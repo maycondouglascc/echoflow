@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>EchoFlow</title>
+  <rect width="64" height="64" rx="18" fill="#0F766E"/>
+  <path d="M15 33c5.7-9.8 11.3-9.8 17 0s11.3 9.8 17 0" stroke="#ECFDF5" stroke-width="5" stroke-linecap="round"/>
+  <path d="M15 44c5.7-9.8 11.3-9.8 17 0s11.3 9.8 17 0" stroke="#A7F3D0" stroke-width="5" stroke-linecap="round"/>
+</svg>
