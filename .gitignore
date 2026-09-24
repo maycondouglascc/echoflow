@@ -1,39 +1,47 @@
-# Dependencies
-node_modules/
-.pnp
-.pnp.js
+# Dependencies and package-manager state
+/node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# Build
-.next/
-out/
-build/
-dist/
+# Next.js output
+/.next/
+/out/
+/build/
+/dist/
+next-env.d.ts
+*.tsbuildinfo
 
-# Environment
+# Local environment and credentials
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+*.pem
 
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Local agent state; keep only the project Spec Kit skills
+/.claude/*
+!/.claude/skills/
+/.claude/skills/*
+!/.claude/skills/speckit-*/
+/.agents/*
+!/.agents/skills/
+/.agents/skills/*
+!/.agents/skills/speckit-*/
 
-# IDE
+# Spec Kit machine-local feature and extension state is ignored in .specify/.gitignore
+.vercel/
+coverage/
+.DS_Store
+Thumbs.db
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Vercel
-.vercel
-
-# TypeScript
-*.tsbuildinfo
-next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
