@@ -1,13 +1,13 @@
 ---
 title: "EchoFlow — Implementation Plan"
 description: "Full AI-led development plan for EchoFlow. This is the source of truth for all development decisions."
-date: "2026-02-25"
+date: "2026-09-24"
 status: "Active"
 ---
 
 # EchoFlow — Implementation Plan
 
-This document governs all development of EchoFlow from day one. It defines the tech stack, development phases, build order, conventions, and AI agent rules. Every Claude Code session should start by reading `CLAUDE.md` (at the project root) and this file.
+This document records the planned stack and product implementation phases. AGENTS.md defines current cross-agent instructions; accepted feature specifications and product decisions take precedence over unreviewed plan details. Check the phase status before starting work.
 
 ---
 
@@ -29,37 +29,24 @@ This document governs all development of EchoFlow from day one. It defines the t
 
 ## 1. AI Development Setup
 
-### CLAUDE.md (project root)
-A `CLAUDE.md` file lives at the project root. Claude Code reads it automatically at the start of every session. It contains non-negotiable rules and conventions. See `CLAUDE.md` (to be created in Phase 0).
+AGENTS.md is the shared project instruction file for coding agents. CLAUDE.md points Claude Code to the same rules. Product requirements live in docs/EchoFlow.md; planned architecture lives in docs/system_architecture.md; feature-specific requirements live in specs/.
 
-### Claude Code Skills
-No custom skills are required for MVP. Standard Claude Code capabilities cover all tasks.
+GitHub Spec Kit 0.16.5 is initialized for Codex in .agents/skills. Codex invokes the installed workflow skills with the $speckit-* names; Claude Code uses /speckit-*. Use the full workflow for user-visible behavior and adjust it to the risk and size of each change. Small maintenance work does not need a full feature specification.
 
-### Workflow Rules for AI Sessions
-- Every session starts: read `CLAUDE.md` and the relevant phase section of this plan.
-- Every file Claude creates must match the folder structure in Section 6.
-- Claude must never make architecture decisions that contradict Section 2 (tech stack) or Section 7 (conventions) — if unsure, ask.
-- Before writing code for a feature, Claude must read all files it will touch.
-- Claude commits only when explicitly asked.
-- Claude never pushes to remote without explicit instruction.
+The normal feature cycle is: specify the user outcome, clarify meaningful ambiguity, plan the implementation, generate tasks, analyze the artifacts, implement in small slices, and converge against the accepted requirements. Specs record intent; tests, review, and device checks provide evidence.
 
-### Session Pattern
-Each development session should follow this loop:
-1. User states the current task (e.g., "Phase 1 — Step 3: Build Supabase auth helpers")
-2. Claude reads CLAUDE.md, the relevant files, and the build order entry
-3. Claude implements the task
-4. Claude shows a concise summary of what was created/changed
-5. User reviews and approves before any destructive operations
+Use short codex/ branches. Create a separate Git worktree for each concurrent writer, and isolate runtime data and credentials separately. Keep commits coherent and reviewable. Do not push, merge, or deploy without explicit instruction.
 
----
 
 ## 2. Tech Stack
 
 | Layer | Choice | Reason |
 |---|---|---|
-| Framework | Next.js 14+ (App Router) | Server components, API routes, streaming — all in one |
-| Language | TypeScript (strict) | Required for all files |
-| Styling | Tailwind CSS v3 | Utility-first, consistent with shadcn |
+| Framework | Next.js 16.3.6 (App Router) | Server components, API routes, streaming — all in one |
+| UI runtime | React 19.2.8 | Pinned with the framework in package.json and package-lock.json |
+| Language | TypeScript 5.9.3 (strict) | Required for all files |
+| Lint and formatting | Biome 2.5.14 | Next.js and React domain rules; checked in CI |
+| Styling | Tailwind CSS 3.4.19 | Existing product decision; exact version pinned |
 | UI Components | shadcn/ui | Accessible, unstyled-first, owns the code |
 | Database | Supabase (Postgres) | Auth + DB + Storage in one service |
 | Auth | Supabase Auth | Sessions, RLS, social login ready |
@@ -67,7 +54,7 @@ Each development session should follow this loop:
 | TTS | ElevenLabs API | Natural native-sounding voice |
 | Transcription | OpenAI Whisper (V2 only) | Best open-source transcription with timestamps |
 | Deployment | Vercel | Native Next.js support, edge functions |
-| Package manager | npm | Default, no preference override |
+| Runtime | Node.js 24.19.0 and npm 11 | Node pin in .nvmrc; package engines checked locally and in CI |
 
 **No Redux, no Zustand.** State is local (useState/useReducer) or server-side (Supabase). Add a global store only if a clear need emerges in V2+.
 
@@ -75,95 +62,53 @@ Each development session should follow this loop:
 
 ## 3. Project Setup
 
-### Bootstrap Commands
+The Next.js foundation is already scaffolded in the repository. Use the pinned runtime and lockfile for local development:
 
-```bash
-# 1. Create Next.js project
-npx create-next-app@latest echoflow \
-  --typescript \
-  --tailwind \
-  --eslint \
-  --app \
-  --src-dir \
-  --import-alias "@/*"
+    nvm use
+    npm ci
+    npm run dev
 
-cd echoflow
+Required automated checks:
 
-# 2. Install core dependencies
-npm install @supabase/supabase-js @supabase/ssr
+    npm run lint
+    npm run typecheck
+    npm run build
 
-# 3. Install shadcn (interactive CLI)
-npx shadcn@latest init
-# Choose: Default style, Slate base color, CSS variables: yes
+GitHub Actions runs these checks for pull requests and pushes to master. The CI workflow is the baseline integration check; configure GitHub branch protection to require its quality status before merging.
 
-# 4. Install commonly needed shadcn components upfront
-npx shadcn@latest add button card badge progress separator
+Do not rerun create-next-app over this repository. Add UI components when a feature needs them, following the accepted Tailwind CSS 3 and shadcn/ui decisions.
 
-# 5. Audio/media
-npm install wavesurfer.js
 
-# 6. Dev tooling
-npm install -D @types/node
-```
-
-### Required shadcn Components (add as needed per phase)
-- `button`, `card`, `badge`, `progress`, `separator` — Phase 1
-- `dialog`, `toast` — Phase 2
-- `skeleton` — Phase 2 (loading states)
-
----
 
 ## 4. Environment Variables
 
-### `.env.local` (never commit)
-```
-# Supabase — safe to expose (anon key, protected by RLS)
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+.env.example lists the server and Supabase variable names planned for later features. Copy it to .env.local only when the feature requires those values. Local environment files are ignored by Git.
 
-# Supabase service role — SERVER ONLY, never NEXT_PUBLIC_
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+Keep Supabase service-role, ElevenLabs, and OpenAI credentials server-side. NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY may be used by the browser, with RLS and server authorization providing the data boundary. Never put private keys in NEXT_PUBLIC variables, source, logs, or client imports. Only grant a task the credentials it needs; ordinary CI uses synthetic data and no paid provider secrets.
 
-# ElevenLabs — SERVER ONLY
-ELEVENLABS_API_KEY=your-elevenlabs-key
-ELEVENLABS_VOICE_ID=your-chosen-voice-id
+Do not create or depend on production credentials to complete local scaffolding. Configure real provider environments separately when a feature is ready for integration.
 
-# OpenAI (V2 only) — SERVER ONLY
-OPENAI_API_KEY=your-openai-key
 
-# App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-### `.env.example` (commit this)
-Copy the block above with values replaced by `your-value-here` descriptions.
-
-### Vercel Environment Variables
-All of the above must be set in the Vercel project dashboard under Settings → Environment Variables. Set for Production and Preview environments.
-
----
 
 ## 5. Development Phases
 
 ### Phase 0 — Foundation (Do First)
-**Goal:** Runnable Next.js app with auth and Supabase connected.
+**Goal:** A reproducible Next.js base and a protected path to integrate verified features.
 
-- [ ] Bootstrap Next.js project (see Section 3)
-- [ ] Create `CLAUDE.md` at project root
-- [ ] Set up Supabase project (new project at supabase.com)
-- [ ] Create `.env.local` and `.env.example`
-- [ ] Set up Supabase client helpers (`lib/supabase/`)
-- [ ] Run database migrations (Section 8)
-- [ ] Enable Supabase Auth (Email/Password for MVP)
-- [ ] Create RLS policies for `user_progress` and `video_sessions`
-- [ ] Create Supabase Storage buckets: `phrase-audio`, `user-recordings`
-- [ ] Build auth pages: `/login`, `/signup`
-- [ ] Protect `/app/*` routes with middleware
-- [ ] Deploy to Vercel (preview URL) — confirm auth works end-to-end
+- [x] Bootstrap the Next.js 16 App Router project with strict TypeScript and the agreed Tailwind version
+- [x] Pin the Node runtime and dependency lockfile
+- [x] Add shared agent instructions and initialize Spec Kit for Codex
+- [x] Add CI checks for lint, TypeScript, and production build
+- [x] Add an environment example and ignore local secrets
+- [ ] Create the Supabase project and configure development credentials
+- [ ] Add server and browser Supabase helpers with the correct authorization boundaries
+- [ ] Add versioned database migrations, RLS policies, and Storage policies; verify two-user isolation
+- [ ] Build signup, login, logout, and protected routes
+- [ ] Deploy a preview and verify authentication end to end
 
-**Deliverable:** Auth works. User can sign up, log in, and be redirected to `/home`.
+**Current state:** The local application foundation and automated CI workflow are in place. The user-facing authentication and data deliverable is still pending. Do not mark Phase 0 complete until its remaining integration and acceptance checks pass.
 
----
+
 
 ### Phase 1 — Scenario & Phrase Browsing
 **Goal:** User can browse scenarios and see phrase lists.
@@ -533,41 +478,28 @@ Create these in the Supabase dashboard (Storage → New bucket):
 
 ## 10. Testing Strategy
 
-### What to Test and When
+### Baseline checks
 
-**Phase 0 — Manual smoke tests only:**
-- Auth: signup, login, logout, protected route redirect
-- Supabase RLS: verify user A cannot see user B's data (use two test accounts)
+The initial repository has no behavior test suite. Its required CI checks are:
 
-**Phase 1 — Manual:**
-- All 40 phrases visible, correct text
-- Audio plays from Supabase Storage URL
-- No console errors on scenario/phrase pages
+- npm run lint
+- npm run typecheck
+- npm run build
 
-**Phase 2 — Manual (device testing critical):**
-- Practice loop end-to-end on desktop Chrome
-- Practice loop on iOS Safari (media APIs differ)
-- Practice loop on Android Chrome
-- Mic permission denied → graceful error
-- Upload failure → graceful error
-- Test with slow network (Chrome DevTools: Slow 3G)
+Add automated tests with the first behavior change and make them required in CI before accepting that feature. Do not add placeholder tests or a coverage target that does not prove product behavior.
 
-**Phase 3+ — Add unit tests for:**
-- `lib/elevenlabs.ts` — mock the API, test error handling
-- `app/api/progress/route.ts` — test auth check, DB write
-- `components/AudioPlayer.tsx` — state machine transitions
+### Tests by risk
 
-**Framework: Vitest** (compatible with Next.js, faster than Jest)
-```bash
-npm install -D vitest @vitejs/plugin-react jsdom @testing-library/react @testing-library/user-event
-```
+- Pure logic and practice-state transitions: focused unit tests with boundary, cancel, retry, and failure cases.
+- API routes and persistence: integration tests for authentication, validation, idempotency, and authorization.
+- Supabase database and Storage: apply migrations from an empty local database and exercise policies using distinct user identities, including anonymous access where relevant. A service-role-only test does not prove RLS isolation.
+- Important user journeys: browser automation for account access, practice, upload, and progress once those flows exist.
+- Audio and browser media: deterministic audio fixtures in automated checks plus manual checks on current iOS Safari and Android Chrome devices for microphone permissions, playback, interruptions, and supported formats.
+- External TTS and transcription: keep ordinary CI on fixtures. Run provider checks separately with explicit budgets and non-production credentials.
 
-### Key Things NOT to Automate for MVP
-- Audio quality (manual ear test)
-- Cross-browser waveform rendering
-- ElevenLabs response time
+For bugs, add a regression check that fails for the reported behavior and passes after the correction. Tests must assert outcomes and invariants; do not mirror internal implementation details without user value.
 
----
+
 
 ## 11. Deployment Checklist
 
@@ -583,8 +515,7 @@ npm install -D vitest @vitejs/plugin-react jsdom @testing-library/react @testing
 
 ### Vercel
 - [ ] Project connected to GitHub repo
-- [ ] All environment variables set (see Section 4)
-- [ ] `NEXT_PUBLIC_APP_URL` set to production URL
+- [ ] Configure only the runtime environment variables required by implemented features
 - [ ] Production domain configured
 - [ ] Deploy succeeds with zero build errors
 
@@ -603,4 +534,4 @@ npm install -D vitest @vitejs/plugin-react jsdom @testing-library/react @testing
 
 ---
 
-*Last updated: 2026-02-25 | Status: Active | Version: 0.1.0*
+*Last updated: 2026-09-24 | Status: Active | Version: 0.1.0*
