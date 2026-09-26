@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { voiceComparisonScenario } from "../../src/lib/fixtures/voice-comparison";
 
 const recordingMarker = "echoflow-test-audio-marker-not-a-personal-recording";
 const phraseTexts = [
@@ -20,6 +21,9 @@ interface EchoTestController {
   failNextRecorderStart: () => void;
   setMicrophoneUnavailable: () => void;
   setNextRecordingEmpty: () => void;
+  setAudioTime: (milliseconds: number) => void;
+  pauseCurrentAudio: () => void;
+  resumeCurrentAudio: () => void;
   failNextReference: () => void;
   failNextRecordingPlayback: () => void;
 }
@@ -61,6 +65,10 @@ function installMediaMocks() {
     activeRecorder: null,
   };
 
+  const mockedAudioSources = new WeakMap<HTMLMediaElement, string>();
+  const mockedAudioTimes = new WeakMap<HTMLMediaElement, number>();
+  const mockedAudioPaused = new WeakMap<HTMLMediaElement, boolean>();
+
   Object.defineProperty(window, "__echoTest", {
     configurable: true,
     value: {
@@ -77,12 +85,14 @@ function installMediaMocks() {
         if (!state.currentAudio) throw new Error("No audio is currently playing");
         const audio = state.currentAudio;
         state.currentAudio = null;
+        mockedAudioPaused.set(audio, true);
         audio.dispatchEvent(new Event("ended"));
       },
       failCurrentAudio() {
         if (!state.currentAudio) throw new Error("No audio is currently playing");
         const audio = state.currentAudio;
         state.currentAudio = null;
+        mockedAudioPaused.set(audio, true);
         audio.dispatchEvent(new Event("error"));
       },
       denyNextMicrophone() {
@@ -102,6 +112,22 @@ function installMediaMocks() {
       setNextRecordingEmpty() {
         state.nextRecordingEmpty = true;
       },
+      setAudioTime(milliseconds: number) {
+        if (!state.currentAudio) throw new Error("No audio is currently loaded");
+        state.currentAudio.currentTime = milliseconds / 1000;
+        state.currentAudio.dispatchEvent(new Event("seeked"));
+        state.currentAudio.dispatchEvent(new Event("timeupdate"));
+      },
+      pauseCurrentAudio() {
+        if (!state.currentAudio) throw new Error("No audio is currently loaded");
+        state.currentAudio.pause();
+      },
+      resumeCurrentAudio() {
+        if (!state.currentAudio) throw new Error("No audio is currently loaded");
+        mockedAudioPaused.set(state.currentAudio, false);
+        state.currentAudio.dispatchEvent(new Event("play"));
+        state.currentAudio.dispatchEvent(new Event("playing"));
+      },
       failNextReference() {
         state.failReference = true;
       },
@@ -111,7 +137,6 @@ function installMediaMocks() {
     },
   });
 
-  const mockedAudioSources = new WeakMap<HTMLMediaElement, string>();
   Object.defineProperty(HTMLMediaElement.prototype, "src", {
     configurable: true,
     get(this: HTMLMediaElement) {
@@ -119,6 +144,22 @@ function installMediaMocks() {
     },
     set(this: HTMLMediaElement, source: string) {
       mockedAudioSources.set(this, new URL(source, document.baseURI).href);
+    },
+  });
+
+  Object.defineProperty(HTMLMediaElement.prototype, "currentTime", {
+    configurable: true,
+    get(this: HTMLMediaElement) {
+      return mockedAudioTimes.get(this) ?? 0;
+    },
+    set(this: HTMLMediaElement, seconds: number) {
+      mockedAudioTimes.set(this, seconds);
+    },
+  });
+  Object.defineProperty(HTMLMediaElement.prototype, "paused", {
+    configurable: true,
+    get(this: HTMLMediaElement) {
+      return mockedAudioPaused.get(this) ?? true;
     },
   });
 
@@ -139,6 +180,10 @@ function installMediaMocks() {
         state.currentAudio = null;
         return Promise.reject(new DOMException("Recording playback failed", "NotSupportedError"));
       }
+      mockedAudioTimes.set(this, 0);
+      mockedAudioPaused.set(this, false);
+      this.dispatchEvent(new Event("play"));
+      this.dispatchEvent(new Event("playing"));
       if (source.startsWith("blob:")) return Promise.resolve();
       return fetch(source).then((response) => {
         if (!response.ok) throw new Error(`Reference fixture returned ${response.status}`);
@@ -149,7 +194,8 @@ function installMediaMocks() {
   Object.defineProperty(HTMLMediaElement.prototype, "pause", {
     configurable: true,
     value: function (this: HTMLMediaElement) {
-      if (state.currentAudio === this) state.currentAudio = null;
+      mockedAudioPaused.set(this, true);
+      this.dispatchEvent(new Event("pause"));
     },
   });
   Object.defineProperty(HTMLMediaElement.prototype, "load", {
@@ -377,13 +423,131 @@ test("automatically stops a recording at 30 seconds", async ({ page }) => {
   await expect.poll(() => page.evaluate(() => window.__echoTest.tracksStopped)).toBe(1);
 });
 
+test("shows only the original voice names without synthesis metadata", async ({ page }) => {
+  await openPractice(page);
+  const voiceChoices = page.locator("fieldset").filter({
+    has: page.getByText("Reference voice", { exact: true }),
+  });
+  await expect(page.getByRole("radio", { name: "Puck", exact: true })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Harper", exact: true })).toBeVisible();
+  await expect(voiceChoices).not.toContainText(
+    /OpenRouter|Google|Microsoft|Gemini|MAI-Voice|google\/|microsoft\/|\.wav|\.mp3/i,
+  );
+});
+
+test("requires complete word timings for each selectable audio variant", () => {
+  for (const phrase of voiceComparisonScenario.phrases) {
+    const expectedWords = phrase.text.split(/\s+/);
+    for (const model of voiceComparisonScenario.audioModels.filter((item) => item.selectable)) {
+      const variant = phrase.audioVariants.find(
+        (item) => item.modelId === model.id && item.voiceId === model.voiceId,
+      );
+      expect(
+        variant?.wordTimings?.map((cue) => cue.word),
+        variant?.id,
+      ).toEqual(expectedWords);
+      let previousEnd = 0;
+      for (const cue of variant?.wordTimings ?? []) {
+        expect(cue.startMs).toBeGreaterThanOrEqual(previousEnd);
+        expect(cue.endMs).toBeGreaterThan(cue.startMs);
+        expect(cue.endMs).toBeLessThanOrEqual(variant?.durationMs ?? 0);
+        previousEnd = cue.endMs;
+      }
+    }
+  }
+});
+
+test("highlights the reference word from media time and clears it for personal playback", async ({
+  page,
+}) => {
+  const phrase = voiceComparisonScenario.phrases[0];
+  const puck = voiceComparisonScenario.audioModels.find((model) => model.voiceName === "Puck");
+  const variant = phrase.audioVariants.find((item) => item.modelId === puck?.id);
+  const cues = variant?.wordTimings ?? [];
+  const timeForWord = (index: number, fallbackMs: number) => {
+    const cue = cues[index];
+    return cue ? Math.floor((cue.startMs + cue.endMs) / 2) : fallbackMs;
+  };
+
+  await openPractice(page);
+  await page.getByRole("button", { name: "Listen to reference" }).click();
+  await expect(page.getByRole("status")).toContainText("Playing reference");
+  const words = page.locator("[data-word-index]");
+  await expect(words.nth(0)).toHaveAttribute("data-highlighted", "true");
+
+  const highlightDelayMs = await page.evaluate(
+    ({ milliseconds, wordIndex }) =>
+      new Promise<number>((resolve, reject) => {
+        const startedAt = performance.now();
+        window.__echoTest.setAudioTime(milliseconds);
+        const check = () => {
+          const word = document.querySelector(
+            `[data-word-index="${wordIndex}"][data-highlighted="true"]`,
+          );
+          if (word) {
+            resolve(performance.now() - startedAt);
+            return;
+          }
+          if (performance.now() - startedAt >= 100) {
+            reject(new Error("The current word was not highlighted within 100ms"));
+            return;
+          }
+          window.requestAnimationFrame(check);
+        };
+        check();
+      }),
+    { milliseconds: timeForWord(4, 1_140), wordIndex: 4 },
+  );
+  expect(highlightDelayMs).toBeLessThan(100);
+  await expect(words.nth(4)).toHaveAttribute("data-highlighted", "true");
+  await page.evaluate(() => window.__echoTest.pauseCurrentAudio());
+  await expect(words.nth(4)).toHaveAttribute("data-highlighted", "true");
+  await page.evaluate(
+    (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
+    timeForWord(7, 1_950),
+  );
+  await expect(words.nth(7)).toHaveAttribute("data-highlighted", "true");
+  await page.evaluate(() => window.__echoTest.resumeCurrentAudio());
+  await page.evaluate(() => window.__echoTest.finishCurrentAudio());
+  await expect(page.locator('[data-highlighted="true"]')).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Listen to reference" }).click();
+  await expect(words.nth(0)).toHaveAttribute("data-highlighted", "true");
+  await page.getByRole("button", { name: "Next phrase" }).click();
+  await expect(page.getByText("Phrase 2 of 5")).toBeVisible();
+  await expect(page.locator('[data-highlighted="true"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "Previous phrase" }).click();
+
+  await startRecording(page);
+  await stopRecording(page);
+  await page.getByRole("button", { name: "Compare" }).click();
+  await expect(page.getByRole("status")).toContainText("Playing reference");
+  await page.evaluate(
+    (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
+    timeForWord(2, 800),
+  );
+  await expect(words.nth(2)).toHaveAttribute("data-highlighted", "true");
+  await finishCurrentAudio(page);
+  await expect(page.getByRole("status")).toContainText("Playing your recording");
+  await expect(page.locator('[data-highlighted="true"]')).toHaveCount(0);
+  await finishCurrentAudio(page);
+});
+
 test("uses the selected MAI voice across phrases and resets it after reload", async ({ page }) => {
   await openPractice(page);
-  const google = page.getByRole("radio", { name: "Use Google Gemini 3.8 Flash TTS voice Puck" });
-  const mai = page.getByRole("radio", { name: "Use Microsoft MAI-Voice-2 voice Harper" });
+  const google = page.getByRole("radio", { name: "Puck", exact: true });
+  const mai = page.getByRole("radio", { name: "Harper", exact: true });
+  const voiceChoices = page.locator("fieldset").filter({
+    has: page.getByText("Reference voice", { exact: true }),
+  });
+  await expect(voiceChoices).not.toContainText(
+    /OpenRouter|Google|Microsoft|Gemini|MAI-Voice|google\/|microsoft\/|\.wav|\.mp3/i,
+  );
   await expect(google).toBeChecked();
   await mai.check();
   await expect(mai).toBeChecked();
+  await expect(page.getByRole("status")).toContainText("Harper selected");
+  await expect(page.getByRole("status")).not.toContainText(/Microsoft|MAI-Voice/i);
   await page.getByRole("button", { name: "Listen to reference" }).click();
   await expect(page.getByRole("status")).toContainText("Playing reference");
   expect(await page.evaluate(() => window.__echoTest.audioStarts.at(-1))).toContain(
@@ -401,9 +565,7 @@ test("uses the selected MAI voice across phrases and resets it after reload", as
   await finishCurrentAudio(page);
 
   await page.reload();
-  await expect(
-    page.getByRole("radio", { name: "Use Google Gemini 3.8 Flash TTS voice Puck" }),
-  ).toBeChecked();
+  await expect(page.getByRole("radio", { name: "Puck", exact: true })).toBeChecked();
 });
 
 test("compares reference first and waits for it to end before playing the recording", async ({
@@ -510,8 +672,10 @@ test("recovers after reference playback is interrupted", async ({ page }) => {
   await openPractice(page);
   await page.getByRole("button", { name: "Listen to reference" }).click();
   await expect(page.getByRole("status")).toContainText("Playing reference");
+  await expect(page.locator('[data-word-index="0"]')).toHaveAttribute("data-highlighted", "true");
   await page.evaluate(() => window.__echoTest.failCurrentAudio());
   await expect(page.locator("p[role=alert]")).toContainText("reference audio was interrupted");
+  await expect(page.locator('[data-highlighted="true"]')).toHaveCount(0);
   await page.getByRole("button", { name: "Listen to reference" }).click();
   await expect(page.getByRole("status")).toContainText("Playing reference");
   await finishCurrentAudio(page);

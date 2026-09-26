@@ -33,6 +33,8 @@ Pre-written phrases organized by real-life scenarios. Each phrase has:
 - Visual waveform display during playback
 - A one-tap record button that opens after playback ends
 - Side-by-side replay of the reference vs. the user's recording
+- A reference voice selector that presents each speaker persona by its original voice name
+- Word-by-word highlighting that follows reference playback, including the reference portion of a comparison; the learner recording stays unhighlighted
 
 **Available scenarios at launch:**
 

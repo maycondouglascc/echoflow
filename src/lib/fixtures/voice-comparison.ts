@@ -30,6 +30,12 @@ export interface AudioProvenance {
   readonly voice?: string;
 }
 
+export interface WordTiming {
+  readonly word: string;
+  readonly startMs: number;
+  readonly endMs: number;
+}
+
 export interface AudioVariantFixture {
   readonly id: string;
   readonly modelId: string;
@@ -42,6 +48,7 @@ export interface AudioVariantFixture {
   readonly sampleFormat: string;
   readonly sizeBytes?: number;
   readonly durationMs?: number;
+  readonly wordTimings?: readonly WordTiming[];
   readonly sha256: string;
   readonly provenance: AudioProvenance;
 }
@@ -75,6 +82,13 @@ export const voiceComparisonScenario: ScenarioFixture = Object.freeze({
           phrase.audioVariants.map((variant) =>
             Object.freeze({
               ...variant,
+              ...(variant.wordTimings
+                ? {
+                    wordTimings: Object.freeze(
+                      variant.wordTimings.map((timing) => Object.freeze(timing)),
+                    ),
+                  }
+                : {}),
               provenance: Object.freeze(variant.provenance),
             }),
           ),

@@ -7,6 +7,7 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
   const { audioRef, view, actions } = useShadowingPractice(scenario);
   const {
     phrase,
+    activeWordIndex,
     selectedIndex,
     audioModels,
     selectedModelId,
@@ -20,6 +21,23 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
     error,
     canRetryRecording,
   } = view;
+
+  let nextWordIndex = 0;
+  const phraseContent = phrase.text.split(/(\s+)/).map((part) => {
+    if (/^\s+$/.test(part)) return part;
+    const wordIndex = nextWordIndex++;
+    const highlighted = activeWordIndex === wordIndex;
+    return (
+      <span
+        key={`${wordIndex}-${part}`}
+        data-word-index={wordIndex}
+        data-highlighted={highlighted ? "true" : undefined}
+        className={highlighted ? "rounded bg-[#d7ff7a] px-1 py-0.5 text-[#173d33]" : undefined}
+      >
+        {part}
+      </span>
+    );
+  });
 
   return (
     <section className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[0.88fr_1.12fr]">
@@ -132,7 +150,7 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
             Reference phrase {String(selectedIndex + 1).padStart(2, "0")}
           </h2>
           <p className="mt-4 max-w-2xl text-3xl font-medium leading-[1.28] tracking-tight text-white sm:text-4xl">
-            {phrase.text}
+            {phraseContent}
           </p>
           <p className="mt-4 max-w-xl text-sm leading-6 text-[#d2e0d8]">
             Listen once, then say it in your own voice. Your recording stays in this page session.
@@ -159,17 +177,11 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
                     value={model.id}
                     checked={selectedModelId === model.id}
                     onChange={() => actions.selectAudioModel(model.id)}
-                    aria-label={`Use ${model.vendor} ${model.displayName} voice ${model.voiceName}`}
+                    aria-label={model.voiceName}
                     className="mt-1 size-4 accent-[#d7ff7a]"
                   />
                   <span className="min-w-0">
-                    <span className="block text-sm font-bold text-white">
-                      {model.vendor} · {model.voiceName}
-                    </span>
-                    <span className="mt-1 block break-all text-xs leading-5 text-[#c1d7cb]">
-                      {model.displayName} · {model.id} · {model.voiceId} ·{" "}
-                      {model.outputFormat.toUpperCase()}
-                    </span>
+                    <span className="block text-sm font-bold text-white">{model.voiceName}</span>
                   </span>
                 </label>
               ))}

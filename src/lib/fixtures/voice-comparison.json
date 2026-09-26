@@ -79,7 +79,59 @@
             "sourceFilename": "openrouter-audio-output.wav",
             "generationId": null,
             "generatedAt": null
-          }
+          },
+          "wordTimings": [
+            {
+              "word": "Hi,",
+              "startMs": 0,
+              "endMs": 480
+            },
+            {
+              "word": "my",
+              "startMs": 680,
+              "endMs": 780
+            },
+            {
+              "word": "name",
+              "startMs": 780,
+              "endMs": 860
+            },
+            {
+              "word": "is",
+              "startMs": 860,
+              "endMs": 1080
+            },
+            {
+              "word": "Alex.",
+              "startMs": 1080,
+              "endMs": 1320
+            },
+            {
+              "word": "It's",
+              "startMs": 1600,
+              "endMs": 1760
+            },
+            {
+              "word": "nice",
+              "startMs": 1760,
+              "endMs": 1880
+            },
+            {
+              "word": "to",
+              "startMs": 1880,
+              "endMs": 2020
+            },
+            {
+              "word": "meet",
+              "startMs": 2020,
+              "endMs": 2140
+            },
+            {
+              "word": "you.",
+              "startMs": 2140,
+              "endMs": 2300
+            }
+          ]
         },
         {
           "id": "introducing-yourself-01--microsoft-mai-voice-2--en-us-harper-mai-voice-2",
@@ -99,7 +151,59 @@
             "sourceFilename": "openrouter-audio-output.mp3",
             "generationId": null,
             "generatedAt": null
-          }
+          },
+          "wordTimings": [
+            {
+              "word": "Hi,",
+              "startMs": 0,
+              "endMs": 520
+            },
+            {
+              "word": "my",
+              "startMs": 900,
+              "endMs": 1060
+            },
+            {
+              "word": "name",
+              "startMs": 1060,
+              "endMs": 1200
+            },
+            {
+              "word": "is",
+              "startMs": 1200,
+              "endMs": 1500
+            },
+            {
+              "word": "Alex.",
+              "startMs": 1500,
+              "endMs": 1800
+            },
+            {
+              "word": "It's",
+              "startMs": 2060,
+              "endMs": 2380
+            },
+            {
+              "word": "nice",
+              "startMs": 2380,
+              "endMs": 2540
+            },
+            {
+              "word": "to",
+              "startMs": 2540,
+              "endMs": 2760
+            },
+            {
+              "word": "meet",
+              "startMs": 2760,
+              "endMs": 2880
+            },
+            {
+              "word": "you.",
+              "startMs": 2880,
+              "endMs": 3120
+            }
+          ]
         },
         {
           "id": "introducing-yourself-01--espeak-ng-1-52-0--en-us",
@@ -147,7 +251,74 @@
             "sourceFilename": "openrouter-audio-output(4).wav",
             "generationId": null,
             "generatedAt": null
-          }
+          },
+          "wordTimings": [
+            {
+              "word": "I'm",
+              "startMs": 0,
+              "endMs": 480
+            },
+            {
+              "word": "originally",
+              "startMs": 480,
+              "endMs": 880
+            },
+            {
+              "word": "from",
+              "startMs": 880,
+              "endMs": 1300
+            },
+            {
+              "word": "Recife,",
+              "startMs": 1300,
+              "endMs": 1800
+            },
+            {
+              "word": "but",
+              "startMs": 1980,
+              "endMs": 2220
+            },
+            {
+              "word": "I've",
+              "startMs": 2220,
+              "endMs": 2440
+            },
+            {
+              "word": "been",
+              "startMs": 2440,
+              "endMs": 2560
+            },
+            {
+              "word": "living",
+              "startMs": 2560,
+              "endMs": 2700
+            },
+            {
+              "word": "here",
+              "startMs": 2700,
+              "endMs": 2880
+            },
+            {
+              "word": "for",
+              "startMs": 2880,
+              "endMs": 3080
+            },
+            {
+              "word": "a",
+              "startMs": 3080,
+              "endMs": 3160
+            },
+            {
+              "word": "few",
+              "startMs": 3160,
+              "endMs": 3260
+            },
+            {
+              "word": "years.",
+              "startMs": 3260,
+              "endMs": 3520
+            }
+          ]
         },
         {
           "id": "introducing-yourself-02--microsoft-mai-voice-2--en-us-harper-mai-voice-2",
@@ -167,7 +338,74 @@
             "sourceFilename": "openrouter-audio-output(1).mp3",
             "generationId": null,
             "generatedAt": null
-          }
+          },
+          "wordTimings": [
+            {
+              "word": "I'm",
+              "startMs": 0,
+              "endMs": 440
+            },
+            {
+              "word": "originally",
+              "startMs": 440,
+              "endMs": 940
+            },
+            {
+              "word": "from",
+              "startMs": 940,
+              "endMs": 1280
+            },
+            {
+              "word": "Recife,",
+              "startMs": 1280,
+              "endMs": 1720
+            },
+            {
+              "word": "but",
+              "startMs": 2160,
+              "endMs": 2540
+            },
+            {
+              "word": "I've",
+              "startMs": 2540,
+              "endMs": 2860
+            },
+            {
+              "word": "been",
+              "startMs": 2860,
+              "endMs": 3060
+            },
+            {
+              "word": "living",
+              "startMs": 3060,
+              "endMs": 3220
+            },
+            {
+              "word": "here",
+              "startMs": 3220,
+              "endMs": 3460
+            },
+            {
+              "word": "for",
+              "startMs": 3460,
+              "endMs": 3680
+            },
+            {
+              "word": "a",
+              "startMs": 3680,
+              "endMs": 3820
+            },
+            {
+              "word": "few",
+              "startMs": 3820,
+              "endMs": 3940
+            },
+            {
+              "word": "years.",
+              "startMs": 3940,
+              "endMs": 4320
+            }
+          ]
         },
         {
           "id": "introducing-yourself-02--espeak-ng-1-52-0--en-us",
@@ -215,7 +453,64 @@
             "sourceFilename": "openrouter-audio-output(1).wav",
             "generationId": null,
             "generatedAt": null
-          }
+          },
+          "wordTimings": [
+            {
+              "word": "I",
+              "startMs": 0,
+              "endMs": 500
+            },
+            {
+              "word": "work",
+              "startMs": 500,
+              "endMs": 660
+            },
+            {
+              "word": "as",
+              "startMs": 660,
+              "endMs": 940
+            },
+            {
+              "word": "a",
+              "startMs": 940,
+              "endMs": 1000
+            },
+            {
+              "word": "software",
+              "startMs": 1000,
+              "endMs": 1360
+            },
+            {
+              "word": "engineer",
+              "startMs": 1360,
+              "endMs": 1780
+            },
+            {
+              "word": "at",
+              "startMs": 1780,
+              "endMs": 2140
+            },
+            {
+              "word": "a",
+              "startMs": 2140,
+              "endMs": 2320
+            },
+            {
+              "word": "tech",
+              "startMs": 2320,
+              "endMs": 2500
+            },
+            {
+              "word": "company",
+              "startMs": 2500,
+              "endMs": 2840
+            },
+            {
+              "word": "downtown.",
+              "startMs": 2840,
+              "endMs": 3200
+            }
+          ]
         },
         {
           "id": "introducing-yourself-03--microsoft-mai-voice-2--en-us-harper-mai-voice-2",
@@ -235,7 +530,64 @@
             "sourceFilename": "openrouter-audio-output(2).mp3",
             "generationId": null,
             "generatedAt": null
-          }
+          },
+          "wordTimings": [
+            {
+              "word": "I",
+              "startMs": 0,
+              "endMs": 220
+            },
+            {
+              "word": "work",
+              "startMs": 220,
+              "endMs": 360
+            },
+            {
+              "word": "as",
+              "startMs": 360,
+              "endMs": 560
+            },
+            {
+              "word": "a",
+              "startMs": 560,
+              "endMs": 680
+            },
+            {
+              "word": "software",
+              "startMs": 680,
+              "endMs": 980
+            },
+            {
+              "word": "engineer",
+              "startMs": 980,
+              "endMs": 1380
+            },
+            {
+              "word": "at",
+              "startMs": 1380,
+              "endMs": 1620
+            },
+            {
+              "word": "a",
+              "startMs": 1620,
+              "endMs": 1780
+            },
+            {
+              "word": "tech",
+              "startMs": 1780,
+              "endMs": 1920
+            },
+            {
+              "word": "company",
+              "startMs": 1920,
+              "endMs": 2300
+            },
+            {
+              "word": "downtown.",
+              "startMs": 2300,
+              "endMs": 2800
+            }
+          ]
         },
         {
           "id": "introducing-yourself-03--espeak-ng-1-52-0--en-us",
@@ -283,7 +635,49 @@
             "sourceFilename": "openrouter-audio-output(2).wav",
             "generationId": null,
             "generatedAt": null
-          }
+          },
+          "wordTimings": [
+            {
+              "word": "Could",
+              "startMs": 0,
+              "endMs": 380
+            },
+            {
+              "word": "we",
+              "startMs": 380,
+              "endMs": 560
+            },
+            {
+              "word": "get",
+              "startMs": 560,
+              "endMs": 740
+            },
+            {
+              "word": "a",
+              "startMs": 740,
+              "endMs": 880
+            },
+            {
+              "word": "table",
+              "startMs": 880,
+              "endMs": 1080
+            },
+            {
+              "word": "for",
+              "startMs": 1080,
+              "endMs": 1320
+            },
+            {
+              "word": "two,",
+              "startMs": 1320,
+              "endMs": 1520
+            },
+            {
+              "word": "please?",
+              "startMs": 1720,
+              "endMs": 1840
+            }
+          ]
         },
         {
           "id": "at-a-restaurant-01--microsoft-mai-voice-2--en-us-harper-mai-voice-2",
@@ -303,7 +697,49 @@
             "sourceFilename": "openrouter-audio-output(3).mp3",
             "generationId": null,
             "generatedAt": null
-          }
+          },
+          "wordTimings": [
+            {
+              "word": "Could",
+              "startMs": 0,
+              "endMs": 200
+            },
+            {
+              "word": "we",
+              "startMs": 200,
+              "endMs": 340
+            },
+            {
+              "word": "get",
+              "startMs": 340,
+              "endMs": 480
+            },
+            {
+              "word": "a",
+              "startMs": 480,
+              "endMs": 660
+            },
+            {
+              "word": "table",
+              "startMs": 660,
+              "endMs": 860
+            },
+            {
+              "word": "for",
+              "startMs": 860,
+              "endMs": 1160
+            },
+            {
+              "word": "two,",
+              "startMs": 1160,
+              "endMs": 1440
+            },
+            {
+              "word": "please?",
+              "startMs": 1680,
+              "endMs": 1860
+            }
+          ]
         }
       ],
       "category": "At a Restaurant"
@@ -331,7 +767,59 @@
             "sourceFilename": "openrouter-audio-output(3).wav",
             "generationId": null,
             "generatedAt": null
-          }
+          },
+          "wordTimings": [
+            {
+              "word": "I",
+              "startMs": 0,
+              "endMs": 620
+            },
+            {
+              "word": "have",
+              "startMs": 620,
+              "endMs": 820
+            },
+            {
+              "word": "about",
+              "startMs": 820,
+              "endMs": 1240
+            },
+            {
+              "word": "five",
+              "startMs": 1240,
+              "endMs": 1680
+            },
+            {
+              "word": "years",
+              "startMs": 1680,
+              "endMs": 1880
+            },
+            {
+              "word": "of",
+              "startMs": 1880,
+              "endMs": 2240
+            },
+            {
+              "word": "experience",
+              "startMs": 2240,
+              "endMs": 2600
+            },
+            {
+              "word": "in",
+              "startMs": 2600,
+              "endMs": 2960
+            },
+            {
+              "word": "software",
+              "startMs": 2960,
+              "endMs": 3320
+            },
+            {
+              "word": "development.",
+              "startMs": 3320,
+              "endMs": 3680
+            }
+          ]
         },
         {
           "id": "job-interview-basics-02--microsoft-mai-voice-2--en-us-harper-mai-voice-2",
@@ -351,7 +839,59 @@
             "sourceFilename": "openrouter-audio-output-109.mp3",
             "generationId": null,
             "generatedAt": null
-          }
+          },
+          "wordTimings": [
+            {
+              "word": "I",
+              "startMs": 0,
+              "endMs": 220
+            },
+            {
+              "word": "have",
+              "startMs": 220,
+              "endMs": 380
+            },
+            {
+              "word": "about",
+              "startMs": 380,
+              "endMs": 640
+            },
+            {
+              "word": "five",
+              "startMs": 640,
+              "endMs": 920
+            },
+            {
+              "word": "years",
+              "startMs": 920,
+              "endMs": 1140
+            },
+            {
+              "word": "of",
+              "startMs": 1140,
+              "endMs": 1500
+            },
+            {
+              "word": "experience",
+              "startMs": 1500,
+              "endMs": 1860
+            },
+            {
+              "word": "in",
+              "startMs": 1860,
+              "endMs": 2120
+            },
+            {
+              "word": "software",
+              "startMs": 2120,
+              "endMs": 2500
+            },
+            {
+              "word": "development.",
+              "startMs": 2500,
+              "endMs": 2960
+            }
+          ]
         }
       ],
       "category": "Job Interview Basics"
