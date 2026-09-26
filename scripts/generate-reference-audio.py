@@ -81,11 +81,21 @@ def generate(output_dir: Path) -> None:
     try:
         require_success("voice selection", library.espeak_SetVoiceByName(VOICE))
         require_success("speech rate", library.espeak_SetParameter(1, RATE_WPM, 0))
-        data_file = Path(__file__).resolve().parents[1] / "src/lib/fixtures/introducing-yourself.json"
+        data_file = Path(__file__).resolve().parents[1] / "src/lib/fixtures/voice-comparison.json"
         fixture = json.loads(data_file.read_text(encoding="utf-8"))
         output_dir.mkdir(parents=True, exist_ok=True)
 
         for phrase in fixture["phrases"]:
+            baseline = next(
+                (
+                    variant
+                    for variant in phrase["audioVariants"]
+                    if variant["modelId"] == "espeak-ng/1.52.0"
+                ),
+                None,
+            )
+            if baseline is None:
+                continue
             samples.clear()
             require_success("random seed", library.espeak_ng_SetRandSeed(SEED_BASE + phrase["order"]))
             text_bytes = phrase["text"].encode("utf-8")
@@ -107,7 +117,7 @@ def generate(output_dir: Path) -> None:
             if not samples:
                 raise RuntimeError(f"eSpeak NG produced no samples for {phrase['id']}")
 
-            audio_path = output_dir / Path(phrase["referenceAudio"]).name
+            audio_path = output_dir / Path(baseline["src"]).name
             pcm = b"".join(samples)
             if sys.byteorder != "little":
                 pcm = b"".join(pcm[index : index + 2][::-1] for index in range(0, len(pcm), 2))

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { voiceComparisonScenario } from "@/lib/fixtures/voice-comparison";
 
 export default function Home() {
   return (
@@ -36,7 +37,7 @@ export default function Home() {
               shadowing session you can try right here.
             </p>
             <Link
-              href="/scenarios/introducing-yourself"
+              href="/scenarios/voice-comparison"
               className="mt-8 inline-flex min-h-14 items-center gap-4 rounded-full bg-[#173d33] px-6 py-4 text-sm font-bold text-white shadow-[0_16px_32px_rgba(23,61,51,0.16)] transition hover:-translate-y-0.5 hover:bg-[#245343]"
             >
               Open scenario{" "}
@@ -65,14 +66,14 @@ export default function Home() {
               <div className="relative flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#b5d0c4]">
-                    Your first session
+                    Compare two reference voices
                   </p>
                   <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-                    Introducing Yourself
+                    Voice Comparison
                   </h2>
                 </div>
                 <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-[#d8e8de]">
-                  3 phrases
+                  {voiceComparisonScenario.phrases.length} phrases
                 </span>
               </div>
               <div className="relative mt-8 space-y-3">
@@ -93,7 +94,7 @@ export default function Home() {
                 ))}
               </div>
               <p className="relative mt-6 border-t border-white/10 pt-5 text-xs leading-5 text-[#b5cfc3]">
-                Reference audio is a local synthetic fixture. Recording is kept in memory and
+                Choose between two pre-generated reference voices. Recording is kept in memory and
                 cleared when you leave or reload.
               </p>
             </article>
