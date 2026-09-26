@@ -1,0 +1,360 @@
+{
+  "id": "voice-comparison",
+  "title": "Voice Comparison",
+  "description": "Listen, repeat, and compare five speech samples from three everyday contexts with two OpenRouter reference voices.",
+  "audioModels": [
+    {
+      "id": "google/gemini-3.8-flash-tts",
+      "provider": "OpenRouter",
+      "vendor": "Google",
+      "displayName": "Gemini 3.8 Flash TTS",
+      "voiceId": "Puck",
+      "voiceName": "Puck",
+      "selectable": true,
+      "archived": false,
+      "responseFormat": "pcm",
+      "responseMimeType": "audio/pcm",
+      "outputFormat": "wav",
+      "outputMimeType": "audio/wav",
+      "sampleRateHz": 24000,
+      "channels": 1,
+      "sampleFormat": "s16le"
+    },
+    {
+      "id": "microsoft/mai-voice-2",
+      "provider": "OpenRouter",
+      "vendor": "Microsoft",
+      "displayName": "MAI-Voice-2",
+      "voiceId": "en-US-Harper:MAI-Voice-2",
+      "voiceName": "Harper",
+      "selectable": true,
+      "archived": false,
+      "responseFormat": "mp3",
+      "responseMimeType": "audio/mpeg",
+      "outputFormat": "mp3",
+      "outputMimeType": "audio/mpeg",
+      "sampleRateHz": 24000,
+      "channels": 1,
+      "sampleFormat": "mpeg"
+    },
+    {
+      "id": "espeak-ng/1.52.0",
+      "provider": "eSpeak NG",
+      "vendor": "eSpeak NG",
+      "displayName": "eSpeak NG 1.52.0",
+      "voiceId": "en-us",
+      "voiceName": "English (US)",
+      "selectable": false,
+      "archived": true,
+      "responseFormat": null,
+      "responseMimeType": null,
+      "outputFormat": "wav",
+      "outputMimeType": "audio/wav",
+      "sampleRateHz": 22050,
+      "channels": 1,
+      "sampleFormat": "s16le"
+    }
+  ],
+  "phrases": [
+    {
+      "id": "introducing-yourself-01",
+      "order": 1,
+      "text": "Hi, my name is Alex. It's nice to meet you.",
+      "audioVariants": [
+        {
+          "id": "introducing-yourself-01--google-gemini-3-8-flash-tts--puck",
+          "modelId": "google/gemini-3.8-flash-tts",
+          "voiceId": "Puck",
+          "src": "/fixtures/audio/openrouter/introducing-yourself-01--google-gemini-3-8-flash-tts--puck.wav",
+          "format": "wav",
+          "contentType": "audio/wav",
+          "sampleRateHz": 24000,
+          "channels": 1,
+          "sampleFormat": "pcm_s16le",
+          "sizeBytes": 117164,
+          "durationMs": 2440,
+          "sha256": "6bcd9780042e80486749bcee85b99628d853099b8b93aa48db9860794b32d1ca",
+          "provenance": {
+            "kind": "user-import",
+            "sourceFilename": "openrouter-audio-output.wav",
+            "generationId": null,
+            "generatedAt": null
+          }
+        },
+        {
+          "id": "introducing-yourself-01--microsoft-mai-voice-2--en-us-harper-mai-voice-2",
+          "modelId": "microsoft/mai-voice-2",
+          "voiceId": "en-US-Harper:MAI-Voice-2",
+          "src": "/fixtures/audio/openrouter/introducing-yourself-01--microsoft-mai-voice-2--en-us-harper-mai-voice-2.mp3",
+          "format": "mp3",
+          "contentType": "audio/mpeg",
+          "sampleRateHz": 24000,
+          "channels": 1,
+          "sampleFormat": "mpeg",
+          "sizeBytes": 64320,
+          "durationMs": 3216,
+          "sha256": "28e3ec9ec5704ebb59e69e90aade1d2157a82ee26f39241b2a0cf4800721278b",
+          "provenance": {
+            "kind": "user-import",
+            "sourceFilename": "openrouter-audio-output.mp3",
+            "generationId": null,
+            "generatedAt": null
+          }
+        },
+        {
+          "id": "introducing-yourself-01--espeak-ng-1-52-0--en-us",
+          "modelId": "espeak-ng/1.52.0",
+          "voiceId": "en-us",
+          "src": "/fixtures/audio/introducing-yourself-01.wav",
+          "format": "wav",
+          "contentType": "audio/wav",
+          "sampleRateHz": 22050,
+          "channels": 1,
+          "sampleFormat": "pcm_s16le",
+          "sha256": "63200d82f67339c31bb6617627aa28a00ec1b9a1240ea051356e84a93fd792ac",
+          "provenance": {
+            "kind": "archived-local-baseline",
+            "sourceFilename": "introducing-yourself-01.wav",
+            "engineVersion": "1.52.0",
+            "voice": "en-us",
+            "generatedAt": null,
+            "generationId": null
+          }
+        }
+      ],
+      "category": "Introducing Yourself"
+    },
+    {
+      "id": "introducing-yourself-02",
+      "order": 2,
+      "text": "I'm originally from Recife, but I've been living here for a few years.",
+      "audioVariants": [
+        {
+          "id": "introducing-yourself-02--google-gemini-3-8-flash-tts--puck",
+          "modelId": "google/gemini-3.8-flash-tts",
+          "voiceId": "Puck",
+          "src": "/fixtures/audio/openrouter/introducing-yourself-02--google-gemini-3-8-flash-tts--puck.wav",
+          "format": "wav",
+          "contentType": "audio/wav",
+          "sampleRateHz": 24000,
+          "channels": 1,
+          "sampleFormat": "pcm_s16le",
+          "sizeBytes": 184364,
+          "durationMs": 3840,
+          "sha256": "c384a873f001642f962e8184ac7ac425710b68d0f99ed49219e6dceb1e9baedf",
+          "provenance": {
+            "kind": "user-import",
+            "sourceFilename": "openrouter-audio-output(4).wav",
+            "generationId": null,
+            "generatedAt": null
+          }
+        },
+        {
+          "id": "introducing-yourself-02--microsoft-mai-voice-2--en-us-harper-mai-voice-2",
+          "modelId": "microsoft/mai-voice-2",
+          "voiceId": "en-US-Harper:MAI-Voice-2",
+          "src": "/fixtures/audio/openrouter/introducing-yourself-02--microsoft-mai-voice-2--en-us-harper-mai-voice-2.mp3",
+          "format": "mp3",
+          "contentType": "audio/mpeg",
+          "sampleRateHz": 24000,
+          "channels": 1,
+          "sampleFormat": "mpeg",
+          "sizeBytes": 94080,
+          "durationMs": 4704,
+          "sha256": "9d09dc20dd93f54ce207c2b98031ddd4bfc0121314a3160582994d6339b99f6f",
+          "provenance": {
+            "kind": "user-import",
+            "sourceFilename": "openrouter-audio-output(1).mp3",
+            "generationId": null,
+            "generatedAt": null
+          }
+        },
+        {
+          "id": "introducing-yourself-02--espeak-ng-1-52-0--en-us",
+          "modelId": "espeak-ng/1.52.0",
+          "voiceId": "en-us",
+          "src": "/fixtures/audio/introducing-yourself-02.wav",
+          "format": "wav",
+          "contentType": "audio/wav",
+          "sampleRateHz": 22050,
+          "channels": 1,
+          "sampleFormat": "pcm_s16le",
+          "sha256": "30a0c9cc8afc36a7388c28f063e3609e4e54eb5e4f9dedb36e99877b89752d62",
+          "provenance": {
+            "kind": "archived-local-baseline",
+            "sourceFilename": "introducing-yourself-02.wav",
+            "engineVersion": "1.52.0",
+            "voice": "en-us",
+            "generatedAt": null,
+            "generationId": null
+          }
+        }
+      ],
+      "category": "Introducing Yourself"
+    },
+    {
+      "id": "introducing-yourself-03",
+      "order": 3,
+      "text": "I work as a software engineer at a tech company downtown.",
+      "audioVariants": [
+        {
+          "id": "introducing-yourself-03--google-gemini-3-8-flash-tts--puck",
+          "modelId": "google/gemini-3.8-flash-tts",
+          "voiceId": "Puck",
+          "src": "/fixtures/audio/openrouter/introducing-yourself-03--google-gemini-3-8-flash-tts--puck.wav",
+          "format": "wav",
+          "contentType": "audio/wav",
+          "sampleRateHz": 24000,
+          "channels": 1,
+          "sampleFormat": "pcm_s16le",
+          "sizeBytes": 172844,
+          "durationMs": 3600,
+          "sha256": "4ed47dd6f573f2be705f680afa956c78c6ff0e846215b58db685078f2ee0a5ad",
+          "provenance": {
+            "kind": "user-import",
+            "sourceFilename": "openrouter-audio-output(1).wav",
+            "generationId": null,
+            "generatedAt": null
+          }
+        },
+        {
+          "id": "introducing-yourself-03--microsoft-mai-voice-2--en-us-harper-mai-voice-2",
+          "modelId": "microsoft/mai-voice-2",
+          "voiceId": "en-US-Harper:MAI-Voice-2",
+          "src": "/fixtures/audio/openrouter/introducing-yourself-03--microsoft-mai-voice-2--en-us-harper-mai-voice-2.mp3",
+          "format": "mp3",
+          "contentType": "audio/mpeg",
+          "sampleRateHz": 24000,
+          "channels": 1,
+          "sampleFormat": "mpeg",
+          "sizeBytes": 64800,
+          "durationMs": 3240,
+          "sha256": "5280d200ae3f2f4c2e241ca4d5ff35ade2d39216b79da666603cd920860d87ea",
+          "provenance": {
+            "kind": "user-import",
+            "sourceFilename": "openrouter-audio-output(2).mp3",
+            "generationId": null,
+            "generatedAt": null
+          }
+        },
+        {
+          "id": "introducing-yourself-03--espeak-ng-1-52-0--en-us",
+          "modelId": "espeak-ng/1.52.0",
+          "voiceId": "en-us",
+          "src": "/fixtures/audio/introducing-yourself-03.wav",
+          "format": "wav",
+          "contentType": "audio/wav",
+          "sampleRateHz": 22050,
+          "channels": 1,
+          "sampleFormat": "pcm_s16le",
+          "sha256": "b7c7877ee4d0a18d8b78f96e118923f76d2e14ecc5e5c3148e155a4b284e7d23",
+          "provenance": {
+            "kind": "archived-local-baseline",
+            "sourceFilename": "introducing-yourself-03.wav",
+            "engineVersion": "1.52.0",
+            "voice": "en-us",
+            "generatedAt": null,
+            "generationId": null
+          }
+        }
+      ],
+      "category": "Introducing Yourself"
+    },
+    {
+      "id": "at-a-restaurant-01",
+      "order": 4,
+      "text": "Could we get a table for two, please?",
+      "audioVariants": [
+        {
+          "id": "at-a-restaurant-01--google-gemini-3-8-flash-tts--puck",
+          "modelId": "google/gemini-3.8-flash-tts",
+          "voiceId": "Puck",
+          "src": "/fixtures/audio/openrouter/at-a-restaurant-01--google-gemini-3-8-flash-tts--puck.wav",
+          "format": "wav",
+          "contentType": "audio/wav",
+          "sampleRateHz": 24000,
+          "channels": 1,
+          "sampleFormat": "pcm_s16le",
+          "sizeBytes": 99884,
+          "durationMs": 2080,
+          "sha256": "21114c656bddbc843c5033a8ec56ec1c2edbfa80fd05f5a5bd96271046ae92e5",
+          "provenance": {
+            "kind": "user-import",
+            "sourceFilename": "openrouter-audio-output(2).wav",
+            "generationId": null,
+            "generatedAt": null
+          }
+        },
+        {
+          "id": "at-a-restaurant-01--microsoft-mai-voice-2--en-us-harper-mai-voice-2",
+          "modelId": "microsoft/mai-voice-2",
+          "voiceId": "en-US-Harper:MAI-Voice-2",
+          "src": "/fixtures/audio/openrouter/at-a-restaurant-01--microsoft-mai-voice-2--en-us-harper-mai-voice-2.mp3",
+          "format": "mp3",
+          "contentType": "audio/mpeg",
+          "sampleRateHz": 24000,
+          "channels": 1,
+          "sampleFormat": "mpeg",
+          "sizeBytes": 40800,
+          "durationMs": 2040,
+          "sha256": "972e81136aeffc0a2f156fddd3c2170ce008173b51da5c1b6498704a5260ce42",
+          "provenance": {
+            "kind": "user-import",
+            "sourceFilename": "openrouter-audio-output(3).mp3",
+            "generationId": null,
+            "generatedAt": null
+          }
+        }
+      ],
+      "category": "At a Restaurant"
+    },
+    {
+      "id": "job-interview-basics-02",
+      "order": 5,
+      "text": "I have about five years of experience in software development.",
+      "audioVariants": [
+        {
+          "id": "job-interview-basics-02--google-gemini-3-8-flash-tts--puck",
+          "modelId": "google/gemini-3.8-flash-tts",
+          "voiceId": "Puck",
+          "src": "/fixtures/audio/openrouter/job-interview-basics-02--google-gemini-3-8-flash-tts--puck.wav",
+          "format": "wav",
+          "contentType": "audio/wav",
+          "sampleRateHz": 24000,
+          "channels": 1,
+          "sampleFormat": "pcm_s16le",
+          "sizeBytes": 199724,
+          "durationMs": 4160,
+          "sha256": "c14a0d09c6606f681e36bb6b960f26a0ea9d7ce4f45df79c70eea1cb71c904b7",
+          "provenance": {
+            "kind": "user-import",
+            "sourceFilename": "openrouter-audio-output(3).wav",
+            "generationId": null,
+            "generatedAt": null
+          }
+        },
+        {
+          "id": "job-interview-basics-02--microsoft-mai-voice-2--en-us-harper-mai-voice-2",
+          "modelId": "microsoft/mai-voice-2",
+          "voiceId": "en-US-Harper:MAI-Voice-2",
+          "src": "/fixtures/audio/openrouter/job-interview-basics-02--microsoft-mai-voice-2--en-us-harper-mai-voice-2.mp3",
+          "format": "mp3",
+          "contentType": "audio/mpeg",
+          "sampleRateHz": 24000,
+          "channels": 1,
+          "sampleFormat": "mpeg",
+          "sizeBytes": 65280,
+          "durationMs": 3264,
+          "sha256": "b69a8ef2795436ca954d29d494667856556bd3841960adc968206f7e1a8081dd",
+          "provenance": {
+            "kind": "user-import",
+            "sourceFilename": "openrouter-audio-output-109.mp3",
+            "generationId": null,
+            "generatedAt": null
+          }
+        }
+      ],
+      "category": "Job Interview Basics"
+    }
+  ]
+}

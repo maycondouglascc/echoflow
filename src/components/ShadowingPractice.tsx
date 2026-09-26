@@ -1,13 +1,15 @@
 "use client";
 
 import { useShadowingPractice } from "@/components/useShadowingPractice";
-import type { ScenarioFixture } from "@/lib/fixtures/introducing-yourself";
+import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
 
 export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
   const { audioRef, view, actions } = useShadowingPractice(scenario);
   const {
     phrase,
     selectedIndex,
+    audioModels,
+    selectedModelId,
     currentRecording,
     canRecord,
     isAudioBusy,
@@ -28,7 +30,7 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
               Your phrases
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#12332d]">
-              A short introduction
+              Practice phrases
             </h2>
           </div>
           <span className="rounded-full bg-[#edf4e9] px-3 py-1.5 text-xs font-semibold text-[#315e4e]">
@@ -62,8 +64,13 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
                     >
                       {String(index + 1).padStart(2, "0")}
                     </span>
-                    <span className="text-sm font-medium leading-6 text-[#203e37]">
-                      {item.text}
+                    <span>
+                      <span className="block text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#638078]">
+                        {item.category}
+                      </span>
+                      <span className="mt-1 block text-sm font-medium leading-6 text-[#203e37]">
+                        {item.text}
+                      </span>
                     </span>
                   </span>
                 </button>
@@ -130,6 +137,44 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
           <p className="mt-4 max-w-xl text-sm leading-6 text-[#d2e0d8]">
             Listen once, then say it in your own voice. Your recording stays in this page session.
           </p>
+
+          <fieldset
+            disabled={isAudioBusy || isRequestingMicrophone || isRecording}
+            className="mt-7"
+          >
+            <legend className="text-xs font-bold uppercase tracking-[0.16em] text-[#bad0c6]">
+              Reference voice
+            </legend>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {audioModels.map((model, index) => (
+                <label
+                  key={model.id}
+                  htmlFor={`reference-model-${index}`}
+                  className="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/15 bg-white/[0.06] p-4 transition hover:bg-white/10 has-[:checked]:border-[#d7ff7a] has-[:checked]:bg-white/10 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50"
+                >
+                  <input
+                    id={`reference-model-${index}`}
+                    type="radio"
+                    name="reference-model"
+                    value={model.id}
+                    checked={selectedModelId === model.id}
+                    onChange={() => actions.selectAudioModel(model.id)}
+                    aria-label={`Use ${model.vendor} ${model.displayName} voice ${model.voiceName}`}
+                    className="mt-1 size-4 accent-[#d7ff7a]"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold text-white">
+                      {model.vendor} · {model.voiceName}
+                    </span>
+                    <span className="mt-1 block break-all text-xs leading-5 text-[#c1d7cb]">
+                      {model.displayName} · {model.id} · {model.voiceId} ·{" "}
+                      {model.outputFormat.toUpperCase()}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           <div className="mt-8 flex flex-wrap gap-3">
             <button

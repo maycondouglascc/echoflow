@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { PhraseFixture, ScenarioFixture } from "@/lib/fixtures/introducing-yourself";
+import type {
+  AudioVariantFixture,
+  PhraseFixture,
+  ScenarioFixture,
+} from "@/lib/fixtures/voice-comparison";
 
 type PlaybackKind = "reference" | "recording" | "comparison-reference" | "comparison-recording";
 type ReturnPhase = "idle" | "ready";
@@ -52,6 +56,7 @@ interface PracticeError {
 
 interface PracticeState {
   readonly selectedIndex: number;
+  readonly selectedModelId: string;
   readonly phase: PracticePhase;
   readonly recordings: Readonly<Record<string, SessionRecording>>;
   readonly status: string;
@@ -61,9 +66,10 @@ interface PracticeState {
 const MAX_RECORDING_MS = 30_000;
 const MIME_CANDIDATES = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"];
 
-function createInitialState(): PracticeState {
+function createInitialState(selectedModelId: string): PracticeState {
   return {
     selectedIndex: 0,
+    selectedModelId,
     phase: { kind: "idle" },
     recordings: {},
     status: "Choose a phrase and listen to its reference audio.",
@@ -95,7 +101,8 @@ function readyPhase(phase: PracticePhase, phraseId: string): ReturnPhase {
 }
 
 export function useShadowingPractice(scenario: ScenarioFixture) {
-  const [state, setState] = useState(createInitialState);
+  const defaultModelId = scenario.audioModels.find((model) => model.selectable)?.id ?? "";
+  const [state, setState] = useState(() => createInitialState(defaultModelId));
   const audioRef = useRef<HTMLAudioElement>(null);
   const selectedPhraseIdRef = useRef(scenario.phrases[0].id);
   const phaseRef = useRef<PracticePhase>(state.phase);
@@ -110,6 +117,16 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
 
   const phrase = scenario.phrases[state.selectedIndex];
   const currentRecording = state.recordings[phrase.id];
+  const selectedModel = scenario.audioModels.find(
+    (model) => model.id === state.selectedModelId && model.selectable,
+  );
+  const selectedAudioVariant = selectedModel
+    ? phrase.audioVariants.find(
+        (variant) =>
+          variant.modelId === selectedModel.id && variant.voiceId === selectedModel.voiceId,
+      )
+    : undefined;
+  const selectableModels = scenario.audioModels.filter((model) => model.selectable);
   const phase = state.phase;
   const isAudioBusy = phase.kind === "playing";
   const isRequestingMicrophone = phase.kind === "requesting";
@@ -249,11 +266,21 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     (
       kind: "reference" | "comparison-reference",
       targetPhrase: PhraseFixture,
+      variant: AudioVariantFixture | undefined,
       returnTo: ReturnPhase,
     ) => {
-      void playSource(targetPhrase.referenceAudio, kind, targetPhrase.id, returnTo);
+      if (!variant) {
+        reportError(
+          "Reference audio is unavailable for this phrase and voice. Choose another voice or try again later.",
+          "Reference audio unavailable.",
+          false,
+          { kind: "idle" },
+        );
+        return;
+      }
+      void playSource(variant.src, kind, targetPhrase.id, returnTo);
     },
-    [playSource],
+    [playSource, reportError],
   );
 
   const playRecordingSource = useCallback(
@@ -525,10 +552,57 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     [clearRecordReadyTimer, scenario.phrases, state.selectedIndex, stopAudio, stopCapture],
   );
 
+  const selectAudioModel = useCallback(
+    (modelId: string) => {
+      const model = scenario.audioModels.find(
+        (candidate) => candidate.id === modelId && candidate.selectable,
+      );
+      if (!model || modelId === state.selectedModelId) return;
+      const hasEveryPhrase = scenario.phrases.every((item) =>
+        item.audioVariants.some(
+          (variant) => variant.modelId === model.id && variant.voiceId === model.voiceId,
+        ),
+      );
+      const activePhase = phaseRef.current.kind;
+      if (
+        !hasEveryPhrase ||
+        activePhase === "playing" ||
+        activePhase === "requesting" ||
+        activePhase === "recording" ||
+        activePhase === "saving" ||
+        captureSessionRef.current
+      ) {
+        return;
+      }
+      clearRecordReadyTimer();
+      stopAudio();
+      const nextPhase: PracticePhase = { kind: "idle" };
+      phaseRef.current = nextPhase;
+      setState((current) => ({
+        ...current,
+        selectedModelId: model.id,
+        phase: nextPhase,
+        status:
+          model.vendor +
+          " · " +
+          model.voiceName +
+          " selected. Listen to the reference when you’re ready.",
+        error: null,
+      }));
+    },
+    [
+      clearRecordReadyTimer,
+      scenario.audioModels,
+      scenario.phrases,
+      state.selectedModelId,
+      stopAudio,
+    ],
+  );
+
   const listenToReference = useCallback(() => {
     clearRecordReadyTimer();
-    playReference("reference", phrase, "idle");
-  }, [clearRecordReadyTimer, phrase, playReference]);
+    playReference("reference", phrase, selectedAudioVariant, "idle");
+  }, [clearRecordReadyTimer, phrase, playReference, selectedAudioVariant]);
 
   const playRecording = useCallback(() => {
     if (!currentRecording || isAudioBusy || isRequestingMicrophone || isRecording) return;
@@ -549,8 +623,21 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
 
   const compare = useCallback(() => {
     if (!currentRecording || isAudioBusy || isRecording || isRequestingMicrophone) return;
-    playReference("comparison-reference", phrase, readyPhase(phaseRef.current, phrase.id));
-  }, [currentRecording, isAudioBusy, isRecording, isRequestingMicrophone, phrase, playReference]);
+    playReference(
+      "comparison-reference",
+      phrase,
+      selectedAudioVariant,
+      readyPhase(phaseRef.current, phrase.id),
+    );
+  }, [
+    currentRecording,
+    isAudioBusy,
+    isRecording,
+    isRequestingMicrophone,
+    phrase,
+    playReference,
+    selectedAudioVariant,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -573,6 +660,8 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     view: {
       phrase,
       selectedIndex: state.selectedIndex,
+      audioModels: selectableModels,
+      selectedModelId: state.selectedModelId,
       currentRecording,
       canRecord,
       isAudioBusy,
@@ -585,6 +674,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     },
     actions: {
       selectPhrase,
+      selectAudioModel,
       listenToReference,
       startRecording,
       stopRecording,

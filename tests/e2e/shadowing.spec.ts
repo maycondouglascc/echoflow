@@ -5,6 +5,8 @@ const phraseTexts = [
   "Hi, my name is Alex. It's nice to meet you.",
   "I'm originally from Recife, but I've been living here for a few years.",
   "I work as a software engineer at a tech company downtown.",
+  "Could we get a table for two, please?",
+  "I have about five years of experience in software development.",
 ];
 
 interface EchoTestController {
@@ -233,7 +235,8 @@ function installMediaMocks() {
 async function openPractice(page: Page) {
   await page.goto("/");
   await page.getByRole("link", { name: "Open scenario" }).click();
-  await expect(page.getByRole("heading", { name: "Introducing Yourself" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Voice Comparison" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Practice phrases" })).toBeVisible();
 }
 
 async function finishCurrentAudio(page: Page) {
@@ -265,21 +268,27 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(installMediaMocks);
 });
 
-test("opens the scenario with three ordered phrases and bounded navigation", async ({ page }) => {
+test("opens the scenario with five ordered phrases and bounded navigation", async ({ page }) => {
   await openPractice(page);
   for (const [index, phrase] of phraseTexts.entries())
     await expect(
       page.getByRole("button", { name: `Choose phrase ${index + 1}: ${phrase}`, exact: true }),
     ).toBeVisible();
-  await expect(page.getByText("Phrase 1 of 3")).toBeVisible();
+  await expect(page.getByText("Phrase 1 of 5")).toBeVisible();
   await expect(page.getByRole("button", { name: "Previous phrase" })).toBeDisabled();
   await page.getByRole("button", { name: "Next phrase" }).click();
-  await expect(page.getByText("Phrase 2 of 3")).toBeVisible();
+  await expect(page.getByText("Phrase 2 of 5")).toBeVisible();
   await page.getByRole("button", { name: "Next phrase" }).click();
-  await expect(page.getByText("Phrase 3 of 3")).toBeVisible();
+  await expect(page.getByText("Phrase 3 of 5")).toBeVisible();
+  await expect(page.getByText("At a Restaurant", { exact: true })).toBeVisible();
+  await expect(page.getByText("Job Interview Basics", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Next phrase" }).click();
+  await expect(page.getByText("Phrase 4 of 5")).toBeVisible();
+  await page.getByRole("button", { name: "Next phrase" }).click();
+  await expect(page.getByText("Phrase 5 of 5")).toBeVisible();
   await expect(page.getByRole("button", { name: "Next phrase" })).toBeDisabled();
   await page.getByRole("button", { name: "Previous phrase" }).click();
-  await expect(page.getByText("Phrase 2 of 3")).toBeVisible();
+  await expect(page.getByText("Phrase 4 of 5")).toBeVisible();
 });
 
 test("plays and replays the selected reference and requests the microphone only on click", async ({
@@ -368,6 +377,35 @@ test("automatically stops a recording at 30 seconds", async ({ page }) => {
   await expect.poll(() => page.evaluate(() => window.__echoTest.tracksStopped)).toBe(1);
 });
 
+test("uses the selected MAI voice across phrases and resets it after reload", async ({ page }) => {
+  await openPractice(page);
+  const google = page.getByRole("radio", { name: "Use Google Gemini 3.8 Flash TTS voice Puck" });
+  const mai = page.getByRole("radio", { name: "Use Microsoft MAI-Voice-2 voice Harper" });
+  await expect(google).toBeChecked();
+  await mai.check();
+  await expect(mai).toBeChecked();
+  await page.getByRole("button", { name: "Listen to reference" }).click();
+  await expect(page.getByRole("status")).toContainText("Playing reference");
+  expect(await page.evaluate(() => window.__echoTest.audioStarts.at(-1))).toContain(
+    "/fixtures/audio/openrouter/introducing-yourself-01--microsoft-mai-voice-2--en-us-harper-mai-voice-2.mp3",
+  );
+  await finishCurrentAudio(page);
+
+  await page.getByRole("button", { name: "Next phrase" }).click();
+  await expect(page.getByText("Phrase 2 of 5")).toBeVisible();
+  await expect(mai).toBeChecked();
+  await page.getByRole("button", { name: "Listen to reference" }).click();
+  expect(await page.evaluate(() => window.__echoTest.audioStarts.at(-1))).toContain(
+    "/fixtures/audio/openrouter/introducing-yourself-02--microsoft-mai-voice-2--en-us-harper-mai-voice-2.mp3",
+  );
+  await finishCurrentAudio(page);
+
+  await page.reload();
+  await expect(
+    page.getByRole("radio", { name: "Use Google Gemini 3.8 Flash TTS voice Puck" }),
+  ).toBeChecked();
+});
+
 test("compares reference first and waits for it to end before playing the recording", async ({
   page,
 }) => {
@@ -378,11 +416,15 @@ test("compares reference first and waits for it to end before playing the record
   await expect(page.getByRole("status")).toContainText("Playing reference");
   await expect.poll(() => page.evaluate(() => window.__echoTest.audioStarts.length)).toBe(2);
   const referenceBeforeEnd = await page.evaluate(() => window.__echoTest.audioStarts.at(-1));
-  expect(referenceBeforeEnd).toContain("/fixtures/audio/introducing-yourself-01.wav");
+  expect(referenceBeforeEnd).toContain(
+    "/fixtures/audio/openrouter/introducing-yourself-01--google-gemini-3-8-flash-tts--puck.wav",
+  );
   await finishCurrentAudio(page);
   await expect.poll(() => page.evaluate(() => window.__echoTest.audioStarts.length)).toBe(3);
   const comparisonStarts = await page.evaluate(() => window.__echoTest.audioStarts.slice(-2));
-  expect(comparisonStarts[0]).toContain("/fixtures/audio/introducing-yourself-01.wav");
+  expect(comparisonStarts[0]).toContain(
+    "/fixtures/audio/openrouter/introducing-yourself-01--google-gemini-3-8-flash-tts--puck.wav",
+  );
   expect(comparisonStarts[1]).toMatch(/^blob:/);
   await expect(page.getByRole("status")).toContainText("Playing your recording");
   await finishCurrentAudio(page);
@@ -435,7 +477,7 @@ test("stops and discards an in-progress clip when navigating to another phrase",
   await openPractice(page);
   await startRecording(page);
   await page.getByRole("button", { name: "Next phrase" }).click();
-  await expect(page.getByText("Phrase 2 of 3")).toBeVisible();
+  await expect(page.getByText("Phrase 2 of 5")).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.__echoTest.tracksStopped)).toBe(1);
   await expect(page.getByRole("button", { name: "Record", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Previous phrase" }).click();

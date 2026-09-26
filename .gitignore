@@ -48,3 +48,11 @@ yarn-error.log*
 *.log
 playwright-report/
 test-results/
+
+# Incomplete atomic writes from the local audio generator
+/public/fixtures/audio/openrouter/.*.tmp
+/src/lib/fixtures/.*.tmp
+/src/lib/fixtures/.voice-comparison.pending.json
+
+# Python bytecode
+__pycache__/
