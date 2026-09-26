@@ -6,10 +6,12 @@ import { useShadowingPractice } from "@/components/useShadowingPractice";
 import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
 
 export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
-  const { audioRef, view, actions } = useShadowingPractice(scenario);
+  const { audioRef, wordReplayAudioRef, view, actions } = useShadowingPractice(scenario);
   const {
     phrase,
     activeWordIndex,
+    wordTimings,
+    referenceAudioSource,
     selectedIndex,
     audioModels,
     selectedModelId,
@@ -25,10 +27,23 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
   } = view;
 
   let nextWordIndex = 0;
+  const selectedVoiceName =
+    audioModels.find((model) => model.id === selectedModelId)?.voiceName ?? "the selected voice";
   const phraseContent = phrase.text.split(/(\s+)/).map((part) => {
     if (/^\s+$/.test(part)) return part;
     const wordIndex = nextWordIndex++;
     const highlighted = activeWordIndex === wordIndex;
+    const canReplayWord =
+      Boolean(wordTimings[wordIndex]) && !isRequestingMicrophone && !isRecording;
+    const text = (
+      <motion.span
+        animate={{ color: highlighted ? "#173d33" : "#ffffff" }}
+        transition={{ color: { duration: 0.12, ease: "easeOut" } }}
+        className="relative"
+      >
+        {part}
+      </motion.span>
+    );
     return (
       <motion.span
         key={wordIndex}
@@ -51,13 +66,19 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
             className="pointer-events-none absolute -inset-x-1 -inset-y-0.5 rounded-sm bg-[#d7ff7a]"
           />
         ) : null}
-        <motion.span
-          animate={{ color: highlighted ? "#173d33" : "#ffffff" }}
-          transition={{ color: { duration: 0.12, ease: "easeOut" } }}
-          className="relative"
-        >
-          {part}
-        </motion.span>
+        {canReplayWord ? (
+          <motion.button
+            type="button"
+            aria-label={`Replay word: ${part} in ${selectedVoiceName}`}
+            onClick={() => actions.replayWord(wordIndex)}
+            disabled={isRequestingMicrophone || isRecording}
+            className="relative appearance-none border-0 bg-transparent p-0 text-inherit cursor-pointer hover:underline disabled:cursor-not-allowed focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-[#d7ff7a] focus-visible:outline-offset-2"
+          >
+            {text}
+          </motion.button>
+        ) : (
+          text
+        )}
       </motion.span>
     );
   });
@@ -306,8 +327,20 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
         <audio
           ref={audioRef}
           preload="none"
+          data-testid="practice-audio"
           onEnded={actions.handleAudioEnded}
           onError={actions.handleAudioError}
+          className="sr-only"
+        />
+
+        {/* biome-ignore lint/a11y/useMediaCaption: The selected reference phrase is rendered in the practice panel. */}
+        <audio
+          ref={wordReplayAudioRef}
+          src={referenceAudioSource || undefined}
+          preload="auto"
+          data-testid="reference-word-audio"
+          onEnded={actions.handleWordAudioEnded}
+          onError={actions.handleWordAudioError}
           className="sr-only"
         />
       </section>

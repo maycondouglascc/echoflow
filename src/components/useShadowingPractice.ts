@@ -7,10 +7,21 @@ import type {
   ScenarioFixture,
 } from "@/lib/fixtures/voice-comparison";
 
-type PlaybackKind = "reference" | "recording" | "comparison-reference" | "comparison-recording";
+type PlaybackKind =
+  | "reference"
+  | "recording"
+  | "comparison-reference"
+  | "comparison-recording"
+  | "word-replay";
 type ReturnPhase = "idle" | "ready";
 type CaptureStopReason = "manual" | "limit" | "navigation" | "unmount" | "error";
 type CaptureStopRequest = Exclude<CaptureStopReason, "error">;
+
+interface WordReplayCue {
+  readonly wordIndex: number;
+  readonly startMs: number;
+  readonly endMs: number;
+}
 
 interface SessionRecording {
   readonly blob: Blob;
@@ -47,6 +58,7 @@ type PracticePhase =
       readonly phraseId: string;
       readonly playback: PlaybackKind;
       readonly returnTo: ReturnPhase;
+      readonly wordReplayCue?: WordReplayCue;
     };
 
 interface PracticeError {
@@ -105,6 +117,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
   const [state, setState] = useState(() => createInitialState(defaultModelId));
   const [currentWordIndex, setCurrentWordIndex] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const wordReplayAudioRef = useRef<HTMLAudioElement>(null);
   const selectedPhraseIdRef = useRef(scenario.phrases[0].id);
   const phaseRef = useRef<PracticePhase>(state.phase);
   const playbackSequenceRef = useRef(0);
@@ -129,9 +142,12 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     : undefined;
   const selectableModels = scenario.audioModels.filter((model) => model.selectable);
   const phase = state.phase;
+  const activePlaybackKind = phase.kind === "playing" ? phase.playback : null;
   const isReferencePlayback =
     phase.kind === "playing" &&
-    (phase.playback === "reference" || phase.playback === "comparison-reference") &&
+    (phase.playback === "reference" ||
+      phase.playback === "comparison-reference" ||
+      phase.playback === "word-replay") &&
     phase.phraseId === phrase.id;
   const activeWordIndex = isReferencePlayback ? currentWordIndex : null;
   const isAudioBusy = phase.kind === "playing";
@@ -175,6 +191,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     setCurrentWordIndex(null);
     playbackSequenceRef.current += 1;
     const audio = audioRef.current;
+    wordReplayAudioRef.current?.pause();
     if (!audio) return;
     audio.pause();
     audio.removeAttribute("src");
@@ -250,6 +267,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
           : "Playing reference audio.",
       );
       audio.pause();
+      wordReplayAudioRef.current?.pause();
       audio.src = source;
       audio.load();
       try {
@@ -306,7 +324,12 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
   const handleAudioError = useCallback(() => {
     setCurrentWordIndex(null);
     const active = phaseRef.current;
-    if (active.kind !== "playing" || active.phraseId !== selectedPhraseIdRef.current) return;
+    if (
+      active.kind !== "playing" ||
+      active.playback === "word-replay" ||
+      active.phraseId !== selectedPhraseIdRef.current
+    )
+      return;
     playbackSequenceRef.current += 1;
     clearRecordReadyTimer();
     const isRecordingPlayback =
@@ -324,7 +347,12 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
   const handleAudioEnded = useCallback(() => {
     setCurrentWordIndex(null);
     const active = phaseRef.current;
-    if (active.kind !== "playing" || active.phraseId !== selectedPhraseIdRef.current) return;
+    if (
+      active.kind !== "playing" ||
+      active.playback === "word-replay" ||
+      active.phraseId !== selectedPhraseIdRef.current
+    )
+      return;
     playbackSequenceRef.current += 1;
 
     if (active.playback === "reference") {
@@ -367,6 +395,86 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
         : "Recording playback finished.",
     );
   }, [clearRecordReadyTimer, playRecordingSource, reportError, transition]);
+
+  const handleWordAudioEnded = useCallback(() => {
+    setCurrentWordIndex(null);
+    const active = phaseRef.current;
+    if (
+      active.kind !== "playing" ||
+      active.playback !== "word-replay" ||
+      active.phraseId !== selectedPhraseIdRef.current
+    )
+      return;
+    playbackSequenceRef.current += 1;
+    transition(
+      active.returnTo === "ready" ? { kind: "ready" } : { kind: "idle" },
+      "Word replay finished.",
+    );
+  }, [transition]);
+
+  const handleWordAudioError = useCallback(() => {
+    setCurrentWordIndex(null);
+    const active = phaseRef.current;
+    if (
+      active.kind !== "playing" ||
+      active.playback !== "word-replay" ||
+      active.phraseId !== selectedPhraseIdRef.current
+    )
+      return;
+    playbackSequenceRef.current += 1;
+    clearRecordReadyTimer();
+    const resumePhase: PracticePhase =
+      active.returnTo === "ready" ? { kind: "ready" } : { kind: "idle" };
+    reportError(
+      "The word could not be replayed. You can try it again.",
+      "Word replay failed.",
+      false,
+      resumePhase,
+    );
+  }, [clearRecordReadyTimer, reportError]);
+
+  const replayWord = useCallback(
+    (wordIndex: number) => {
+      const currentPhase = phaseRef.current;
+      if (
+        currentPhase.kind === "requesting" ||
+        currentPhase.kind === "recording" ||
+        currentPhase.kind === "saving"
+      )
+        return;
+      const cue = selectedAudioVariant?.wordTimings?.[wordIndex];
+      const audio = wordReplayAudioRef.current;
+      if (!cue || !audio) return;
+
+      clearRecordReadyTimer();
+      const returnTo = readyPhase(currentPhase, phrase.id);
+      const sequence = playbackSequenceRef.current + 1;
+      playbackSequenceRef.current = sequence;
+      audioRef.current?.pause();
+      audio.pause();
+      audio.currentTime = cue.startMs / 1000;
+      setCurrentWordIndex(wordIndex);
+      transition(
+        {
+          kind: "playing",
+          phraseId: phrase.id,
+          playback: "word-replay",
+          returnTo,
+          wordReplayCue: {
+            wordIndex,
+            startMs: cue.startMs,
+            endMs: cue.endMs,
+          },
+        },
+        "Replaying word.",
+      );
+      void audio.play().catch(() => {
+        if (playbackSequenceRef.current !== sequence) return;
+        handleWordAudioError();
+      });
+    },
+    [clearRecordReadyTimer, handleWordAudioError, phrase.id, selectedAudioVariant, transition],
+  );
 
   const startRecording = useCallback(async () => {
     const currentPhase = phaseRef.current;
@@ -606,7 +714,8 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
   );
 
   useEffect(() => {
-    const audio = audioRef.current;
+    const audio =
+      activePlaybackKind === "word-replay" ? wordReplayAudioRef.current : audioRef.current;
     const timings = selectedAudioVariant?.wordTimings ?? [];
     if (!audio || !isReferencePlayback || timings.length === 0) {
       setCurrentWordIndex(null);
@@ -623,9 +732,31 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       const nextIndex = match >= 0 ? match : null;
       setCurrentWordIndex((current) => (current === nextIndex ? current : nextIndex));
     };
+    const stopAtWordEnd = () => {
+      const currentPhase = phaseRef.current;
+      if (
+        currentPhase.kind !== "playing" ||
+        currentPhase.playback !== "word-replay" ||
+        !currentPhase.wordReplayCue ||
+        audio.currentTime * 1000 < currentPhase.wordReplayCue.endMs
+      )
+        return false;
+      playbackSequenceRef.current += 1;
+      setCurrentWordIndex(null);
+      transition(
+        currentPhase.returnTo === "ready" ? { kind: "ready" } : { kind: "idle" },
+        "Word replay finished.",
+      );
+      audio.pause();
+      return true;
+    };
     const tick = () => {
       if (!active) return;
       syncWord();
+      if (stopAtWordEnd()) {
+        animationFrameId = null;
+        return;
+      }
       if (!audio.paused && !audio.ended) animationFrameId = window.requestAnimationFrame(tick);
       else animationFrameId = null;
     };
@@ -665,7 +796,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       audio.removeEventListener("ended", clear);
       audio.removeEventListener("error", clear);
     };
-  }, [isReferencePlayback, selectedAudioVariant?.wordTimings]);
+  }, [activePlaybackKind, isReferencePlayback, selectedAudioVariant?.wordTimings, transition]);
 
   const listenToReference = useCallback(() => {
     clearRecordReadyTimer();
@@ -713,6 +844,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       permissionRequestRef.current += 1;
       playbackSequenceRef.current += 1;
       audioRef.current?.pause();
+      wordReplayAudioRef.current?.pause();
       const activeCapture = captureSessionRef.current;
       if (activeCapture) stopCapture("unmount", activeCapture);
       for (const recording of Object.values(recordingsRef.current)) {
@@ -725,9 +857,12 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
 
   return {
     audioRef,
+    wordReplayAudioRef,
     view: {
       phrase,
       activeWordIndex,
+      wordTimings: selectedAudioVariant?.wordTimings ?? [],
+      referenceAudioSource: selectedAudioVariant?.src ?? "",
       selectedIndex: state.selectedIndex,
       audioModels: selectableModels,
       selectedModelId: state.selectedModelId,
@@ -751,6 +886,9 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       compare,
       handleAudioEnded,
       handleAudioError,
+      handleWordAudioEnded,
+      handleWordAudioError,
+      replayWord,
     },
   };
 }

@@ -41,17 +41,17 @@
 
 ### Tests for User Story 2
 
-- [ ] T004 [P] [US2] Add deterministic replay, interruption, capture-protection, and completion checks in `tests/e2e/shadowing.spec.ts`.
-- [ ] T005 [P] [US2] Add native-media seek and cue-stop coverage for both voices in `tests/e2e/shadowing-real-audio.spec.ts`.
+- [X] T004 [P] [US2] Add deterministic replay, interruption, capture-protection, and completion checks in `tests/e2e/shadowing.spec.ts`.
+- [X] T005 [P] [US2] Add native-media seek and cue-stop coverage for both voices in `tests/e2e/shadowing-real-audio.spec.ts`.
 
 ### Implementation for User Story 2
 
-- [ ] T006 [US2] Add word-replay playback state, media-clock selection, and cue-end stopping in `src/components/useShadowingPractice.ts`.
-- [ ] T007 [US2] Add a preloaded selected-reference audio element and accessible transcript replay controls in `src/components/ShadowingPractice.tsx`.
+- [X] T006 [US2] Add word-replay playback state, media-clock selection, and cue-end stopping in `src/components/useShadowingPractice.ts`.
+- [X] T007 [US2] Add a preloaded selected-reference audio element and accessible transcript replay controls in `src/components/ShadowingPractice.tsx`.
 
 **Checkpoint**: Word replay uses the selected asset's cue, interrupts other playback, and returns to the prior safe practice state.
 
 ## Final Phase: Polish and Cross-Cutting Concerns
 
-- [ ] T008 [P] Update feature and domain descriptions for word replay in `docs/EchoFlow.md` and `CONTEXT.md`.
-- [ ] T009 Run focused Playwright tests, `npm run lint`, `npm run typecheck`, and `npm run build`; reconcile implementation against the acceptance criteria in `specs/004-smooth-word-replay/spec.md`.
+- [X] T008 [P] Update feature and domain descriptions for word replay in `docs/EchoFlow.md` and `CONTEXT.md`.
+- [X] T009 Run focused Playwright tests, `npm run lint`, `npm run typecheck`, and `npm run build`; reconcile implementation against the acceptance criteria in `specs/004-smooth-word-replay/spec.md`.

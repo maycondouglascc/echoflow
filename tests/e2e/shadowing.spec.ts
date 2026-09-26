@@ -12,6 +12,8 @@ const phraseTexts = [
 
 interface EchoTestController {
   audioStarts: string[];
+  wordReplayStarts: Array<{ source: string; startMs: number }>;
+  currentAudioTimeMs: () => number | null;
   getUserMediaCalls: number;
   tracksStopped: number;
   finishCurrentAudio: () => void;
@@ -37,6 +39,7 @@ declare global {
 function installMediaMocks() {
   const state: {
     audioStarts: string[];
+    wordReplayStarts: Array<{ source: string; startMs: number }>;
     currentAudio: HTMLMediaElement | null;
     getUserMediaCalls: number;
     tracksStopped: number;
@@ -51,6 +54,7 @@ function installMediaMocks() {
     activeRecorder: { stop: () => void } | null;
   } = {
     audioStarts: [],
+    wordReplayStarts: [],
     currentAudio: null,
     getUserMediaCalls: 0,
     tracksStopped: 0,
@@ -74,6 +78,12 @@ function installMediaMocks() {
     value: {
       get audioStarts() {
         return state.audioStarts;
+      },
+      get wordReplayStarts() {
+        return state.wordReplayStarts;
+      },
+      currentAudioTimeMs() {
+        return state.currentAudio ? state.currentAudio.currentTime * 1000 : null;
       },
       get getUserMediaCalls() {
         return state.getUserMediaCalls;
@@ -140,7 +150,8 @@ function installMediaMocks() {
   Object.defineProperty(HTMLMediaElement.prototype, "src", {
     configurable: true,
     get(this: HTMLMediaElement) {
-      return mockedAudioSources.get(this) ?? "";
+      const source = mockedAudioSources.get(this) ?? this.getAttribute("src");
+      return source ? new URL(source, document.baseURI).href : "";
     },
     set(this: HTMLMediaElement, source: string) {
       mockedAudioSources.set(this, new URL(source, document.baseURI).href);
@@ -180,7 +191,11 @@ function installMediaMocks() {
         state.currentAudio = null;
         return Promise.reject(new DOMException("Recording playback failed", "NotSupportedError"));
       }
-      mockedAudioTimes.set(this, 0);
+      if (this.dataset.testid === "reference-word-audio") {
+        state.wordReplayStarts.push({ source, startMs: this.currentTime * 1000 });
+      } else {
+        mockedAudioTimes.set(this, 0);
+      }
       mockedAudioPaused.set(this, false);
       this.dispatchEvent(new Event("play"));
       this.dispatchEvent(new Event("playing"));
@@ -457,15 +472,224 @@ test("requires complete word timings for each selectable audio variant", () => {
   }
 });
 
+test("replays the selected word from each voice and stops at its cue", async ({ page }) => {
+  await openPractice(page);
+  const phrase = voiceComparisonScenario.phrases[0];
+  const word = page.locator('[data-word-index="4"] button');
+
+  for (const voiceName of ["Puck", "Harper"]) {
+    const model = voiceComparisonScenario.audioModels.find(
+      (candidate) => candidate.voiceName === voiceName,
+    );
+    const variant = phrase.audioVariants.find((candidate) => candidate.modelId === model?.id);
+    const cue = variant?.wordTimings?.[4];
+    expect(cue, `${voiceName} word cue`).toBeDefined();
+
+    if (voiceName !== "Puck")
+      await page.getByRole("radio", { name: voiceName, exact: true }).check();
+    const replayCount = await page.evaluate(() => window.__echoTest.wordReplayStarts.length);
+    await expect(page.getByTestId("reference-word-audio")).toHaveAttribute(
+      "src",
+      variant?.src ?? "",
+    );
+    await expect(word).toHaveAttribute("aria-label", `Replay word: ${cue?.word} in ${voiceName}`);
+    if (voiceName === "Puck") {
+      await word.click();
+    } else {
+      await word.focus();
+      await page.keyboard.press("Enter");
+    }
+    await expect(page.getByRole("status")).toContainText("Replaying word");
+    await expect
+      .poll(() => page.evaluate(() => window.__echoTest.wordReplayStarts.length))
+      .toBe(replayCount + 1);
+
+    const replay = await page.evaluate(() => window.__echoTest.wordReplayStarts.at(-1));
+    const expectedSource = await page.evaluate(
+      (source) => new URL(source, document.baseURI).href,
+      variant?.src ?? "",
+    );
+    expect(replay).toEqual({ source: expectedSource, startMs: cue?.startMs });
+
+    await page.evaluate(
+      (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
+      (cue?.endMs ?? 0) + 1,
+    );
+    await expect(page.getByRole("status")).toContainText("Word replay finished");
+    await expect
+      .poll(() =>
+        page
+          .getByTestId("reference-word-audio")
+          .evaluate((audio) => (audio as HTMLAudioElement).paused),
+      )
+      .toBe(true);
+    await expect(page.locator('[data-highlighted="true"]')).toHaveCount(0);
+  }
+});
+
+test("rapid word selection leaves only the latest cue playing", async ({ page }) => {
+  await openPractice(page);
+  const phrase = voiceComparisonScenario.phrases[0];
+  const puck = voiceComparisonScenario.audioModels.find((model) => model.voiceName === "Puck");
+  const variant = phrase.audioVariants.find((item) => item.modelId === puck?.id);
+  const firstCue = variant?.wordTimings?.[1];
+  const latestCue = variant?.wordTimings?.[6];
+  expect(firstCue).toBeDefined();
+  expect(latestCue).toBeDefined();
+
+  await page.locator('[data-word-index="1"] button').click();
+  await page.locator('[data-word-index="6"] button').click();
+  await expect.poll(() => page.evaluate(() => window.__echoTest.wordReplayStarts.length)).toBe(2);
+  await expect(page.locator('[data-word-index="6"]')).toHaveAttribute("data-highlighted", "true");
+
+  const latestReplay = await page.evaluate(() => window.__echoTest.wordReplayStarts.at(-1));
+  expect(latestReplay?.startMs).toBe(latestCue?.startMs);
+  await page.evaluate(
+    (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
+    (latestCue?.endMs ?? 0) + 1,
+  );
+  await expect(page.getByRole("status")).toContainText("Word replay finished");
+  await expect(page.getByTestId("reference-word-audio")).toHaveJSProperty("paused", true);
+});
+
+test("replays the selected Puck word during comparison reference playback", async ({ page }) => {
+  await openPractice(page);
+  const phrase = voiceComparisonScenario.phrases[0];
+  const puck = voiceComparisonScenario.audioModels.find((model) => model.voiceName === "Puck");
+  const variant = phrase.audioVariants.find((item) => item.modelId === puck?.id);
+  const cue = variant?.wordTimings?.[4];
+  expect(cue).toBeDefined();
+
+  await startRecording(page);
+  await stopRecording(page);
+  await page.getByRole("button", { name: "Compare" }).click();
+  await expect(page.getByRole("status")).toContainText("Playing reference");
+  const replayCount = await page.evaluate(() => window.__echoTest.wordReplayStarts.length);
+  await page.locator('[data-word-index="4"] button').click();
+  await expect(page.getByRole("status")).toContainText("Replaying word");
+  await expect
+    .poll(() => page.evaluate(() => window.__echoTest.wordReplayStarts.length))
+    .toBe(replayCount + 1);
+
+  const replay = await page.evaluate(() => window.__echoTest.wordReplayStarts.at(-1));
+  const expectedSource = await page.evaluate(
+    (source) => new URL(source, document.baseURI).href,
+    variant?.src ?? "",
+  );
+  expect(replay).toEqual({ source: expectedSource, startMs: cue?.startMs });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => window.__echoTest.audioStarts.filter((source) => source.startsWith("blob:")).length,
+      ),
+    )
+    .toBe(0);
+  await page.evaluate(
+    (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
+    (cue?.endMs ?? 0) + 1,
+  );
+  await expect(page.getByRole("status")).toContainText("Word replay finished");
+});
+
+test("word selection interrupts playback and stays unavailable during capture", async ({
+  page,
+}) => {
+  await openPractice(page);
+  const word = page.locator('[data-word-index="4"] button');
+  const phrase = voiceComparisonScenario.phrases[0];
+  const cue = phrase.audioVariants[0].wordTimings?.[4];
+  const harperModel = voiceComparisonScenario.audioModels.find(
+    (model) => model.voiceName === "Harper",
+  );
+  const harperVariant = phrase.audioVariants.find((variant) => variant.modelId === harperModel?.id);
+  const comparisonCue = harperVariant?.wordTimings?.[4];
+  expect(cue).toBeDefined();
+  expect(comparisonCue).toBeDefined();
+
+  await page.getByRole("button", { name: "Listen to reference" }).click();
+  await expect(page.getByRole("status")).toContainText("Playing reference");
+  await word.click();
+  await expect(page.getByRole("status")).toContainText("Replaying word");
+  await page.evaluate(
+    (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
+    (cue?.endMs ?? 0) + 1,
+  );
+  await expect(page.getByRole("status")).toContainText("Word replay finished");
+
+  await startRecording(page);
+  await stopRecording(page);
+  await page.getByRole("radio", { name: "Harper", exact: true }).check();
+  await page.getByRole("button", { name: "Listen to reference" }).click();
+  await expect(page.getByRole("status")).toContainText("Playing reference");
+  await page.evaluate(() => window.__echoTest.finishCurrentAudio());
+  await expect(page.getByRole("status")).toContainText("You can record now");
+  await page.getByRole("button", { name: "Compare" }).click();
+  await expect(page.getByRole("status")).toContainText("Playing reference");
+  await page.evaluate(() => window.__echoTest.finishCurrentAudio());
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => window.__echoTest.audioStarts.filter((source) => source.startsWith("blob:")).length,
+      ),
+    )
+    .toBe(1);
+  const replayCount = await page.evaluate(() => window.__echoTest.wordReplayStarts.length);
+  await word.click();
+  await expect(page.getByRole("status")).toContainText("Replaying word");
+  await expect
+    .poll(() => page.evaluate(() => window.__echoTest.wordReplayStarts.length))
+    .toBe(replayCount + 1);
+  const comparisonReplay = await page.evaluate(() => window.__echoTest.wordReplayStarts.at(-1));
+  const expectedComparisonSource = await page.evaluate(
+    (source) => new URL(source, document.baseURI).href,
+    harperVariant?.src ?? "",
+  );
+  expect(comparisonReplay).toEqual({
+    source: expectedComparisonSource,
+    startMs: comparisonCue?.startMs,
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => window.__echoTest.audioStarts.filter((source) => source.startsWith("blob:")).length,
+      ),
+    )
+    .toBe(1);
+  await page.evaluate(
+    (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
+    (comparisonCue?.endMs ?? 0) + 1,
+  );
+  await expect(page.getByRole("status")).toContainText("Word replay finished");
+  const captureRecord = page.getByRole("button", { name: "Record again", exact: true });
+  await expect(captureRecord).toBeEnabled();
+  await captureRecord.click();
+  await expect(page.getByRole("status")).toContainText("Recording your voice");
+  await expect(word).toHaveCount(0);
+  const blockedReplayCount = await page.evaluate(() => window.__echoTest.wordReplayStarts.length);
+  await page.evaluate(() => {
+    (document.querySelector('[data-word-index="4"]') as HTMLElement).click();
+  });
+  expect(await page.evaluate(() => window.__echoTest.wordReplayStarts.length)).toBe(
+    blockedReplayCount,
+  );
+  await stopRecording(page);
+});
+
+test("recovers when an aligned word cannot be played", async ({ page }) => {
+  await openPractice(page);
+  await page.evaluate(() => window.__echoTest.failNextReference());
+  await page.locator('[data-word-index="4"] button').click();
+  await expect(page.locator("main p[role='alert']")).toContainText("word could not be replayed");
+  await expect(page.locator('[data-highlighted="true"]')).toHaveCount(0);
+});
+
 test("keeps transcript geometry stable across reference highlight changes", async ({ page }) => {
   await openPractice(page);
   await page.evaluate(() => document.fonts.ready);
   const phrase = voiceComparisonScenario.phrases[0];
   const puck = voiceComparisonScenario.audioModels.find((model) => model.voiceName === "Puck");
   const variant = phrase.audioVariants.find((item) => item.modelId === puck?.id);
-  const targetIndex = 4;
-  const cue = variant?.wordTimings?.[targetIndex];
-  expect(cue).toBeDefined();
+  const targetIndices = [1, 2, 3, 4, 5];
 
   const words = page.locator("[data-word-index]");
   const bounds = async () =>
@@ -483,22 +707,27 @@ test("keeps transcript geometry stable across reference highlight changes", asyn
   await expect(words.nth(0)).toHaveAttribute("data-highlighted", "true");
   const highlight = page.getByTestId("word-highlight-indicator");
   await expect(highlight).toBeVisible();
-  await page.evaluate(
-    (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
-    cue ? (cue.startMs + cue.endMs) / 2 : 0,
-  );
-  await expect(words.nth(targetIndex)).toHaveAttribute("data-highlighted", "true");
-  await page.waitForTimeout(200);
 
-  const target = await words.nth(targetIndex).boundingBox();
-  const settled = await highlight.boundingBox();
-  expect(target).not.toBeNull();
-  expect(settled).not.toBeNull();
-  expect(settled ? settled.x + settled.width / 2 : 0).toBeCloseTo(
-    target ? target.x + target.width / 2 : 0,
-    0,
-  );
-  expect(await bounds()).toEqual(initialBounds);
+  for (const targetIndex of targetIndices) {
+    const cue = variant?.wordTimings?.[targetIndex];
+    expect(cue).toBeDefined();
+    await page.evaluate(
+      (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
+      cue ? (cue.startMs + cue.endMs) / 2 : 0,
+    );
+    await expect(words.nth(targetIndex)).toHaveAttribute("data-highlighted", "true");
+    await page.waitForTimeout(200);
+
+    const target = await words.nth(targetIndex).boundingBox();
+    const settled = await highlight.boundingBox();
+    expect(target).not.toBeNull();
+    expect(settled).not.toBeNull();
+    expect(settled ? settled.x + settled.width / 2 : 0).toBeCloseTo(
+      target ? target.x + target.width / 2 : 0,
+      0,
+    );
+    expect(await bounds()).toEqual(initialBounds);
+  }
 });
 
 test("honors reduced motion for reference word changes", async ({ page }) => {
