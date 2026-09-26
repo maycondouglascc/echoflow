@@ -1,5 +1,7 @@
 "use client";
 
+import { LayoutGroup, MotionConfig } from "motion/react";
+import * as motion from "motion/react-client";
 import { useShadowingPractice } from "@/components/useShadowingPractice";
 import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
 
@@ -28,14 +30,35 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
     const wordIndex = nextWordIndex++;
     const highlighted = activeWordIndex === wordIndex;
     return (
-      <span
-        key={`${wordIndex}-${part}`}
+      <motion.span
+        key={wordIndex}
         data-word-index={wordIndex}
         data-highlighted={highlighted ? "true" : undefined}
-        className={highlighted ? "rounded bg-[#d7ff7a] px-1 py-0.5 text-[#173d33]" : undefined}
+        className="relative inline-block align-baseline"
       >
-        {part}
-      </span>
+        {highlighted ? (
+          <motion.span
+            aria-hidden="true"
+            data-testid="word-highlight-indicator"
+            layoutId="spoken-word-highlight"
+            initial={false}
+            transition={{
+              layout: {
+                duration: 0.18,
+                ease: [0.77, 0, 0.175, 1],
+              },
+            }}
+            className="pointer-events-none absolute -inset-x-1 -inset-y-0.5 rounded-sm bg-[#d7ff7a]"
+          />
+        ) : null}
+        <motion.span
+          animate={{ color: highlighted ? "#173d33" : "#ffffff" }}
+          transition={{ color: { duration: 0.12, ease: "easeOut" } }}
+          className="relative"
+        >
+          {part}
+        </motion.span>
+      </motion.span>
     );
   });
 
@@ -149,9 +172,13 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
           >
             Reference phrase {String(selectedIndex + 1).padStart(2, "0")}
           </h2>
-          <p className="mt-4 max-w-2xl text-3xl font-medium leading-[1.28] tracking-tight text-white sm:text-4xl">
-            {phraseContent}
-          </p>
+          <MotionConfig reducedMotion="user">
+            <LayoutGroup id={`spoken-phrase-${phrase.id}`}>
+              <p className="mt-4 max-w-2xl text-3xl font-medium leading-[1.28] tracking-tight text-white sm:text-4xl">
+                {phraseContent}
+              </p>
+            </LayoutGroup>
+          </MotionConfig>
           <p className="mt-4 max-w-xl text-sm leading-6 text-[#d2e0d8]">
             Listen once, then say it in your own voice. Your recording stays in this page session.
           </p>

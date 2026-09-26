@@ -24,12 +24,12 @@
 
 ### Tests for User Story 1
 
-- [ ] T001 [P] [US1] Add Playwright checks for stable word bounds and reduced-motion behavior in `tests/e2e/shadowing.spec.ts`.
+- [x] T001 [P] [US1] Add Playwright checks for stable word bounds and reduced-motion behavior in `tests/e2e/shadowing.spec.ts`.
 
 ### Implementation for User Story 1
 
-- [ ] T002 [US1] Add the Motion dependency and lockfile entry in `package.json` and `package-lock.json`.
-- [ ] T003 [US1] Render a shared highlight layer over fixed transcript tokens and respect reduced motion in `src/components/ShadowingPractice.tsx`.
+- [x] T002 [US1] Add the Motion dependency and lockfile entry in `package.json` and `package-lock.json`.
+- [x] T003 [US1] Render a shared highlight layer over fixed transcript tokens and respect reduced motion in `src/components/ShadowingPractice.tsx`.
 
 **Checkpoint**: The highlight transitions without moving words, and reduced-motion playback updates without spatial travel.
 

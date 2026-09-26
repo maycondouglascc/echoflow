@@ -457,6 +457,79 @@ test("requires complete word timings for each selectable audio variant", () => {
   }
 });
 
+test("keeps transcript geometry stable across reference highlight changes", async ({ page }) => {
+  await openPractice(page);
+  await page.evaluate(() => document.fonts.ready);
+  const phrase = voiceComparisonScenario.phrases[0];
+  const puck = voiceComparisonScenario.audioModels.find((model) => model.voiceName === "Puck");
+  const variant = phrase.audioVariants.find((item) => item.modelId === puck?.id);
+  const targetIndex = 4;
+  const cue = variant?.wordTimings?.[targetIndex];
+  expect(cue).toBeDefined();
+
+  const words = page.locator("[data-word-index]");
+  const bounds = async () =>
+    words.evaluateAll((items) =>
+      items.map((item) => {
+        const rect = item.getBoundingClientRect();
+        return [rect.x, rect.y + window.scrollY, rect.width, rect.height].map(
+          (value) => Math.round(value * 100) / 100,
+        );
+      }),
+    );
+  const initialBounds = await bounds();
+
+  await page.getByRole("button", { name: "Listen to reference" }).click();
+  await expect(words.nth(0)).toHaveAttribute("data-highlighted", "true");
+  const highlight = page.getByTestId("word-highlight-indicator");
+  await expect(highlight).toBeVisible();
+  await page.evaluate(
+    (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
+    cue ? (cue.startMs + cue.endMs) / 2 : 0,
+  );
+  await expect(words.nth(targetIndex)).toHaveAttribute("data-highlighted", "true");
+  await page.waitForTimeout(200);
+
+  const target = await words.nth(targetIndex).boundingBox();
+  const settled = await highlight.boundingBox();
+  expect(target).not.toBeNull();
+  expect(settled).not.toBeNull();
+  expect(settled ? settled.x + settled.width / 2 : 0).toBeCloseTo(
+    target ? target.x + target.width / 2 : 0,
+    0,
+  );
+  expect(await bounds()).toEqual(initialBounds);
+});
+
+test("honors reduced motion for reference word changes", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await openPractice(page);
+  const phrase = voiceComparisonScenario.phrases[0];
+  const puck = voiceComparisonScenario.audioModels.find((model) => model.voiceName === "Puck");
+  const variant = phrase.audioVariants.find((item) => item.modelId === puck?.id);
+  const cue = variant?.wordTimings?.[1];
+  expect(cue).toBeDefined();
+
+  const words = page.locator("[data-word-index]");
+  await page.getByRole("button", { name: "Listen to reference" }).click();
+  await expect(words.nth(0)).toHaveAttribute("data-highlighted", "true");
+  await page.evaluate(
+    (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
+    cue ? (cue.startMs + cue.endMs) / 2 : 0,
+  );
+  await expect(words.nth(1)).toHaveAttribute("data-highlighted", "true");
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+
+  const active = await words.nth(1).boundingBox();
+  const highlight = await page.getByTestId("word-highlight-indicator").boundingBox();
+  expect(active).not.toBeNull();
+  expect(highlight).not.toBeNull();
+  expect(highlight ? highlight.x + highlight.width / 2 : 0).toBeCloseTo(
+    active ? active.x + active.width / 2 : 0,
+    0,
+  );
+});
+
 test("highlights the reference word from media time and clears it for personal playback", async ({
   page,
 }) => {
