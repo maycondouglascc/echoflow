@@ -68,7 +68,7 @@ def resolve_asset_path(repo_root: Path, variant: dict[str, Any]) -> Path:
     prefix = "/fixtures/audio/"
     if not source.startswith(prefix):
         raise ValueError("Audio output paths must stay under /fixtures/audio.")
-    asset_root = (repo_root / "public/fixtures/audio").resolve()
+    asset_root = (repo_root / "assets/reference-audio").resolve()
     output = (asset_root / source[len(prefix) :]).resolve()
     if asset_root not in output.parents:
         raise ValueError("Audio output path escapes the fixture directory.")
@@ -399,4 +399,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
