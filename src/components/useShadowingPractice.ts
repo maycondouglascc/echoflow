@@ -116,6 +116,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
   const defaultModelId = scenario.audioModels.find((model) => model.selectable)?.id ?? "";
   const [state, setState] = useState(() => createInitialState(defaultModelId));
   const [currentWordIndex, setCurrentWordIndex] = useState<number | null>(null);
+  const [comparedPhraseIds, setComparedPhraseIds] = useState<readonly string[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
   const wordReplayAudioRef = useRef<HTMLAudioElement>(null);
   const selectedPhraseIdRef = useRef(scenario.phrases[0].id);
@@ -388,6 +389,11 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       return;
     }
 
+    if (active.playback === "comparison-recording") {
+      setComparedPhraseIds((ids) =>
+        ids.includes(active.phraseId) ? ids : [...ids, active.phraseId],
+      );
+    }
     transition(
       active.returnTo === "ready" ? { kind: "ready" } : { kind: "idle" },
       active.playback === "comparison-recording"
@@ -860,6 +866,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     wordReplayAudioRef,
     view: {
       phrase,
+      comparedPhraseIds,
       activeWordIndex,
       wordTimings: selectedAudioVariant?.wordTimings ?? [],
       referenceAudioSource: selectedAudioVariant?.src ?? "",

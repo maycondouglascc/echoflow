@@ -1,9 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { voiceComparisonScenario } from "../../src/lib/fixtures/voice-comparison";
+import { login, voiceComparisonScenario } from "./helpers/auth";
 
 test("uses the decoded reference audio clock for both selectable voices", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("link", { name: "Open scenario" }).click();
+  await login(page, "real-audio");
   await expect(page.getByRole("heading", { name: "Voice Comparison" })).toBeVisible();
 
   const phrase = voiceComparisonScenario.phrases[0];
@@ -53,8 +52,7 @@ test("uses the decoded reference audio clock for both selectable voices", async 
 });
 
 test("replays one aligned word from the decoded selected voice", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("link", { name: "Open scenario" }).click();
+  await login(page, "real-audio");
   await expect(page.getByRole("heading", { name: "Voice Comparison" })).toBeVisible();
 
   const phrase = voiceComparisonScenario.phrases[0];

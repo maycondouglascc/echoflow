@@ -18,7 +18,7 @@ jobs:
   quality:
     name: quality
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
@@ -42,6 +42,20 @@ jobs:
 
       - name: Check TypeScript
         run: npm run typecheck
+
+      - name: Start isolated local Supabase
+        run: npx supabase start > /tmp/echoflow-supabase.log 2>&1
+
+      - name: Prepare local test credentials and private fixture audio
+        run: |
+          node scripts/setup-local-test.mjs
+          npm run audio:import
+
+      - name: Test RLS and Storage isolation
+        run: npm run test:db
+
+      - name: Test deterministic catalog and audio tooling
+        run: npm run test:audio-generator
 
       - name: Build
         run: npm run build
