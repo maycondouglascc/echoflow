@@ -1,6 +1,6 @@
 # Revisão PM — plataforma pública e redesign
 
-**Status:** pronto para autorização da implementação; publicação e operações remotas não autorizadas.
+**Status:** implementação local validada; T036/T037 permanecem gates de publicação. Operações remotas não autorizadas.
 
 ## Decisões
 
@@ -39,5 +39,25 @@
 | Teto de gasto da plataforma gratuita | Publicação sem limite aceito pode gerar custos por cadastro/email/egress; não bloqueia implementação local | Responsável pelo produto/operação | Definir teto e limites antes de publicar; T037 |
 
 ## Evidências externas para o plano
+
+## Revisão independente da implementação (T035)
+
+Revisor separado read-only, diff contra planejamento `248a407` e arquivos novos:
+
+- P1 CLI global na CI: corrigido helper para `npx --no-install supabase`, dependency pinada.
+- P2 destino perdido no layout: Proxy sobrescreve header interno com rota atual e layout usa allowlist;
+  E2E acesso direto → login → mesma rota passou.
+- P2 auth pages de usuário existente: redirect server-side, preservada exceção recovery/reset; E2E passou.
+- P2 cues sem campos aceitos por NULL SQL: corrigido `IS DISTINCT FROM`, testes de campos vazios/null/overlap e banco recriado; pgTAP passou.
+- Complementos: SDK cookie adulterado, conta revogada, confirmação/recovery via inbox local,
+  catálogo não publicado, deleção proibida, idempotência e métricas cobertos.
+- Revisão complementar confirmou banco aplicado, privilégios negados anon/auth dos counters,
+  RPC anon negado, funções internas revogadas, `search_path=''` e nenhum PII persistido.
+  Nenhum novo achado bloqueante; não encontrou service role na aplicação, upload pessoal,
+  bucket público ou enfraquecimento dos gates. Lockfile auditado sem vulnerabilidades.
+
+Risco residual: usuários autenticados podem inflar contagem de acessos via RPC; telemetria é
+indicativa, não auditoria confiável. Abuso/limites, Google real, SMTP/domínio e dispositivos
+continuam gates externos. CI foi preparada, mas execução GitHub só é comprovada após push autorizado.
 
 - [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/creating-a-client), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [Google](https://supabase.com/docs/guides/auth/social-login/auth-google), [migrations](https://supabase.com/docs/guides/local-development/database-migrations), [testes de banco](https://supabase.com/docs/guides/local-development/testing/overview) e [Next 16 Proxy](https://nextjs.org/docs/app/api-reference/file-conventions/proxy), consultados em 2026-09-29.

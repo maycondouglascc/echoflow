@@ -2,8 +2,8 @@
 title: "EchoFlow — English Speaking Practice via Shadowing"
 description: "Product specification and system design for EchoFlow, an AI-powered English speaking practice app."
 date: "2026-02-25"
-status: "MVP Planning"
-version: "0.1.0"
+status: "Public beta implementation — release gates pending"
+version: "0.2.0"
 ---
 
 # EchoFlow
@@ -16,6 +16,14 @@ EchoFlow is a web app that teaches English speaking fluency through the **shadow
 
 ## The Problem
 
+Current feature 005: public free-beta landing; confirmed account required for playlists, phrases,
+practice and all reference audio. One **Voice Comparison** playlist, five phrases, **Puck/Harper**.
+Listen, Speak, Compare, word highlight/replay and microphone recovery are preserved. Recordings
+and voice selection stay in page memory; only **Completed** persists per account after five
+recordings/comparisons. Search/filter use the real catalog. Supabase Auth/database/private Storage
+are implemented locally; remote Google/email/domain, legal approval, spend/abuse limits, real
+devices and deployment remain release gates. Larger catalog and modes below are future roadmap.
+
 Most English learners can read and write well but freeze when they need to speak. Traditional apps focus on vocabulary and grammar drills — not on the physical act of speaking. Shadowing is the most effective method for building speaking fluency, but there are no tools that make it accessible, structured, and easy to practice daily.
 
 ---
@@ -24,7 +32,7 @@ Most English learners can read and write well but freeze when they need to speak
 
 EchoFlow provides two practice modes:
 
-### 🗂️ Curated Phrase Mode *(MVP)*
+### 🗂️ Curated Phrase Mode *(future expansion)*
 
 Pre-written phrases organized by real-life scenarios. Each phrase has:
 
@@ -36,7 +44,7 @@ Pre-written phrases organized by real-life scenarios. Each phrase has:
 - A reference voice selector that presents each speaker persona by its original voice name
 - A transcript highlight that smoothly follows reference playback; learners can replay an aligned word in the selected voice, while personal recordings remain unhighlighted
 
-**Available scenarios at launch:**
+**Proposed expanded scenarios (not current catalog):**
 
 | Scenario | Phrases |
 |---|---|
@@ -60,4 +68,3 @@ This unlocks practice with real-world content — interviews, movies, talks, pod
 ## Core Practice Loop
 
 Every session follows the same 6-step rhythm:
-

@@ -9,6 +9,14 @@ status: "Active"
 
 This document records the planned stack and product implementation phases. AGENTS.md defines current cross-agent instructions; accepted feature specifications and product decisions take precedence over unreviewed plan details. Check the phase status before starting work.
 
+Feature 005 supersedes early sketches below: public free-beta landing, confirmed email/Google PKCE
+(remote provider configuration pending), account-gated catalog/practice, private `phrase-audio`,
+authenticated Range byte proxy/no-store, five phrases and Puck/Harper, page-memory recordings,
+append-only owner-isolated playlist completion. No recording upload, profiles, partial progress,
+40-phrase catalog, slow mode or video import. Schema/types are in `supabase/migrations/` and
+`src/lib/supabase/database.types.ts`; evidence/release gates in feature 005 `quickstart.md`.
+Historical phases/schema below are future sketches, not instructions overriding those decisions.
+
 ---
 
 ## Table of Contents
@@ -285,8 +293,8 @@ Never mix them. Never call `createBrowserClient` in a Server Component.
   ```
 
 ### Audio Handling
-- Reference audio: served directly from Supabase Storage public URL — no proxying needed.
-- User recordings: uploaded to Supabase Storage `user-recordings/` bucket (private), accessed via signed URL.
+- Reference audio: private Storage and authenticated `/api/reference-audio/[variantId]` Range bytes, no public/signed URL.
+- User recordings: page memory only; no upload endpoint or recording bucket in feature 005.
 - Max recording length: 30 seconds (`MAX_RECORDING_SECONDS = 30`).
 - Recording format: `audio/webm;codecs=opus` (browser MediaRecorder default).
 - Slow playback = `audioElement.playbackRate = 0.7` — no server-side processing needed.
@@ -375,15 +383,15 @@ create policy "Users see own sessions" on video_sessions
 create policy "Users see own profile" on profiles
   for all using (auth.uid() = id);
 
--- scenarios and phrases are public read
+-- Future expanded-schema example: never grant anonymous catalog access.
 alter table scenarios enable row level security;
 alter table phrases enable row level security;
 
-create policy "Anyone can read scenarios" on scenarios
-  for select using (true);
+create policy "Authenticated can read scenarios" on scenarios
+  for select to authenticated using (true);
 
-create policy "Anyone can read phrases" on phrases
-  for select using (true);
+create policy "Authenticated can read phrases" on phrases
+  for select to authenticated using (true);
 
 -- Auto-create profile on signup
 create or replace function handle_new_user()
@@ -404,8 +412,8 @@ Create these in the Supabase dashboard (Storage → New bucket):
 
 | Bucket | Public? | Purpose |
 |---|---|---|
-| `phrase-audio` | Yes | Pre-generated ElevenLabs MP3s (served directly) |
-| `user-recordings` | No | User's recorded .webm files (signed URLs) |
+| `phrase-audio` | No | Existing references, authenticated proxy and RLS |
+| `user-recordings` | Not created | Future only; current recordings remain in memory |
 
 ---
 
@@ -506,7 +514,7 @@ For bugs, add a regression check that fails for the reported behavior and passes
 ### Supabase
 - [ ] Production project created (separate from dev)
 - [ ] Migration `001_initial_schema.sql` applied to production
-- [ ] Storage buckets created: `phrase-audio` (public), `user-recordings` (private)
+- [ ] Remote private `phrase-audio` policies applied after authorization; no recording bucket in feature 005
 - [ ] CORS policy on Storage: allow `https://your-vercel-domain.vercel.app`
 - [ ] Auth → Email templates customized (optional)
 - [ ] Auth → Site URL set to production Vercel URL

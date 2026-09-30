@@ -41,3 +41,28 @@ Codex uses the installed skills as $speckit-specify, $speckit-clarify, $speckit-
 - Implementation plan: docs/IMPLEMENTATION_PLAN.md
 - Architecture: docs/system_architecture.md
 - Development workflow: docs/DEVELOPMENT_WORKFLOW.md
+# Public platform — isolated development
+
+The public landing requires no session. Playlists, phrases and reference audio require a confirmed
+Supabase user. Personal recordings remain in browser memory; no audio is uploaded.
+
+Use Node/npm pinned in `package.json` and Docker. Run `npm ci`, then `npx supabase start` in this
+checkout. Project `public-platform-005` uses API **56321**, database **56322**, Studio **56323** and
+local email inbox **56324**; do not reuse another project's stack or `--linked`.
+
+Run `node scripts/setup-local-test.mjs` to create an ignored, local-only `.env.local`, then
+`npm run audio:import`. The script refuses nonlocal destinations, verifies all 13 original
+checksums and never overwrites a mismatched object. `--dry-run` verifies files without requests.
+`npm run catalog:seed` regenerates seed SQL from the existing fixtures without calling providers.
+
+Verification: `npm run test:db`, `npm run test:audio-generator`, `npm run lint`,
+`npm run typecheck`, `npm run build`, `npm run test:e2e`. Browser tests use port **4175**.
+The local setup helper uses that origin for callbacks; for normal development set
+`NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000`. Supabase URL and anon key are public identifiers
+subject to RLS. Service role is maintenance-only and is never read by application code.
+
+Email confirmation is enabled locally; inspect the test inbox to open confirmation/recovery links
+in the same browser that requested them (PKCE). Google is deliberately disabled until a test
+OAuth client is provided. Configure its secret server-side, enable the provider, and allow only
+the exact `/auth/callback` origins in both Google and Supabase. Production SMTP, redirect origins,
+legal content, spend/abuse limits, device checks and deployment need separate approval.

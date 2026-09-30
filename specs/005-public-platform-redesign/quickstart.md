@@ -1,6 +1,8 @@
-# Guia de validação futura
+# Guia de execução e evidência local
 
-Nenhum comando abaixo foi executado nesta fase de planejamento. Use apenas no ambiente local isolado após implementação; não apontar CLI para projeto remoto de produção.
+Implementação executada na worktree `/home/maycon/Documents/code/echoflow/.worktrees/public-platform-005`,
+branch `codex/public-platform-plan`. Não apontar CLI/testes/importador para projeto remoto.
+O banco recriado nesta sessão contém exclusivamente fixtures e contas sintéticas dessa worktree.
 
 ## Pré-requisitos
 
@@ -8,10 +10,11 @@ Node/npm da versão do package.json, Docker compatível, Supabase CLI (2.118.0 j
 
 ## Preparar e verificar localmente
 
-1. Na worktree de implementação, confirmar projeto Supabase local isolado e executar `supabase start`; então `supabase db reset` apenas local para aplicar migrations e seed. Não usar `--linked`.
-2. Executar `supabase test db`, verificando grants/RLS como anon, usuário A e B, inclusive catálogo, conclusão e política de Storage.
-3. Executar `npm run lint`, `npm run typecheck`, `npm run build` e testes automatizados introduzidos na implementação (`npm run test:e2e` e comandos de integração definidos em package.json).
-4. Conferir cinco frases e dez variantes; comparar checksums dos objetos privados aos arquivos de origem e confirmar que nenhuma URL pública antiga nem o endpoint de áudio libera bytes sem login.
+1. Na worktree, `npm ci`, `npx supabase start`; se precisar recriar fixtures, `npx supabase db reset --local` (apaga apenas dados sintéticos deste stack). Não usar `--linked`. Projeto `public-platform-005`: API56321/DB56322/Studio56323/inbox56324; não parar outros projetos Docker.
+2. `node scripts/setup-local-test.mjs` gera `.env.local` ignorado sem imprimir credenciais; `npm run audio:import` verifica/importa os 13 objetos privados idempotentemente. `--dry-run` não faz requests. `node scripts/generate-database-types.mjs` regenera tipos locais.
+3. Executar `npm run test:db`, verificando grants/RLS como anon, usuário A e B, inclusive catálogo, conclusão e política de Storage.
+4. Executar `npm run lint`, `npm run typecheck`, `npm run build` e `npm run test:e2e`.
+5. Conferir cinco frases e dez variantes; comparar checksums dos objetos privados aos arquivos de origem e confirmar que nenhuma URL pública antiga nem o endpoint de áudio libera bytes sem login.
 
 ## Jornadas observáveis
 
@@ -21,7 +24,48 @@ Node/npm da versão do package.json, Docker compatível, Supabase CLI (2.118.0 j
 4. Buscar termo presente e ausente, limpar busca, alternar estado sem seleção/selecionado. Testar 375 px e 1440 px, teclado, leitor de tela e movimento reduzido. Comparar com [inventário Figma](contracts/figma-inventory.md) e registrar diferenças.
 5. Simular auth indisponível, áudio ausente, callback OAuth inválido e `next` externo; exigir falha recuperável sem acesso indevido.
 
-## Checks externos e físicos
+## Backup e rollback
+
+Tag anotada `backup/pre-public-platform-20260929`, commit resolvido
+`94cce8b55d8e894d31d85c4eaa3f4773a818f25b`; planejamento em `248a407`.
+O checkout funcional original não foi modificado pelo desenvolvimento desta feature.
+Checksums dos **13** arquivos originais estão em
+[`assets/reference-audio/checksums.json`](../../assets/reference-audio/checksums.json);
+seed/importador/teste offline verificam os hashes byte a byte. Nenhum TTS foi chamado.
+
+Antes de operação remota autorizada: snapshot de banco/Storage, export das configurações Auth e
+inventário de objetos com hashes; confirmar restauração em ambiente de teste. Migrations são
+aditivas, sem remover tabelas existentes. Rollback do aplicativo deve usar manutenção ou última
+versão autenticada, **nunca republicar o protótipo com áudio anônimo**. Preservar banco/conclusões
+e bucket privado; não executar DROP/down migration automático. Recuperação local da versão antiga
+usa uma branch/worktree nova a partir da tag, preservando alterações atuais. Restaurar arquivos
+de áudio pela tag/hashes, não regenerar via provider. Nenhum backup remoto, push ou deploy ocorreu.
+
+## Evidência de implementação
+
+- CLI fixado em devDependency 2.118.0; Supabase SSR0.12.7/JS2.117.2; `npm audit` sem vulnerabilidades.
+- Três migrations aplicadas desde banco vazio; seed de cinco frases, dez variantes ativas e três arquivadas.
+- `npm run test:db`: **34 checks / 2 arquivos, PASS**: anon, A/B, grants, RLS, Storage, cues inválidos/null, idempotência e métricas agregadas sem PII.
+- `npm run test:audio-generator`: **12 testes PASS**, incluindo hashes/seed/paridade e ausência dos caminhos públicos antigos.
+- Auth/áudio: **10 E2E PASS** na rodada focal: confirmação/recuperação reais na inbox local/PKCE, login/logout, destino interno, conta revogada, cookie SDK adulterado, Google não configurado recuperável, Range e objeto ausente.
+- Testes de modal em 1440/375: trap de foco, Escape e retorno ao botão, reduced-motion e ausência de scroll horizontal.
+- Selo A/B: todas as cinco comparações exigidas, erro de save com retry, reload/nova entrada, uma linha apenas, nenhuma gravação enviada ao Storage.
+- `npm run lint`: PASS sem erros/avisos após limpeza final de especificidade CSS (48 arquivos).
+- `npm run typecheck` e `npm run build`: PASS na versão final.
+- `npm run test:e2e`: **42 testes PASS (1.6m)**; após ajustes finais de estilos, quatro checks visuais/teclado/responsividade repetidos e PASS.
+- Hooks before/after implement: `.specify/extensions.yml` ausente; nenhum hook a executar.
+- Commits locais: `394684b` (infraestrutura/RLS) e `5d7aa58` (auth, cutover privado, redesign e testes).
+
+Evidência visual temporária: `/tmp/echoflow-{landing,signup,catalog,practice}-{1440,375}.png`;
+captura reproduzível por `tests/e2e/visual-evidence.spec.ts`, contas sintéticas sem PII real.
+Comparação e diferenças no inventário Figma. Capturas não equivalem a validação de dispositivo.
+
+## Gates ainda não atendidos
+
+T036: dispositivos reais, entrega email/Google/domínio remotos. T037: termos/privacidade aprovados,
+teto de gasto, limites/alertas e tráfego de abuso em ambiente autorizado; autorização específica de
+publicação. Contadores locais já implementados/testados, mas eventos de acesso são indicativos
+(incluem renders/prefetch e podem ser inflados pelo RPC de uma conta), não auditoria de pessoas.
 
 Google OAuth real, entrega de email, domínio, configuração remota Supabase, texto legal aprovado, limites de abuso, observabilidade, teto de gasto aprovado, políticas remotas e browser em dispositivo com permissão de microfone/reprodução/interrupções exigem validação separada antes de lançamento. Definir métricas de cadastro confirmado → acessos à prática → primeira conclusão por conta sem guardar áudio pessoal. Nenhum desses itens é provado por build ou mocks. Chamadas pagas a provedores de voz não fazem parte desta validação ordinária. Publicação/deploy e operações em produção requerem autorização posterior.
 
