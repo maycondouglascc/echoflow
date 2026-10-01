@@ -1,20 +1,36 @@
 "use client";
 import Image from "next/image";
-import { useId, useRef } from "react";
+import { useId, useRef, useState } from "react";
 import { AuthForm } from "./AuthForm";
 
-export function SignupModal({ label, className }: { label: string; className?: string }) {
+export function AuthModal({
+  label,
+  className,
+  initialMode = "signup",
+}: {
+  label: string;
+  className?: string;
+  initialMode?: "signup" | "login";
+}) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const [mode, setMode] = useState(initialMode);
   return (
     <>
-      <button type="button" className={className} onClick={() => dialog.current?.showModal()}>
+      <button
+        type="button"
+        className={className}
+        onClick={() => {
+          dialog.current?.showModal();
+        }}
+      >
         {label}
       </button>
       <dialog
         ref={dialog}
         className="signup-dialog"
         aria-labelledby={titleId}
+        onClose={() => setMode(initialMode)}
         onKeyDown={(event) => {
           if (event.key !== "Tab") return;
           const controls = Array.from(
@@ -33,10 +49,18 @@ export function SignupModal({ label, className }: { label: string; className?: s
           }
         }}
       >
-        <AuthForm titleId={titleId} />
+        <AuthForm
+          key={mode}
+          titleId={titleId}
+          mode={mode}
+          onModeChange={(nextMode) => {
+            setMode(nextMode);
+            dialog.current?.focus();
+          }}
+        />
         <button
           type="button"
-          aria-label="Close signup"
+          aria-label={mode === "signup" ? "Close signup" : "Close login"}
           className="close-signup"
           onClick={() => dialog.current?.close()}
         >

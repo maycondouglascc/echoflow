@@ -17,6 +17,13 @@ Os frames inspecionados mostram landing com chamada de beta gratuito e modal de 
 - Q: O selo "Completed" deve persistir por usuário? → A: Sim, salvar por usuário quando ele conclui uma playlist.
 - Q: "Puck / Alice" e "Mode 1" são opções finais? → A: São placeholders; preservar as opções de voz e modo já aceitas pelo projeto.
 
+### Session 2026-10-01
+
+- Correção solicitada: Login, Sign up e Practice now abrem formulários em modal sobre a landing,
+  sem navegar para uma página separada. Alternar cadastro/entrada e abrir recuperação mantém o
+  mesmo modal; Escape/fechar devolve o foco ao acionador. Rotas diretas de autenticação continuam
+  disponíveis para callbacks, recuperação e redirecionamentos protegidos.
+
 ## User Scenarios & Testing
 
 ### User Story 1 - Entrar na prática com uma conta (Priority: P1)
@@ -84,7 +91,7 @@ Visitantes e pessoas autenticadas veem, respectivamente, a nova landing e a nova
 
 ### Functional Requirements
 
-- **FR-001**: A landing MUST permanecer pública e fornecer caminhos distintos e funcionais para cadastro e entrada.
+- **FR-001**: A landing MUST permanecer pública e fornecer caminhos distintos e funcionais para cadastro e entrada. Login, Sign up e Practice now MUST abrir formulários modais sobre a landing sem navegação; a alternância cadastro/entrada e recuperação permanece no modal.
 - **FR-002**: O cadastro inicial MUST ser gratuito, e frases, catálogo completo e prática MUST exigir uma sessão autenticada válida em acessos diretos e pela navegação.
 - **FR-003**: O produto MUST permitir cadastro/entrada por email e por Google, confirmação de email no fluxo de produção, saída e recuperação de acesso por email; falhas MUST ser recuperáveis sem concessão de acesso.
 - **FR-004**: Cada leitura de conteúdo protegido MUST verificar a sessão no servidor; conclusão de playlist MUST ter isolamento por proprietário no servidor e no banco.

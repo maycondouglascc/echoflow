@@ -60,6 +60,16 @@ Evidência visual temporária: `/tmp/echoflow-{landing,signup,catalog,practice}-
 captura reproduzível por `tests/e2e/visual-evidence.spec.ts`, contas sintéticas sem PII real.
 Comparação e diferenças no inventário Figma. Capturas não equivalem a validação de dispositivo.
 
+## Correção de autenticação sobre a landing (2026-10-01)
+
+`AuthModal` substitui `SignupModal`: Login, Sign up e Practice now abrem o formulário
+sobre a landing, sem mudar a URL. Trocas de modo e recuperação permanecem no modal;
+Escape/fechamento restauram foco ao botão de origem. Rotas diretas de autenticação
+continuam disponíveis para redirecionamentos protegidos e callbacks.
+Lint, typecheck e build: PASS. Nove testes de landing/modal (1440/375 px e login real)
+e oito testes de regressão de autenticação: PASS em rodadas focadas. Evidência visual
+local: `/tmp/echoflow-login-modal.png`. Nenhum deploy ou configuração remota foi alterado.
+
 ## Gates ainda não atendidos
 
 T036: dispositivos reais, entrega email/Google/domínio remotos. T037: termos/privacidade aprovados,

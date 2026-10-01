@@ -9,11 +9,13 @@ export function AuthForm({
   next = "/home",
   initialError = false,
   titleId,
+  onModeChange,
 }: {
   mode?: "signup" | "login" | "reset";
   next?: string;
   initialError?: boolean;
   titleId?: string;
+  onModeChange?: (mode: "signup" | "login") => void;
 }) {
   const [recover, setRecover] = useState(false);
   const [email, setEmail] = useState("");
@@ -110,11 +112,24 @@ export function AuthForm({
         {mode === "signup" ? (
           <>
             Already have an account?{" "}
-            <Link href={`/login?next=${encodeURIComponent(next)}`}>Log in</Link>
+            {onModeChange ? (
+              <button type="button" className="text-button" onClick={() => onModeChange("login")}>
+                Log in
+              </button>
+            ) : (
+              <Link href={`/login?next=${encodeURIComponent(next)}`}>Log in</Link>
+            )}
           </>
         ) : (
           <>
-            New to EchoFlow? <Link href="/signup">Sign up</Link>
+            New to EchoFlow?{" "}
+            {onModeChange ? (
+              <button type="button" className="text-button" onClick={() => onModeChange("signup")}>
+                Sign up
+              </button>
+            ) : (
+              <Link href="/signup">Sign up</Link>
+            )}
           </>
         )}
       </p>

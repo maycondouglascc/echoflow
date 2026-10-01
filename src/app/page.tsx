@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { SignupModal } from "@/components/SignupModal";
+import { AuthModal } from "@/components/AuthModal";
 
 export default function Home() {
   return (
@@ -11,10 +11,8 @@ export default function Home() {
           <Image src="/design/logo.svg" width={157} height={32} alt="EchoFlow" priority />
         </Link>
         <nav aria-label="Account">
-          <SignupModal label="Sign up" className="signup-button" />
-          <Link className="login-button" href="/login">
-            Login
-          </Link>
+          <AuthModal label="Sign up" className="signup-button" />
+          <AuthModal label="Login" className="login-button" initialMode="login" />
         </nav>
       </header>
       <section className="hero">
@@ -27,7 +25,7 @@ export default function Home() {
             made <span>easy</span>
           </h1>
           <p>Find your rhythm in English with daily shadowing exercises</p>
-          <SignupModal label="Practice now" className="dark-button practice-cta" />
+          <AuthModal label="Practice now" className="dark-button practice-cta" />
         </div>
         <div className="how-panel">
           <Image

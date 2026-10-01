@@ -96,3 +96,7 @@
 ## Implementation Strategy
 
 Primeiro incremento funcional: US1 com fundação, acessível em ambiente de teste e sem publicar. Depois integrar catálogo/conclusão e, por fim, redesign com as skills fornecidas. Encerrar no gate de release readiness; publicar somente por autorização posterior. Commits devem agrupar implementação e teste da mesma fatia.
+
+## Follow-up: formulários sobre a landing (2026-10-01)
+
+- [X] T038 Corrigir FR-001: Login, Sign up e Practice now abrem modal sobre a landing; alternar cadastro/entrada e recuperação sem navegação; manter foco/fechamento e validar login real e regressões em `tests/e2e/landing-redesign.spec.ts`.
