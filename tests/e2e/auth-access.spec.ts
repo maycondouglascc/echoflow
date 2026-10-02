@@ -164,6 +164,8 @@ test("email confirmation and recovery complete through the local inbox and PKCE"
   await expect(page.getByRole("status")).toContainText("Request received");
   await page.goto(await localEmailLink(request, email, "confirm"));
   await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByRole("dialog", { name: "Let’s hear your voice" })).toBeVisible();
+  await page.getByRole("button", { name: "Not now", exact: true }).click();
   await page.getByRole("button", { name: "Log out" }).click();
   await page.getByRole("button", { name: "Forgot password?" }).click();
   await page.getByLabel("Email address").fill(email);

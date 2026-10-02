@@ -107,3 +107,10 @@ Primeiro incremento funcional: US1 com fundação, acessível em ambiente de tes
 - [X] T043 Simplificar prática conforme cinco anotações; preservar take/readiness/comparação ao trocar voz, Compare acionável sem take com orientação e erros/status acessíveis; atualizar regressões de comportamento removido explicitamente.
 - [X] T044 Detectar fim de fala por silêncio após sinal inicial com fallback manual/limite, cleanup e testes determinísticos; pré-carregar referência atual/próxima com buffer limitado em memória e testes de falhas/sem upload.
 - [X] T045 Executar lint/typecheck/build/testes feature e suíte local, revisar auth/RLS/microfone/motion, medir pós-correção e convergir contra acceptance; separar hardware/SMTP/Google/deploy pendentes.
+
+### Modal de microfone e privacidade (2026-10-02)
+
+- [X] T046 Escrever checks para onboarding modal, CTA, recusa/retry, dismiss durante request e página pública sem getUserMedia em `tests/e2e/practice-refinement.spec.ts`/`tests/e2e/privacy.spec.ts`.
+- [X] T047 Reutilizar estrutura/foco/close/motion de AuthModal num dialog compartilhado; trocar banner por modal com mascote, permission por gesto e cleanup; remover aside do topo.
+- [X] T048 Criar `/privacy` server pública com fatos da beta e links em landing, conta e modal; manter aprovação legal separada.
+- [X] T049 Executar gates, regressões e revisão visual 375/972/1440/viewport curto; registrar convergência e limitações físicas/jurídicas sem publicar.

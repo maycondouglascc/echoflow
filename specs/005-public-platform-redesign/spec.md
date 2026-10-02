@@ -153,6 +153,20 @@ Visitantes e pessoas autenticadas veem, respectivamente, a nova landing e a nova
 
 ## Autorizações posteriores (2026-10-01)
 
+### Modal de microfone e página de privacidade (2026-10-02)
+
+- Primeiro acesso autenticado apresenta modal com o mesmo dialog, superfície azul, close,
+  foco e motion do cadastro/login; mascote existente humaniza sem animação decorativa contínua.
+  Pedido nativo ocorre ao escolher Enable microphone (supersede timer automático de 300ms),
+  sem gravar; sucesso libera tracks e fecha. Recusa oferece retry; Escape/close/Not now dispensam.
+- Não reapresentar onboarding na mesma conta/aba. Remover aside/details do topo; links discretos
+  Privacy na landing, conta e modal levam a `/privacy`, pública e sem catálogo ou pedido de mic.
+- Página descreve fatos atuais: conta/Supabase, conclusão por conta, gravação temporária local,
+  permissão, cookies de sessão e contadores agregados. Não inventar contato, retenção ou direitos
+  jurídicos. Texto informativo de beta, não política legal aprovada; T037 continua aberto.
+- Verificar modal/foco/Escape, aprovação/recusa/retry e stream tardio após dismiss, navegação
+  e ausência de aside, página anônima sem permissão, 375/972/1440px e viewport curto.
+
 ### Refinamento da prática e latência (2026-10-02)
 
 - Após signup, exibir etapa explícita “Check your email”, instrução de confirmação e spam,

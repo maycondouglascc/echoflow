@@ -1,7 +1,7 @@
 "use client";
-import Image from "next/image";
 import { useId, useRef, useState } from "react";
 import { AuthForm } from "./AuthForm";
+import { ModalDialog } from "./ModalDialog";
 
 export function AuthModal({
   label,
@@ -51,31 +51,14 @@ export function AuthModal({
       >
         {label}
       </button>
-      <dialog
-        ref={dialog}
-        className="signup-dialog"
-        aria-labelledby={titleId}
+      <ModalDialog
+        dialogRef={dialog}
+        titleId={titleId}
+        closeLabel={mode === "signup" ? "Close signup" : "Close login"}
         onClose={() => {
           viewAnimation.current?.cancel();
           setMode(initialMode);
           setFormSession((session) => session + 1);
-        }}
-        onKeyDown={(event) => {
-          if (event.key !== "Tab") return;
-          const controls = Array.from(
-            event.currentTarget.querySelectorAll<HTMLElement>(
-              'button:not(:disabled), input:not([type="hidden"]):not(:disabled), a[href]',
-            ),
-          );
-          const first = controls[0];
-          const last = controls.at(-1);
-          if (event.shiftKey && document.activeElement === first) {
-            event.preventDefault();
-            last?.focus();
-          } else if (!event.shiftKey && document.activeElement === last) {
-            event.preventDefault();
-            first?.focus();
-          }
         }}
       >
         <div ref={view} className="auth-view">
@@ -91,15 +74,7 @@ export function AuthModal({
             onRecoveryChange={animateView}
           />
         </div>
-        <button
-          type="button"
-          aria-label={mode === "signup" ? "Close signup" : "Close login"}
-          className="close-signup"
-          onClick={() => dialog.current?.close()}
-        >
-          <Image src="/design/close.svg" width={40} height={40} alt="" />
-        </button>
-      </dialog>
+      </ModalDialog>
     </>
   );
 }

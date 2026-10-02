@@ -110,6 +110,17 @@ Rollback de aplicação: apontar novamente para `backup/pre-public-platform-2026
 
 ## Post-design Constitution Check
 
+### Modal/privacy follow-up
+
+T046 testes de acceptance → T047 dialog compartilhado e onboarding sem timer → T048 página
+server pública e links → T049 gates/evidência. Reutilizar Nunito e tokens #0087da/#1a1e26/white,
+largura 400px/padding40 (24 mobile), mascote original `/design/kitten.png` como apoio ao título.
+Mesma superfície, backdrop e scroll interno; privacy em leitura contínua, não cards repetitivos.
+Análise: pedido novo autoriza página factual sem resolver aprovação jurídica T037; não muda
+Auth/RLS/schema ou gravação. Primeiro modal imediato, browser prompt após CTA é decisão explícita
+de leitura/consentimento. Skill motion: ocasião rara, propósito de explicação/state indication;
+usar CSS existente 250ms/120 reduced/teclado imediato, sem dependência nova.
+
 ## Follow-up performance/practice plan (2026-10-02)
 
 1. Regressões antes de correções: Compare acionável, voice readiness, onboarding, silêncio.

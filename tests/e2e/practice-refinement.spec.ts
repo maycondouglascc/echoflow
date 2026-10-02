@@ -17,19 +17,24 @@ test("first authenticated entry explains permission, releases the stream and doe
   page,
 }) => {
   await login(page, "mic-onboarding", "/home", { microphoneOnboarding: true });
+  await expect(page.getByRole("dialog", { name: "Let’s hear your voice" })).toBeVisible();
+  expect(await page.evaluate(() => window.__echoTest.getUserMediaCalls)).toBe(0);
+  await page.getByRole("button", { name: "Enable microphone", exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__echoTest.getUserMediaCalls)).toBe(1);
   await expect.poll(() => page.evaluate(() => window.__echoTest.tracksStopped)).toBe(1);
   expect(await page.evaluate(() => window.__echoTest.recorderStarts)).toBe(0);
-  await page.getByText("Microphone & privacy", { exact: true }).click();
-  await expect(page.getByText(/Recordings stay in page memory/)).toBeVisible();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await expect(page.locator(".microphone-onboarding")).toHaveCount(0);
   await page.reload();
-  await expect(page.getByText("Microphone & privacy", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Available playlists" })).toBeVisible();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
   expect(await page.evaluate(() => window.__echoTest.getUserMediaCalls)).toBe(0);
 });
 
 test("denied onboarding is nonblocking and can be retried", async ({ page }) => {
   await page.addInitScript(() => window.__echoTest.denyNextMicrophone());
   await login(page, "mic-denied", "/home", { microphoneOnboarding: true });
+  await page.getByRole("button", { name: "Enable microphone", exact: true }).click();
   await expect(page.getByText("You can still listen.", { exact: false })).toBeVisible();
   await expect(page.getByRole("link", { name: "Voice Comparison", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Enable microphone", exact: true }).click();

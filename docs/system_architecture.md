@@ -26,7 +26,7 @@ The full data flow works like this:
 Every screen in the app is just an entry point to the Practice Screen. The loop must feel like a rhythm, not a form. [dilsedesigner](https://www.dilsedesigner.com/p/crafting-an-mvp-the-key-to-user-acquisition)
 **Key UX timing details:**
 
-- First authenticated entry per account/tab explains and requests microphone permission, releases tracks immediately and starts no recording. Rejection is nonblocking and retryable. Signup confirmation precedes this entry.
+- First authenticated entry per account/tab opens a mascot-led modal using the auth dialog structure. Browser permission is requested only by Enable microphone, releases tracks immediately and starts no recording. Escape/close/Not now dismiss; rejection is retryable. Signup confirmation precedes this entry. The public server-rendered `/privacy` explains current data/microphone handling without requesting permission; legal approval remains a launch gate.
 - Step 3 → 4: 300ms readiness gap; recording starts only on explicit Speak. A local energy detector stops after 1500ms silence following at least 200ms voice signal; initial silence does not stop recording. Manual stop/30s limit remain, Web Audio failures fall back to manual control. Device/noise validation is still required.
 - Reference bytes are deduplicated and preloaded for the current/next phrase in the current voice, up to four page-owned object URLs, aborted/revoked on exit. No persistent/public HTTP cache; received buffers cannot be revoked retroactively. Voice changes preserve take/readiness/comparison; no new upload or database field.
 - Step 5: play user recording and reference audio **sequentially**, not simultaneously — easier to self-evaluate

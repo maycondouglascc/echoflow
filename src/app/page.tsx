@@ -59,6 +59,9 @@ export default function Home() {
           />
         </div>
       </section>
+      <footer className="landing-footer">
+        <Link href="/privacy">Privacy</Link>
+      </footer>
     </main>
   );
 }

@@ -191,6 +191,35 @@ local: `/tmp/echoflow-login-modal.png`. Nenhum deploy ou configuração remota f
   exclusivamente para hardware, email/Google/termos/limites e publicação. Nenhum push/deploy,
   nova migration, alteração de RLS, credencial, SMTP ou provider pago neste refinamento.
 
+## Modal de microfone e página de privacidade (T046–T049, 2026-10-02)
+
+- Banner/details de microfone removidos do topo. Onboarding reutiliza `ModalDialog` com
+  AuthModal: mesma superfície 400px azul, Nunito, close e trap de foco, backdrop/250ms;
+  reduced-motion fade120ms e teclado imediato. Mascote original `kitten.png` reutilizado,
+  sem gerar/improvisar asset diferente das referências da marca.
+- Modal aparece na primeira entrada da conta/aba; navegador pede permissão **apenas após
+  Enable microphone** (substitui timer300ms). Sucesso libera tracks/fecha sem gravação.
+  Denied oferece retry; Escape/close/Not now dispensam e retornam foco ao conteúdo.
+  Stream recebido após dismiss/unmount é imediatamente liberado, sem reabrir ou gravar.
+- `/privacy`: página pública Server Component estática, sem Auth, catálogo ou pedido de mic;
+  textos factuais sobre gravações, conta/conclusão/Supabase, sessão e contadores. Links em
+  landing, conta e modal. Não é política legal aprovada: contato/retenção/termos de lançamento
+  dependem do responsável e permanecem em T037; nenhuma promessa jurídica foi inventada.
+- Mesmo reflow existente para modal; scroll interno em viewport baixo. Página usa padding
+  fluido e coluna de leitura de no máximo760px, sem breakpoint novo ou cartões por parágrafo.
+  Capturas revisadas: `/tmp/echoflow-microphone-modal-{1440,972,375}.png` e
+  `/tmp/echoflow-privacy-{1440,972,375}.png`; menor viewport375×556 mantém close na tela.
+- Lint61 arquivos/typecheck: PASS. Build padrão continua falhando na restrição Turbopack de
+  porta interna; builds Webpack local e remoto isolado: PASS, sem mudar scripts/CI/locks.
+- HEAD anônimo `/privacy` na prévia4177:200; sem alteração no projeto Supabase ou deploy.
+  Rodada completa:74 PASS/1 falha (3.5m); teste legado de confirmação tentava logout por trás
+  do novo modal. Jornada adaptada para dispensar via Not now, preservando asserts PKCE/recovery.
+  Repetição final de auth/prática/privacy: **22 PASS (55.1s)**, incluindo o caso corrigido.
+  Retorno de foco também corrigido e validado (link de conteúdo antes do botão de filtro).
+- Convergência T046–T049: acceptance implementado; nenhuma dependência/credencial/migration/RLS
+  ou operação remota de dados modificada, nem push/deploy. Hooks before/after ausentes.
+  T036/T037 permanecem abertos para hardware, política jurídica completa e release.
+
 ## Gates de lançamento restantes
 
 T036: dispositivos reais, entrega email/Google/domínio remotos. T037: termos/privacidade aprovados,
