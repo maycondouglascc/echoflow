@@ -1,0 +1,66 @@
+import { createHash } from "node:crypto";
+import { expect, type Page } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
+import { voiceComparisonScenario as fixture } from "../../../src/lib/fixtures/voice-comparison";
+
+export const password = "EchoFlow-test-only-123!";
+function testPort(value: string | undefined, fallback: number) {
+  if (value === undefined) return String(fallback);
+  if (!/^\d+$/.test(value) || Number(value) < 1024 || Number(value) > 65535)
+    throw new Error("Invalid isolated local test port.");
+  return value;
+}
+const apiPort = testPort(process.env.ECHOFLOW_TEST_API_PORT, 56321);
+export const localInbox = `http://127.0.0.1:${testPort(process.env.ECHOFLOW_TEST_INBOX_PORT, 56324)}`;
+export const localUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+if (new URL(localUrl).hostname !== "127.0.0.1" || new URL(localUrl).port !== apiPort)
+  throw new Error("E2E requires the explicitly selected isolated local stack.");
+export const admin = createClient(localUrl, process.env.SUPABASE_SERVICE_ROLE_KEY ?? "", {
+  auth: { persistSession: false },
+});
+export function stableId(value: string) {
+  const h = createHash("sha256").update(value).digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+export const audioUrl = (slug: string) => `/api/reference-audio/${stableId(slug)}`;
+export const voiceComparisonScenario = {
+  ...fixture,
+  phrases: fixture.phrases.map((p) => ({
+    ...p,
+    audioVariants: p.audioVariants.map((v) => ({ ...v, src: audioUrl(v.id) })),
+  })),
+};
+
+export async function ensureAccount(label = "practice") {
+  const email = `${label}@example.test`;
+  for (let page = 1; ; page += 1) {
+    const list = await admin.auth.admin.listUsers({ page, perPage: 100 });
+    if (list.error) throw new Error("Could not list synthetic local test users.");
+    const existing = list.data.users.find((u) => u.email === email);
+    if (existing) return { email, id: existing.id };
+    if (list.data.users.length < 100) break;
+  }
+  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  if (created.error || !created.data.user)
+    throw new Error("Could not create synthetic local test user.");
+  return { email, id: created.data.user.id };
+}
+
+export async function login(
+  page: Page,
+  label = "practice",
+  next = "/scenarios/voice-comparison",
+  options = { microphoneOnboarding: false },
+) {
+  const { email, id } = await ensureAccount(label);
+  // Most tests isolate practice after onboarding; dedicated tests exercise first-entry permission.
+  if (!options.microphoneOnboarding)
+    await page.addInitScript((userId) => {
+      sessionStorage.setItem(`echoflow-microphone-explained:${userId}`, "yes");
+    }, id);
+  await page.goto(`/login?next=${encodeURIComponent(next)}`);
+  await page.getByLabel("Email address", { exact: true }).fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(next));
+}

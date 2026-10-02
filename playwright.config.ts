@@ -1,6 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const port = 4173;
+try {
+  process.loadEnvFile(".env.local");
+} catch {
+  /* CI supplies its local environment. */
+}
+const port = 4175;
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${port}`;
 const useExternalServer = Boolean(process.env.PLAYWRIGHT_BASE_URL);
 

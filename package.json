@@ -13,13 +13,21 @@
     "lint": "biome check src tests playwright.config.ts tailwind.config.ts next.config.ts",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
+    "test:db": "supabase test db",
+    "catalog:seed": "node scripts/generate-catalog-seed.mjs",
+    "audio:import": "node --env-file=.env.local scripts/import-reference-audio.ts",
     "audio:generate": "python3 scripts/generate-openrouter-audio.py",
-    "test:audio-generator": "python3 -m unittest discover -s tests/python -p 'test_*.py'"
+    "test:audio-generator": "python3 -m unittest discover -s tests/python -p 'test_*.py'",
+    "test:unit": "node --test tests/*.test.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.117.2",
+    "motion": "13.4.4",
     "next": "16.3.6",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
@@ -29,6 +37,7 @@
     "@types/react-dom": "19.3.0",
     "autoprefixer": "10.6.1",
     "postcss": "8.5.28",
+    "supabase": "2.118.0",
     "tailwindcss": "3.4.19",
     "typescript": "5.9.3"
   }

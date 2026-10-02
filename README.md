@@ -25,9 +25,25 @@ Useful checks:
 
 - npm run lint
 - npm run typecheck
+- npm run test:unit
 - npm run build
 
 Automated behavior tests are added with the first feature that introduces behavior and become required CI checks.
+
+## Supabase remote preview (authorized project only)
+
+The CLI-linked project is `echoflow` (`hllsxshahgvdqhzxdmef`). See
+[feature quickstart](specs/005-public-platform-redesign/quickstart.md) for provisioning evidence.
+With the CLI authenticated, run `node scripts/configure-remote-preview.mjs --confirm-project=hllsxshahgvdqhzxdmef`,
+then `node scripts/preview-remote.mjs --build` and `node scripts/preview-remote.mjs`.
+Open `http://127.0.0.1:4177`. This uses a production bundle in `.next-remote`, separate
+from `.next` and local tests; rebuild this profile after source changes.
+Only the public anon key is written to ignored `.env.remote.local` (mode 600).
+The local `.env.local`, Supabase stack and browser tests on port 4175 remain separate.
+Do not run ordinary tests or the local audio importer against the remote project.
+Register with an organization team-member email and confirm in the same browser;
+public email delivery needs custom SMTP and Google login needs its OAuth credentials.
+This is a local frontend with remote Supabase, not a published deployment.
 
 ## AI development workflow
 
@@ -41,3 +57,34 @@ Codex uses the installed skills as $speckit-specify, $speckit-clarify, $speckit-
 - Implementation plan: docs/IMPLEMENTATION_PLAN.md
 - Architecture: docs/system_architecture.md
 - Development workflow: docs/DEVELOPMENT_WORKFLOW.md
+# Public platform — isolated development
+
+The public landing requires no session. Playlists, phrases and reference audio require a confirmed
+Supabase user. Personal recordings remain in browser memory; no audio is uploaded.
+
+Use Node/npm pinned in `package.json` and Docker. Run `npm ci`, then `npx supabase start` in this
+checkout. Project `public-platform-005` uses API **56321**, database **56322**, Studio **56323** and
+local email inbox **56324**; do not reuse another project's stack or `--linked`.
+
+Run `node scripts/setup-local-test.mjs` to create an ignored, local-only `.env.local`, then
+`npm run audio:import`. The script refuses nonlocal destinations, verifies all 13 original
+checksums and never overwrites a mismatched object. `--dry-run` verifies files without requests.
+`npm run catalog:seed` regenerates seed SQL from the existing fixtures without calling providers.
+
+Verification: `npm run test:db`, `npm run test:audio-generator`, `npm run lint`,
+`npm run typecheck`, `npm run build`, `npm run test:e2e`. Browser tests use port **4175**.
+The local setup helper uses that origin for callbacks; for normal development set
+`NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000`. Supabase URL and anon key are public identifiers
+subject to RLS. Service role is maintenance-only and is never read by application code.
+
+Email confirmation is enabled locally; inspect the test inbox to open confirmation/recovery links
+in the same browser that requested them (PKCE). Google is deliberately disabled until a test
+OAuth client is provided. Configure its secret server-side, enable the provider, and allow only
+the exact `/auth/callback` origins in both Google and Supabase. Production SMTP, redirect origins,
+legal content, spend/abuse limits, device checks and deployment need separate approval.
+
+For concurrent local test work, use a separate Supabase project and port set. Set
+`ECHOFLOW_TEST_API_PORT` and `ECHOFLOW_TEST_INBOX_PORT` in the ignored local environment,
+then run browser tests with `PLAYWRIGHT_BASE_URL` pointing at that checkout's frontend.
+The test helper still requires `127.0.0.1` and the exact selected API port; defaults remain
+56321/56324. Do not point these checks at remote Supabase or another writer's stack.
