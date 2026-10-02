@@ -1,0 +1,238 @@
+.auth-form {
+  background: #0087da;
+  border-radius: 35.859px;
+  box-shadow:
+    inset 0 -30px 35px -26px rgba(217, 112, 252, 0.45),
+    0 0 16px rgba(255, 255, 255, 0.1);
+}
+.signup-dialog {
+  overflow: visible;
+  background: #0087da;
+  border-radius: 35.859px;
+  color: white;
+  width: 400px;
+  padding: 0;
+  border: 0;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100svh - 144px);
+}
+.signup-dialog[open] {
+  opacity: 1;
+  transform: none;
+  transform-origin: center;
+  transition:
+    opacity 250ms var(--ease-out),
+    transform 250ms var(--ease-out);
+}
+@starting-style {
+  .signup-dialog[open] {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.signup-dialog[open][data-instant="true"] {
+  transition-duration: 0s, 0s;
+}
+.signup-dialog::backdrop {
+  background: rgba(26, 30, 38, 0.4);
+  backdrop-filter: blur(5px);
+  transition: opacity 250ms var(--ease-out);
+}
+@starting-style {
+  .signup-dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+.signup-dialog[data-instant="true"]::backdrop {
+  transition: none;
+}
+.auth-view {
+  max-height: inherit;
+  overflow-y: auto;
+  border-radius: 35.859px;
+  overscroll-behavior: contain;
+}
+.close-signup {
+  position: absolute;
+  right: 0;
+  top: -56px;
+  width: 40px;
+  height: 40px;
+}
+.auth-form {
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  color: white;
+}
+.auth-form h1 {
+  font-weight: 900;
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.auth-form > p {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  text-wrap: balance;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.auth-description {
+  margin-top: -16px;
+}
+.auth-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+.auth-form input {
+  height: 48px;
+  border: 1px solid #4badff;
+  border-radius: 999px;
+  background: transparent;
+  color: white;
+  padding: 0 16px;
+  min-width: 0;
+}
+.auth-form input::placeholder {
+  color: #d6eeff;
+}
+.password-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.password-input {
+  position: relative;
+}
+.password-input input {
+  width: 100%;
+  padding-right: 56px;
+}
+.password-toggle {
+  position: absolute;
+  right: 3px;
+  top: 2px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: #d6eeff;
+}
+.google-button {
+  height: 48px;
+  width: 100%;
+  border: 1px solid #4badff;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  background: #4badff;
+  flex: 1;
+}
+.auth-form .dark-button {
+  margin-top: 8px;
+}
+.auth-form [role="alert"] {
+  color: #fff1e9;
+}
+.auth-switch a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.auth-form :focus-visible {
+  outline-color: white;
+}
+.auth-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  padding: 40px 16px;
+  color: white;
+}
+.auth-page .auth-form {
+  width: 400px;
+  max-width: 100%;
+}
+.microphone-form {
+  gap: 20px;
+}
+.microphone-mascot {
+  align-self: center;
+  width: 208px;
+  height: auto;
+}
+.microphone-form .microphone-reassurance {
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 400;
+}
+.microphone-form > a {
+  font-size: 14px;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.microphone-form .text-button {
+  align-self: center;
+  min-height: 44px;
+}
+@media (max-width: 760px) {
+  .signup-dialog {
+    max-height: calc(100svh - 144px);
+  }
+  .auth-form {
+    padding: 24px;
+    gap: 20px;
+  }
+  .auth-form h1 {
+    font-size: 28px;
+    line-height: 36px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .signup-dialog[open] {
+    transition:
+      opacity 120ms var(--ease-out),
+      transform 0s;
+  }
+  @starting-style {
+    .signup-dialog[open] {
+      transform: none;
+    }
+  }
+  .signup-dialog::backdrop {
+    transition-duration: 120ms;
+  }
+}
+.signup-dialog {
+  overscroll-behavior: contain;
+}
