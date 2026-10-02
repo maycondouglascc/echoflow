@@ -1,12 +1,7 @@
 import "server-only";
-import type {
-  AudioModelFixture,
-  AudioProvenance,
-  AudioVariantFixture,
-  ScenarioFixture,
-  WordTiming,
-} from "@/lib/fixtures/voice-comparison";
+import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
 import { requireUser } from "@/lib/supabase/server";
+import { decodeModel, decodeVariant } from "./catalog-metadata";
 
 export interface PlaylistSummary {
   id: string;
@@ -49,7 +44,7 @@ export async function getScenario(
   const audioModels = [
     ...new Map(
       variants.map((v) => {
-        const model = v.model_metadata as unknown as AudioModelFixture;
+        const model = decodeModel(v.model_metadata);
         return [model.id, model] as const;
       }),
     ).values(),
@@ -67,17 +62,14 @@ export async function getScenario(
         text: p.text,
         category: p.category,
         order: p.sort_order,
-        audioVariants: variants
-          .filter((v) => v.phrase_id === p.id)
-          .map((v) => ({
-            ...(v.audio_metadata as unknown as Omit<
-              AudioVariantFixture,
-              "src" | "wordTimings" | "provenance"
-            >),
-            src: `/api/reference-audio/${v.id}`,
-            wordTimings: v.word_timings as unknown as readonly WordTiming[],
-            provenance: v.provenance as unknown as AudioProvenance,
-          })),
+        audioVariants: p.audio_variants.map((v) =>
+          decodeVariant(
+            v.audio_metadata,
+            v.word_timings,
+            v.provenance,
+            `/api/reference-audio/${v.id}`,
+          ),
+        ),
       })),
     },
   };
