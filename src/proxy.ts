@@ -1,8 +1,30 @@
-import type { NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/proxy";
+import { createServerClient } from "@supabase/ssr";
+import { type NextRequest, NextResponse } from "next/server";
+import { supabaseConfig } from "@/lib/supabase/config";
+import type { Database } from "@/lib/supabase/database.types";
+
 export async function proxy(request: NextRequest) {
-  return updateSession(request);
+  request.headers.set("x-echo-path", request.nextUrl.pathname + request.nextUrl.search);
+  let response = NextResponse.next({ request });
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    return response;
+  const { url, key } = supabaseConfig();
+  const client = createServerClient<Database>(url, key, {
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll: (values) => {
+        for (const { name, value } of values) request.cookies.set(name, value);
+        response = NextResponse.next({ request });
+        for (const { name, value, options } of values) response.cookies.set(name, value, options);
+      },
+    },
+  });
+  // Refresh/verify the token here; protected reads still check getUser on the server.
+  await client.auth.getClaims();
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
 }
+
 export const config = {
   matcher: [
     "/home/:path*",

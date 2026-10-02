@@ -16,6 +16,9 @@ append-only owner-isolated playlist completion. No recording upload, profiles, p
 40-phrase catalog, slow mode or video import. Schema/types are in `supabase/migrations/` and
 `src/lib/supabase/database.types.ts`; evidence/release gates in feature 005 `quickstart.md`.
 Historical phases/schema below are future sketches, not instructions overriding those decisions.
+The unused browser Supabase adapter was removed in the quality follow-up: current forms use
+server actions, and session refresh lives directly in `src/proxy.ts`. Reintroduce a browser
+adapter only when an actual browser caller needs it.
 
 ---
 

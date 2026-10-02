@@ -25,6 +25,7 @@ Useful checks:
 
 - npm run lint
 - npm run typecheck
+- npm run test:unit
 - npm run build
 
 Automated behavior tests are added with the first feature that introduces behavior and become required CI checks.
@@ -81,3 +82,9 @@ in the same browser that requested them (PKCE). Google is deliberately disabled 
 OAuth client is provided. Configure its secret server-side, enable the provider, and allow only
 the exact `/auth/callback` origins in both Google and Supabase. Production SMTP, redirect origins,
 legal content, spend/abuse limits, device checks and deployment need separate approval.
+
+For concurrent local test work, use a separate Supabase project and port set. Set
+`ECHOFLOW_TEST_API_PORT` and `ECHOFLOW_TEST_INBOX_PORT` in the ignored local environment,
+then run browser tests with `PLAYWRIGHT_BASE_URL` pointing at that checkout's frontend.
+The test helper still requires `127.0.0.1` and the exact selected API port; defaults remain
+56321/56324. Do not point these checks at remote Supabase or another writer's stack.

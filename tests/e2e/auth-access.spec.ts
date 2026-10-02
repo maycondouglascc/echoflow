@@ -1,5 +1,13 @@
 import { type APIRequestContext, expect, test } from "@playwright/test";
-import { admin, audioUrl, ensureAccount, login, password } from "./helpers/auth";
+import {
+  admin,
+  audioUrl,
+  ensureAccount,
+  localInbox,
+  localUrl,
+  login,
+  password,
+} from "./helpers/auth";
 
 test("anonymous direct routes, old audio URLs and forged cookies disclose no phrase or audio", async ({
   page,
@@ -119,7 +127,7 @@ async function localEmailLink(request: APIRequestContext, email: string, subject
   let id = "";
   await expect
     .poll(async () => {
-      const response = await request.get("http://127.0.0.1:56324/api/v1/messages");
+      const response = await request.get(`${localInbox}/api/v1/messages`);
       const inbox = await response.json();
       const message = inbox.messages.find(
         (m: { ID: string; Subject: string; To: { Address: string }[] }) =>
@@ -129,11 +137,11 @@ async function localEmailLink(request: APIRequestContext, email: string, subject
       return Boolean(id);
     })
     .toBe(true);
-  const message = await (await request.get(`http://127.0.0.1:56324/api/v1/message/${id}`)).json();
+  const message = await (await request.get(`${localInbox}/api/v1/message/${id}`)).json();
   const match = String(message.HTML).match(/href="([^"]*\/auth\/v1\/verify[^"]*)"/);
   if (!match) throw new Error("Local confirmation link missing.");
   const link = match[1].replaceAll("&amp;", "&");
-  if (new URL(link).origin !== "http://127.0.0.1:56321")
+  if (new URL(link).origin !== new URL(localUrl).origin)
     throw new Error("Refusing nonlocal auth link.");
   return link;
 }
