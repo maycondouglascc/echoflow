@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import { PageTransition } from "@/components/PageTransition";
 
 export const metadata: Metadata = {
   title: {
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <a className="skip-link" href="#main-content">
           Skip to content
         </a>
-        <div id="main-content">{children}</div>
+        <div id="main-content">
+          <PageTransition>{children}</PageTransition>
+        </div>
       </body>
     </html>
   );

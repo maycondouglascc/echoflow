@@ -747,6 +747,51 @@ button:disabled {
   white-space: nowrap;
   font-size: 16px;
 }
+.microphone-onboarding {
+  color: #1a1e26;
+  padding: 8px 24px 0;
+}
+.microphone-notice {
+  max-width: 760px;
+  margin: 8px auto;
+  padding: 20px;
+  background: white;
+  border-radius: 20px;
+  text-wrap: pretty;
+}
+.microphone-notice p {
+  margin: 10px 0;
+}
+.microphone-notice .text-button {
+  margin-left: 16px;
+}
+.microphone-privacy {
+  max-width: 760px;
+  margin: 0 auto;
+  font-size: 12px;
+}
+.microphone-privacy summary {
+  cursor: pointer;
+  width: fit-content;
+}
+.microphone-privacy p {
+  padding: 8px 0;
+  text-wrap: pretty;
+}
+.loading-shell {
+  min-height: 70vh;
+}
+.loading-line {
+  height: 48px;
+  background: #ecf0f4;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+.loading-shell .platform-panel {
+  display: grid;
+  place-items: center;
+}
+
 .practice-feedback {
   text-align: center;
   font-size: 14px;
@@ -764,7 +809,7 @@ button:disabled {
   display: flex;
   gap: 12px;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   font-size: 13px;
 }
 .next-phrase {

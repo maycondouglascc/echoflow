@@ -69,16 +69,16 @@ test("replays one aligned word from the decoded selected voice", async ({ page }
     if (voiceName !== "Puck")
       await page.getByRole("radio", { name: voiceName, exact: true }).check();
 
-    await page.waitForFunction((src) => {
+    await page.waitForFunction(() => {
       const element = document.querySelector<HTMLAudioElement>(
         '[data-testid="reference-word-audio"]',
       );
       return (
         element?.readyState !== undefined &&
         element.readyState >= HTMLMediaElement.HAVE_METADATA &&
-        element.currentSrc === new URL(src, document.baseURI).href
+        element.currentSrc.startsWith("blob:")
       );
-    }, variant?.src ?? "");
+    });
 
     await word.click();
     await expect(page.getByRole("status")).toContainText("Replaying word");
@@ -99,8 +99,8 @@ test("replays one aligned word from the decoded selected voice", async ({ page }
     );
     expect(finalTimeMs).toBeGreaterThanOrEqual((cue?.endMs ?? 0) - 25);
     expect(finalTimeMs).toBeLessThanOrEqual((cue?.endMs ?? 0) + 50);
-    expect(await wordAudio.evaluate((element) => (element as HTMLAudioElement).currentSrc)).toBe(
-      await page.evaluate((src) => new URL(src, document.baseURI).href, variant?.src ?? ""),
+    expect(await wordAudio.evaluate((element) => (element as HTMLAudioElement).currentSrc)).toMatch(
+      /^blob:/,
     );
     await expect(page.getByRole("status")).toContainText("Word replay finished");
   }

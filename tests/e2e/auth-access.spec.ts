@@ -52,6 +52,10 @@ test("signup is neutral, login failure recovers and invalid callbacks cannot red
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Request received");
+  await expect(page.getByRole("heading", { name: "Check your email", exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Confirm your email address before signing in to EchoFlow."),
+  ).toBeVisible();
   await page.goto("/auth/callback?code=invalid&next=https://example.com");
   await expect(page).toHaveURL(/\/login\?error=callback/);
   await login(page, "redirect", "/home");

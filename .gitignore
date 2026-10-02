@@ -12,6 +12,7 @@
 
 # Next.js output
 /.next/
+/.next-remote/
 /out/
 /build/
 /dist/

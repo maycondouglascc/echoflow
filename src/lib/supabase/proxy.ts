@@ -19,7 +19,8 @@ export async function updateSession(request: NextRequest) {
       },
     },
   });
-  await client.auth.getUser();
+  // Refresh/verify the token here; protected reads still check getUser on the server.
+  await client.auth.getClaims();
   response.headers.set("Cache-Control", "private, no-store");
   return response;
 }

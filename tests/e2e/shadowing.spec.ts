@@ -18,6 +18,9 @@ async function openPractice(page: Page) {
 }
 
 async function finishCurrentAudio(page: Page) {
+  await expect
+    .poll(() => page.evaluate(() => window.__echoTest.currentAudioTimeMs()))
+    .not.toBeNull();
   await page.evaluate(() => window.__echoTest.finishCurrentAudio());
 }
 
@@ -39,7 +42,7 @@ async function startRecording(page: Page) {
 async function stopRecording(page: Page) {
   await page.waitForTimeout(10);
   await page.getByRole("button", { name: "Stop recording" }).click();
-  await expect(page.getByRole("button", { name: "Play your recording" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Record again", exact: true })).toBeEnabled();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -52,21 +55,21 @@ test("opens the scenario with five ordered phrases and bounded navigation", asyn
     await expect(
       page.getByRole("button", { name: `Choose phrase ${index + 1}: ${phrase}`, exact: true }),
     ).toBeVisible();
-  await expect(page.getByText("Phrase 1 of 5")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Previous phrase" })).toBeDisabled();
+  await expect(page.getByRole("heading", { name: "Reference phrase 01" })).toBeAttached();
+  await expect(page.getByRole("button", { name: "Previous phrase" })).toHaveCount(0);
   await page.getByRole("button", { name: "Next phrase" }).click();
-  await expect(page.getByText("Phrase 2 of 5")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reference phrase 02" })).toBeAttached();
   await page.getByRole("button", { name: "Next phrase" }).click();
-  await expect(page.getByText("Phrase 3 of 5")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reference phrase 03" })).toBeAttached();
   await expect(page.getByText("At a Restaurant", { exact: true })).toBeVisible();
   await expect(page.getByText("Job Interview Basics", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Next phrase" }).click();
-  await expect(page.getByText("Phrase 4 of 5")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reference phrase 04" })).toBeAttached();
   await page.getByRole("button", { name: "Next phrase" }).click();
-  await expect(page.getByText("Phrase 5 of 5")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reference phrase 05" })).toBeAttached();
   await expect(page.getByRole("button", { name: "Next phrase" })).toBeDisabled();
-  await page.getByRole("button", { name: "Previous phrase" }).click();
-  await expect(page.getByText("Phrase 4 of 5")).toBeVisible();
+  await page.getByRole("button", { name: /^Choose phrase 4:/ }).click();
+  await expect(page.getByRole("heading", { name: "Reference phrase 04" })).toBeAttached();
 });
 
 test("plays and replays the selected reference and requests the microphone only on click", async ({
@@ -104,7 +107,7 @@ test("recovers from microphone denial without reloading the page", async ({ page
   await expect(page.getByRole("button", { name: "Listen to reference" })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Next phrase" })).toBeEnabled();
   await page.getByRole("button", { name: "Next phrase" }).click();
-  await page.getByRole("button", { name: "Previous phrase" }).click();
+  await page.getByRole("button", { name: /^Choose phrase 1:/ }).click();
   await prepareRecording(page);
   await page.getByRole("button", { name: "Record", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Recording your voice");
@@ -130,13 +133,14 @@ test("stops manually, replays the clip, and retains completed clips while naviga
   await startRecording(page);
   await page.waitForTimeout(250);
   await stopRecording(page);
-  await page.getByRole("button", { name: "Play your recording" }).click();
-  await expect.poll(() => page.evaluate(() => window.__echoTest.audioStarts.length)).toBe(2);
+  await page.getByRole("button", { name: "Compare" }).click();
+  await finishCurrentAudio(page);
+  await expect.poll(() => page.evaluate(() => window.__echoTest.audioStarts.length)).toBe(3);
   await finishCurrentAudio(page);
 
   await page.getByRole("button", { name: "Next phrase" }).click();
-  await page.getByRole("button", { name: "Previous phrase" }).click();
-  await expect(page.getByRole("button", { name: "Play your recording" })).toBeEnabled();
+  await page.getByRole("button", { name: /^Choose phrase 1:/ }).click();
+  await expect(page.getByRole("button", { name: "Record again", exact: true })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Compare" })).toBeEnabled();
 });
 
@@ -151,7 +155,7 @@ test("automatically stops a recording at 30 seconds", async ({ page }) => {
   await page.clock.runFor(30_000);
   await page.clock.runFor(1);
   await expect(page.getByRole("status")).toContainText("Recording saved", { timeout: 2_000 });
-  await expect(page.getByRole("button", { name: "Play your recording" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Record again", exact: true })).toBeEnabled();
   await expect.poll(() => page.evaluate(() => window.__echoTest.tracksStopped)).toBe(1);
 });
 
@@ -205,10 +209,13 @@ test("replays the selected word from each voice and stops at its cue", async ({ 
     if (voiceName !== "Puck")
       await page.getByRole("radio", { name: voiceName, exact: true }).check();
     const replayCount = await page.evaluate(() => window.__echoTest.wordReplayStarts.length);
-    await expect(page.getByTestId("reference-word-audio")).toHaveAttribute(
-      "src",
-      variant?.src ?? "",
-    );
+    await expect
+      .poll(() =>
+        page
+          .getByTestId("reference-word-audio")
+          .evaluate((element) => (element as HTMLAudioElement).src),
+      )
+      .toMatch(/^blob:/);
     await expect(word).toHaveAttribute("aria-label", `Replay word: ${cue?.word} in ${voiceName}`);
     if (voiceName === "Puck") {
       await word.click();
@@ -533,9 +540,9 @@ test("highlights the reference word from media time and clears it for personal p
   await page.getByRole("button", { name: "Listen to reference" }).click();
   await expect(words.nth(0)).toHaveAttribute("data-highlighted", "true");
   await page.getByRole("button", { name: "Next phrase" }).click();
-  await expect(page.getByText("Phrase 2 of 5")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reference phrase 02" })).toBeAttached();
   await expect(page.locator('[data-highlighted="true"]')).toHaveCount(0);
-  await page.getByRole("button", { name: "Previous phrase" }).click();
+  await page.getByRole("button", { name: /^Choose phrase 1:/ }).click();
 
   await startRecording(page);
   await stopRecording(page);
@@ -575,7 +582,7 @@ test("uses the selected MAI voice across phrases and resets it after reload", as
   await finishCurrentAudio(page);
 
   await page.getByRole("button", { name: "Next phrase" }).click();
-  await expect(page.getByText("Phrase 2 of 5")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reference phrase 02" })).toBeAttached();
   await expect(mai).toBeChecked();
   await page.getByRole("button", { name: "Listen to reference" }).click();
   expect(await page.evaluate(() => window.__echoTest.audioStarts.at(-1))).toContain(
@@ -648,8 +655,10 @@ test("never sends the recording marker and loses the clip after reload", async (
   expect(await page.context().cookies()).toEqual(cookiesBeforeRecording);
 
   await page.reload();
-  await expect(page.getByRole("button", { name: "Play your recording" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Compare" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Record again", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Compare" })).toBeEnabled();
+  await page.getByRole("button", { name: "Compare" }).click();
+  await expect(page.locator("p[role=alert]")).toContainText("Speak");
 });
 
 test("stops and discards an in-progress clip when navigating to another phrase", async ({
@@ -658,11 +667,11 @@ test("stops and discards an in-progress clip when navigating to another phrase",
   await openPractice(page);
   await startRecording(page);
   await page.getByRole("button", { name: "Next phrase" }).click();
-  await expect(page.getByText("Phrase 2 of 5")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reference phrase 02" })).toBeAttached();
   await expect.poll(() => page.evaluate(() => window.__echoTest.tracksStopped)).toBe(1);
   await expect(page.getByRole("button", { name: "Record", exact: true })).toBeDisabled();
-  await page.getByRole("button", { name: "Previous phrase" }).click();
-  await expect(page.getByRole("button", { name: "Play your recording" })).toBeDisabled();
+  await page.getByRole("button", { name: /^Choose phrase 1:/ }).click();
+  await expect(page.getByRole("button", { name: "Record again", exact: true })).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => window.__echoTest.getUserMediaCalls)).toBe(1);
 });
 
@@ -716,7 +725,7 @@ test("reports an unavailable microphone API and rejects an empty recording", asy
   await expect(page.getByRole("status")).toContainText("Recording your voice");
   await page.getByRole("button", { name: "Stop recording" }).click();
   await expect(page.locator("p[role=alert]")).toContainText(/empty/i);
-  await expect(page.getByRole("button", { name: "Play your recording" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Record again", exact: true })).toHaveCount(0);
 });
 
 test("reports a recorded clip that the browser cannot play", async ({ page }) => {
@@ -724,7 +733,8 @@ test("reports a recorded clip that the browser cannot play", async ({ page }) =>
   await startRecording(page);
   await stopRecording(page);
   await page.evaluate(() => window.__echoTest.failNextRecordingPlayback());
-  await page.getByRole("button", { name: "Play your recording" }).click();
+  await page.getByRole("button", { name: "Compare" }).click();
+  await finishCurrentAudio(page);
   await expect(page.locator("p[role=alert]")).toContainText("recording");
   await expect(page.getByRole("button", { name: "Next phrase" })).toBeEnabled();
 });

@@ -109,7 +109,8 @@ local: `/tmp/echoflow-login-modal.png`. Nenhum deploy ou configuração remota f
   alteradas, demais configurações remotas mantidas. Usar origem 127.0.0.1 para esta prévia.
 - `node scripts/configure-remote-preview.mjs --confirm-project=hllsxshahgvdqhzxdmef`
   salva somente URL, chave anon pública e origem em `.env.remote.local` ignorado, modo 600.
-  `node scripts/preview-remote.mjs` inicia Next/Webpack em **4177**, usando esse perfil.
+  `node scripts/preview-remote.mjs --build` compila o perfil em `.next-remote`; depois
+  `node scripts/preview-remote.mjs` inicia a prévia de produção em **4177**.
   `.env.local`, Docker e testes 4175 continuam locais; CI não usa cloud/credenciais remotas.
 - Smoke remoto explícito: RLS como anon e duas identidades autenticadas; catálogo protegido,
   conclusão própria, isolamento de leitura e inserção entre usuários, update/delete negados,
@@ -131,6 +132,64 @@ local: `/tmp/echoflow-login-modal.png`. Nenhum deploy ou configuração remota f
   SMTP público e Google OAuth aguardam credenciais próprias; não solicitar segredos no chat.
   Nenhuma publicação/deploy/push foi realizada; dispositivos, email público e release gates
   T036/T037 permanecem abertos. Configuração remota deixou de ser pendência de T040 apenas.
+
+## Refinamento de prática e performance (T041–T045, 2026-10-02)
+
+- Diagnóstico: prévia remota anterior executava `next dev`, com compilação fria de rotas
+  (login/catalog ~9.3s, dos quais ~8.5s de compilação; cenário ~6.4s/~4.6s de compilação).
+  Além disso, layout/página repetiam Auth e o cenário fazia consultas sequenciais; cada
+  reprodução voltava a baixar referência autenticada. Não é evidência de lentidão do banco
+  sozinho nem uma medição de Core Web Vitals.
+- Correções: prévia remota em produção com bundle isolado `.next-remote`; Auth deduplicado
+  por render, claims no Proxy e **getUser mantido nas operações protegidas**; playlist,
+  frases, variantes e conclusão na mesma consulta RLS. Suspense entrega somente skeleton
+  neutro antes de autorização. Sem migration, cache pessoal compartilhado ou alteração de CI.
+- Smoke remoto autorizado mediu um login → catálogo renderizado em **1640ms** e um clique
+  de playlist → prática renderizada em **886ms**. Rede/Supabase externos continuam influindo;
+  amostra única, não SLA ou comparação percentual entre perfis frios e quentes.
+  RLS anon/A/B, conclusão própria, Storage privado e Range: PASS; contas temporárias removidas.
+  Os smokes adicionam eventos agregados sintéticos; eles foram preservados, não são adoção real.
+- Referência atual/próxima pré-carregada em memória; fetch deduplicado e até quatro entradas
+  (incluindo recentes e requests em voo). Abort e revogação de blobs ao sair; HTTP no-store,
+  nada em localStorage/IndexedDB e nenhum upload de gravação pessoal.
+- Cadastro mostra “Check your email”; primeiro acesso **autenticado** explica e solicita
+  microfone, sem MediaRecorder, e libera tracks imediatamente. Recusa não bloqueia navegação,
+  tem retry e “Not now”. Privacidade factual em details separado do painel de prática;
+  não substitui a política jurídica de T037. Conta pendente de confirmação não acessa prática.
+- Speak mantém texto/ícone em retakes; troca de voz preserva take, readiness e comparações.
+  Compare acionável sem take orienta a gravar, mas mantém interlock durante captura/playback.
+  Feedback rotineiro fica assistivo; erros e timer continuam visíveis. Previous/count e replay
+  avulso removidos; Next e sidebar preservados. Nenhum breakpoint novo: padrões responsivos
+  existentes mantidos, footer alinhado à direita em todas as larguras.
+- Fim de fala: RMS ≥ .02 por 200ms, depois 1500ms de silêncio; silêncio inicial/ruído breve
+  ignorados, pausa menor preservada, Stop/30s continuam fallback. Detector de energia local,
+  não reconhecimento linguístico. Ruído contínuo pode exigir Stop; calibrar em dispositivo real.
+- Motion guiado pelas skills de animação/performance: entrada entre rotas com opacity e
+  translateY(4px), 180ms; reduced-motion apenas fade 120ms, teclado imediato. Sem animação
+  no carregamento inicial, delay artificial ou animação do layout que altere o hero.
+- Revisão focada da implementação: sem novos segredos client-side, getUser/RLS/revogação
+  preservados; tracks/AudioContext/buffer e callbacks assíncronos têm cleanup/invalidação.
+  Revisão local, não parecer independente novo. Hardware e serviços externos continuam abertos.
+
+### Verificação final deste refinamento
+
+- `npm run lint` (58 arquivos), `npm run typecheck`: PASS.
+- `npm run build`: bloqueado pelo Turbopack ao abrir porta interna (`Operation not permitted`).
+  `npm run build -- --webpack`: PASS; build remoto isolado também PASS. Sem alteração do gate.
+- `npm run test:db`: **34 PASS**; dois checks de fim de fala e três de perfil remoto via Node:
+  **5 PASS**; `npm run test:audio-generator`: **12 PASS** sem provedor pago.
+- Conclusão + oito testes de refinamento: **9 PASS (30.3s)**; rodada completa final:
+  **69 PASS (2.6m)**. Cookies forjados/revogação, RLS, Range, conclusão por conta, cleanup,
+  ausência de upload, reprodução/word replay com áudio decodificado e motion incluídos.
+- Rodadas anteriores localizaram race de status antes do download, mudança de src durante
+  word replay e animação inicial alterando medição do hero: corrigidos sem remover assertions.
+  Fixture de contas agora pagina listUsers (evita duplicação após muitas rodadas). Uma execução
+  foi interrompida por servidor local órfão; reinício em sessão própria e suíte inteira passaram.
+- Capturas finais revisadas: `/tmp/echoflow-final-practice-{972,375,1440}.png`.
+  Todos os viewports usam os mesmos tokens e breakpoints existentes; simulação não prova hardware.
+- Convergência: acceptance T041–T045 implementado/verificado; T036/T037 continuam pendentes
+  exclusivamente para hardware, email/Google/termos/limites e publicação. Nenhum push/deploy,
+  nova migration, alteração de RLS, credencial, SMTP ou provider pago neste refinamento.
 
 ## Gates de lançamento restantes
 

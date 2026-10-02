@@ -34,7 +34,9 @@ Automated behavior tests are added with the first feature that introduces behavi
 The CLI-linked project is `echoflow` (`hllsxshahgvdqhzxdmef`). See
 [feature quickstart](specs/005-public-platform-redesign/quickstart.md) for provisioning evidence.
 With the CLI authenticated, run `node scripts/configure-remote-preview.mjs --confirm-project=hllsxshahgvdqhzxdmef`,
-then `node scripts/preview-remote.mjs`. Open `http://127.0.0.1:4177`.
+then `node scripts/preview-remote.mjs --build` and `node scripts/preview-remote.mjs`.
+Open `http://127.0.0.1:4177`. This uses a production bundle in `.next-remote`, separate
+from `.next` and local tests; rebuild this profile after source changes.
 Only the public anon key is written to ignored `.env.remote.local` (mode 600).
 The local `.env.local`, Supabase stack and browser tests on port 4175 remain separate.
 Do not run ordinary tests or the local audio importer against the remote project.

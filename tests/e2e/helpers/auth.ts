@@ -25,17 +25,31 @@ export const voiceComparisonScenario = {
 
 export async function ensureAccount(label = "practice") {
   const email = `${label}@example.test`;
-  const list = await admin.auth.admin.listUsers();
-  const existing = list.data.users.find((u) => u.email === email);
-  if (existing) return { email, id: existing.id };
+  for (let page = 1; ; page += 1) {
+    const list = await admin.auth.admin.listUsers({ page, perPage: 100 });
+    if (list.error) throw new Error("Could not list synthetic local test users.");
+    const existing = list.data.users.find((u) => u.email === email);
+    if (existing) return { email, id: existing.id };
+    if (list.data.users.length < 100) break;
+  }
   const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   if (created.error || !created.data.user)
     throw new Error("Could not create synthetic local test user.");
   return { email, id: created.data.user.id };
 }
 
-export async function login(page: Page, label = "practice", next = "/scenarios/voice-comparison") {
-  const { email } = await ensureAccount(label);
+export async function login(
+  page: Page,
+  label = "practice",
+  next = "/scenarios/voice-comparison",
+  options = { microphoneOnboarding: false },
+) {
+  const { email, id } = await ensureAccount(label);
+  // Most tests isolate practice after onboarding; dedicated tests exercise first-entry permission.
+  if (!options.microphoneOnboarding)
+    await page.addInitScript((userId) => {
+      sessionStorage.setItem(`echoflow-microphone-explained:${userId}`, "yes");
+    }, id);
   await page.goto(`/login?next=${encodeURIComponent(next)}`);
   await page.getByLabel("Email address", { exact: true }).fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);

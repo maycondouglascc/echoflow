@@ -24,6 +24,10 @@ recordings/comparisons. Search/filter use the real catalog. Supabase Auth/databa
 are implemented locally; remote Google/email/domain, legal approval, spend/abuse limits, real
 devices and deployment remain release gates. Larger catalog and modes below are future roadmap.
 
+First authenticated entry explains/requests microphone permission without recording; Speak
+supports automatic stop after 1.5 seconds of silence following voice activity, with manual fallback.
+Voice changes keep the take and comparison progress. Confirmation after signup is explicit.
+
 Most English learners can read and write well but freeze when they need to speak. Traditional apps focus on vocabulary and grammar drills — not on the physical act of speaking. Shadowing is the most effective method for building speaking fluency, but there are no tools that make it accessible, structured, and easy to practice daily.
 
 ---

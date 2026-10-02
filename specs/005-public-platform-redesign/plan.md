@@ -110,4 +110,25 @@ Rollback de aplicação: apontar novamente para `backup/pre-public-platform-2026
 
 ## Post-design Constitution Check
 
+## Follow-up performance/practice plan (2026-10-02)
+
+1. Regressões antes de correções: Compare acionável, voice readiness, onboarding, silêncio.
+2. React.cache deduplica getUser por render/request (não entre contas); Proxy verifica claims
+   para refresh, leituras e mutações preservam getUser remoto. Consulta PostgREST aninhada
+   reúne playlist/frases/variantes/conclusão sob o mesmo RLS em uma chamada. Suspense envolve
+   gate autenticado com skeleton sem conteúdo protegido; loading e feedback de navegação.
+3. Etapa de confirmação destacada; onboarding automático de microfone após gate, tracks
+   imediatamente liberadas, sem gravação. Consentimento/retry factual, por conta/aba.
+4. Detector RMS temporal local, silêncio só após fala, cleanup em todas as saídas/falhas.
+   Preservar take/readiness ao trocar voz; remover anotações visuais redundantes mantendo a11y.
+5. Referências pré-carregadas atual/próxima, fetch deduplicado e blobs limitados em memória;
+   sem Storage público/cache HTTP ou service role, cleanup/abort no unmount.
+6. Prévia remota em build de produção isolado, sem recompilar rotas durante navegação;
+   build/testes locais não devem sobrescrever bundle remoto. Medir antes/depois e documentar
+   limites de rede externa; testes de auth/RLS/Range e suíte inteira local permanecem gate.
+
+Análise de consistência: nova solicitação supersede microfone-on-Speak, visibilidade de
+feedback e footer; não altera critérios de Completed nem privacidade de áudio pessoal.
+Sem schema/dependência/CI novo. Streaming entrega apenas shell antes da autorização.
+
 Passa em nível documental: contratos distinguem catálogo compartilhado de conclusão privada, testes RLS cobrem usuários separados, e quickstart explicita hardware e serviços externos. A execução ainda deve produzir evidência; o parecer documental não substitui testes.

@@ -153,6 +153,28 @@ Visitantes e pessoas autenticadas veem, respectivamente, a nova landing e a nova
 
 ## Autorizações posteriores (2026-10-01)
 
+### Refinamento da prática e latência (2026-10-02)
+
+- Após signup, exibir etapa explícita “Check your email”, instrução de confirmação e spam,
+  sem revelar existência de conta nem acessar prática antes da confirmação.
+- Primeira entrada autenticada por conta/aba: explicar o microfone e solicitar permissão;
+  liberar imediatamente o stream sem gravar, oferecer retry e permitir navegar após recusa.
+  Isto supersede a regra anterior de primeira solicitação somente em Speak. Gravação continua
+  exclusivamente ao clicar Speak, em memória; texto factual de privacidade vai ao onboarding.
+- Após ao menos 200 ms de sinal de fala, silêncio contínuo de 1500 ms encerra Speak e guarda
+  o take; pausas menores não interrompem, silêncio inicial não encerra, Stop e limite de
+  30 segundos continuam disponíveis. Detecção local de energia não é transcrição e pode
+  confundir ruído/fala; fallback manual se Web Audio indisponível e validação física pendente.
+- Troca Puck/Harper preserva take, readiness de Speak e comparações realizadas da frase.
+  Compare habilitado sem take explica “Speak”; durante gravação/playback mantém interlock.
+- Remover feedback rotineiro visual e Play your recording; manter status assistivo, timer e
+  erros visíveis. Remover Previous phrase e contador, manter sidebar e Next phrase. Speak
+  permanece “Speak” com ícone, inclusive para novo take. Não criar página jurídica fictícia.
+- Medir navegação e eliminar round trips redundantes sem relaxar autenticação/RLS. Sem cache
+  compartilhado de dados pessoais; buffer de referências só em memória da página, limitado
+  à voz/frase atual e próxima. Primeira transição mostra shell; entrada leve até 180 ms,
+  sem delay de navegação e sem movimento por teclado/reduced-motion.
+
 A implementação foi autorizada posteriormente via `$speckit-implement`. O responsável criou
 o projeto Supabase `echoflow` (`hllsxshahgvdqhzxdmef`) e autorizou explicitamente seu
 provisionamento via CLI: backup, migrations, catálogo, áudios privados, Auth URLs e

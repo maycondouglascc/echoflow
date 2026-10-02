@@ -36,54 +36,38 @@ export async function getScenario(
   const { client } = await requireUser(`/scenarios/${slug}`);
   const playlist = await client
     .from("playlists")
-    .select("id,slug,title,description")
+    .select(
+      "id,slug,title,description,playlist_completions(playlist_id),phrases(id,slug,text,category,sort_order,audio_variants(id,phrase_id,model_metadata,audio_metadata,word_timings,provenance))",
+    )
     .eq("slug", slug)
     .maybeSingle();
   if (playlist.error) throw new Error("The playlist could not be loaded. Please try again.");
   if (!playlist.data) return null;
-  const phrases = await client
-    .from("phrases")
-    .select("id,slug,text,category,sort_order")
-    .eq("playlist_id", playlist.data.id)
-    .order("sort_order");
-  if (phrases.error || !phrases.data?.length)
-    throw new Error("This playlist has no available phrases.");
-  const variants = await client
-    .from("audio_variants")
-    .select("id,phrase_id,model_metadata,audio_metadata,word_timings,provenance")
-    .in(
-      "phrase_id",
-      phrases.data.map((p) => p.id),
-    );
-  if (variants.error) throw new Error("Reference voices could not be loaded. Please try again.");
+  const phrases = playlist.data.phrases.sort((a, b) => a.sort_order - b.sort_order);
+  if (!phrases.length) throw new Error("This playlist has no available phrases.");
+  const variants = phrases.flatMap((p) => p.audio_variants);
   const audioModels = [
     ...new Map(
-      (variants.data ?? []).map((v) => {
+      variants.map((v) => {
         const model = v.model_metadata as unknown as AudioModelFixture;
         return [model.id, model] as const;
       }),
     ).values(),
   ].sort((a, b) => a.id.localeCompare(b.id));
-  const completion = await client
-    .from("playlist_completions")
-    .select("playlist_id")
-    .eq("playlist_id", playlist.data.id)
-    .maybeSingle();
-  if (completion.error) throw new Error("Completion status could not be loaded.");
   return {
     playlistId: playlist.data.id,
-    completed: Boolean(completion.data),
+    completed: playlist.data.playlist_completions.length > 0,
     scenario: {
       id: playlist.data.slug,
       title: playlist.data.title,
       description: playlist.data.description,
       audioModels,
-      phrases: phrases.data.map((p) => ({
+      phrases: phrases.map((p) => ({
         id: p.slug,
         text: p.text,
         category: p.category,
         order: p.sort_order,
-        audioVariants: (variants.data ?? [])
+        audioVariants: variants
           .filter((v) => v.phrase_id === p.id)
           .map((v) => ({
             ...(v.audio_metadata as unknown as Omit<

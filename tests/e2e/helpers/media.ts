@@ -3,6 +3,7 @@ interface EchoTestController {
   wordReplayStarts: Array<{ source: string; startMs: number }>;
   currentAudioTimeMs: () => number | null;
   getUserMediaCalls: number;
+  recorderStarts: number;
   tracksStopped: number;
   finishCurrentAudio: () => void;
   failCurrentAudio: () => void;
@@ -16,6 +17,7 @@ interface EchoTestController {
   resumeCurrentAudio: () => void;
   failNextReference: () => void;
   failNextRecordingPlayback: () => void;
+  setMicrophoneLevel: (level: number) => void;
 }
 
 declare global {
@@ -25,6 +27,50 @@ declare global {
 }
 
 export function installMediaMocks() {
+  let recorderStarts = 0;
+  let microphoneLevel = 0;
+  const referenceBlobs = new WeakMap<Blob, string>();
+  const referenceUrls = new Map<string, string>();
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = async (...args) => {
+    const response = await nativeFetch(...args);
+    const source = String(args[0]);
+    if (source.includes("/api/reference-audio/")) {
+      const nativeBlob = response.blob.bind(response);
+      response.blob = async () => {
+        const blob = await nativeBlob();
+        referenceBlobs.set(blob, new URL(source, document.baseURI).href);
+        return blob;
+      };
+    }
+    return response;
+  };
+  const createUrl = URL.createObjectURL.bind(URL);
+  URL.createObjectURL = (blob) => {
+    const url = createUrl(blob);
+    const source = blob instanceof Blob ? referenceBlobs.get(blob) : undefined;
+    if (source) referenceUrls.set(url, source);
+    return url;
+  };
+  class FakeAudioContext {
+    state = "running";
+    createAnalyser() {
+      return {
+        fftSize: 1024,
+        getFloatTimeDomainData(values: Float32Array) {
+          values.fill(microphoneLevel);
+        },
+      };
+    }
+    createMediaStreamSource() {
+      return { connect() {}, disconnect() {} };
+    }
+    async resume() {}
+    async close() {
+      this.state = "closed";
+    }
+  }
+  Object.defineProperty(window, "AudioContext", { configurable: true, value: FakeAudioContext });
   const state: {
     audioStarts: string[];
     wordReplayStarts: Array<{ source: string; startMs: number }>;
@@ -75,6 +121,9 @@ export function installMediaMocks() {
       },
       get getUserMediaCalls() {
         return state.getUserMediaCalls;
+      },
+      get recorderStarts() {
+        return recorderStarts;
       },
       get tracksStopped() {
         return state.tracksStopped;
@@ -132,6 +181,9 @@ export function installMediaMocks() {
       failNextRecordingPlayback() {
         state.failRecordingPlayback = true;
       },
+      setMicrophoneLevel(level: number) {
+        microphoneLevel = level;
+      },
     },
   });
 
@@ -165,7 +217,7 @@ export function installMediaMocks() {
   Object.defineProperty(HTMLMediaElement.prototype, "play", {
     configurable: true,
     value: function (this: HTMLMediaElement) {
-      const source = this.src;
+      const source = referenceUrls.get(this.src) ?? this.src;
       state.audioStarts.push(source);
       state.currentAudio = this;
 
@@ -187,7 +239,7 @@ export function installMediaMocks() {
       mockedAudioPaused.set(this, false);
       this.dispatchEvent(new Event("play"));
       this.dispatchEvent(new Event("playing"));
-      if (source.startsWith("blob:")) return Promise.resolve();
+      if (this.src.startsWith("blob:")) return Promise.resolve();
       return fetch(source).then((response) => {
         if (!response.ok) throw new Error(`Reference fixture returned ${response.status}`);
       });
@@ -253,6 +305,7 @@ export function installMediaMocks() {
         throw new DOMException("Recorder could not start", "NotSupportedError");
       }
       this.state = "recording";
+      recorderStarts += 1;
       state.activeRecorder = this;
     }
 

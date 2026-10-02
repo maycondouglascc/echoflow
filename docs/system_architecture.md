@@ -15,7 +15,7 @@ it does not prove remote deployment or real-device behavior.
 The browser may use the Supabase anon client for operations explicitly covered by RLS. Next.js route handlers handle operations that require server authorization, validation, or private provider credentials. Calls to ElevenLabs and OpenAI stay server-side. A prompt or folder layout alone cannot enforce these boundaries; server-only modules, authorization checks, RLS, and tests must enforce them. [vladimirsiedykh](https://vladimirsiedykh.com/blog/saas-architecture-patterns-nextjs)
 The full data flow works like this:
 
-- **Auth**: confirmed email/password, recovery, Google PKCE (external configuration pending). Proxy refreshes cookies; protected reads/actions independently call `auth.getUser()`. RLS/grants deny anonymous catalog reads and enforce completion ownership.
+- **Auth**: confirmed email/password, recovery, Google PKCE (external configuration pending). Proxy verifies claims/refreshes cookies; protected reads/actions call `auth.getUser()` deduplicated per render/request only. No session is cached across accounts or requests. RLS/grants deny anonymous catalog reads and enforce completion ownership. Suspense may stream a generic loading shell before authorization, never protected content.
 - **Curated content**: one playlist, five phrases, ten active Puck/Harper references, three archived baselines. Private `phrase-audio`; each `/api/reference-audio/[variantId]` checks session/publication through the user's RLS client, returns bytes with Range and `private, no-store`, never a public/signed URL. Original files outside `public/` retain SHA-256.
 - **Video import (V2, not implemented)**: requires a separate accepted feature and privacy controls.
 
@@ -26,7 +26,9 @@ The full data flow works like this:
 Every screen in the app is just an entry point to the Practice Screen. The loop must feel like a rhythm, not a form. [dilsedesigner](https://www.dilsedesigner.com/p/crafting-an-mvp-the-key-to-user-acquisition)
 **Key UX timing details:**
 
-- Step 3 → 4: 300ms readiness gap; microphone opens only on explicit Speak action.
+- First authenticated entry per account/tab explains and requests microphone permission, releases tracks immediately and starts no recording. Rejection is nonblocking and retryable. Signup confirmation precedes this entry.
+- Step 3 → 4: 300ms readiness gap; recording starts only on explicit Speak. A local energy detector stops after 1500ms silence following at least 200ms voice signal; initial silence does not stop recording. Manual stop/30s limit remain, Web Audio failures fall back to manual control. Device/noise validation is still required.
+- Reference bytes are deduplicated and preloaded for the current/next phrase in the current voice, up to four page-owned object URLs, aborted/revoked on exit. No persistent/public HTTP cache; received buffers cannot be revoked retroactively. Voice changes preserve take/readiness/comparison; no new upload or database field.
 - Step 5: play user recording and reference audio **sequentially**, not simultaneously — easier to self-evaluate
 - No recording or partial progress is saved. After recording/comparing all five phrases in one page session, an idempotent action saves only the current user's playlist completion. The server enforces identity/publication/ownership, not physical practice attestation.
 

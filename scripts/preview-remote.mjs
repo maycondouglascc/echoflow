@@ -10,14 +10,8 @@ if (
     "Remote preview environment must match the authorized project and isolated origin.",
   );
 }
-process.argv = [
-  process.argv[0],
-  "next",
-  "dev",
-  "--webpack",
-  "--hostname",
-  "127.0.0.1",
-  "--port",
-  "4177",
-];
+process.env.ECHOFLOW_REMOTE_PREVIEW = "1";
+process.argv = process.argv.includes("--build")
+  ? [process.argv[0], "next", "build", "--webpack"]
+  : [process.argv[0], "next", "start", "--hostname", "127.0.0.1", "--port", "4177"];
 await import("next/dist/bin/next");

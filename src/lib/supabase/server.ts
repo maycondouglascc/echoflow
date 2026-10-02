@@ -2,6 +2,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { supabaseConfig } from "./config";
 import type { Database } from "./database.types";
 
@@ -23,21 +24,27 @@ export async function createClient() {
 }
 
 export async function requireUser(next = "/home") {
-  let client: Awaited<ReturnType<typeof createClient>>;
+  let result: Awaited<ReturnType<typeof authenticatedSession>>;
   try {
-    client = await createClient();
+    result = await authenticatedSession();
   } catch {
     redirect(`/login?next=${encodeURIComponent(next)}&error=unavailable`);
   }
-  const { data, error } = await client.auth.getUser();
+  const { client, data, error } = result;
   if (error || !data.user) redirect(`/login?next=${encodeURIComponent(next)}`);
   return { client, user: data.user };
 }
 
+// Render/request scoped only: never share a user's session between requests.
+const authenticatedSession = cache(async () => {
+  const client = await createClient();
+  const { data, error } = await client.auth.getUser();
+  return { client, data, error };
+});
+
 export async function currentUser() {
   try {
-    const client = await createClient();
-    const { data, error } = await client.auth.getUser();
+    const { data, error } = await authenticatedSession();
     return error ? null : data.user;
   } catch {
     return null;

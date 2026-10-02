@@ -27,6 +27,35 @@ export function AuthForm({
     message: "",
   });
   const effectiveMode = recover ? "recover" : mode;
+  if (state.success && effectiveMode === "signup") {
+    return (
+      <div className="auth-form confirmation-step">
+        <h1 id={titleId}>Check your email</h1>
+        <p className="auth-description">
+          Confirm your email address before signing in to EchoFlow.
+        </p>
+        <p role="status">{state.message}</p>
+        <p>
+          Open the confirmation link in this browser. If you do not see the email, check your spam
+          folder.
+        </p>
+        <p>
+          Already confirmed?{" "}
+          {onModeChange ? (
+            <button
+              type="button"
+              className="text-button"
+              onClick={(event) => onModeChange("login", event.detail > 0)}
+            >
+              Log in
+            </button>
+          ) : (
+            <Link href={`/login?next=${encodeURIComponent(next)}`}>Log in</Link>
+          )}
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="auth-form">
       <h1 id={titleId}>

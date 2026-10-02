@@ -38,7 +38,7 @@ test("all five comparisons persist once for A, survive login, and do not complet
   await expect(page.getByText("✓ Completed", { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByText("✓ Completed", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Play your recording" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Record again", exact: true })).toHaveCount(0);
   const rows = await admin.from("playlist_completions").select("user_id").eq("user_id", a.id);
   expect(rows.data).toHaveLength(1);
   const objects = await admin.storage.from("phrase-audio").list("openrouter");

@@ -24,7 +24,6 @@ export function ShadowingPractice({
     phrase,
     activeWordIndex,
     wordTimings,
-    referenceAudioSource,
     selectedIndex,
     audioModels,
     selectedModelId,
@@ -220,7 +219,7 @@ export function ShadowingPractice({
                   className="dark-button"
                 >
                   <Image src="/design/speech.svg" width={24} height={24} alt="" />
-                  {isRequestingMicrophone ? "Waiting…" : currentRecording ? "Speak again" : "Speak"}
+                  {isRequestingMicrophone ? "Waiting…" : "Speak"}
                 </button>
               )}
             </div>
@@ -231,7 +230,7 @@ export function ShadowingPractice({
               <button
                 type="button"
                 onClick={actions.compare}
-                disabled={!currentRecording || isAudioBusy || isRequestingMicrophone || isRecording}
+                disabled={isAudioBusy || isRequestingMicrophone || isRecording}
                 className="dark-button"
               >
                 <Image src="/design/ear.svg" width={24} height={24} alt="" />
@@ -240,7 +239,7 @@ export function ShadowingPractice({
             </div>
           </div>
           <div className="practice-feedback">
-            <p role="status" aria-live="polite">
+            <p role="status" aria-live="polite" className="sr-only">
               {status}
             </p>
             {isRecording ? (
@@ -256,28 +255,8 @@ export function ShadowingPractice({
                 ) : null}
               </div>
             ) : null}
-            <button
-              type="button"
-              className="text-button recording-play"
-              onClick={actions.playRecording}
-              disabled={!currentRecording || isAudioBusy || isRequestingMicrophone || isRecording}
-            >
-              Play your recording
-            </button>
           </div>
           <div className="phrase-navigation">
-            <button
-              type="button"
-              aria-label="Previous phrase"
-              className="text-button"
-              onClick={() => actions.selectPhrase(selectedIndex - 1)}
-              disabled={selectedIndex === 0}
-            >
-              Previous phrase
-            </button>
-            <p>
-              Phrase {selectedIndex + 1} of {scenario.phrases.length}
-            </p>
             <button
               type="button"
               aria-label="Next phrase"
@@ -289,10 +268,6 @@ export function ShadowingPractice({
               Next phrase
             </button>
           </div>
-          <p className="recording-privacy">
-            Your recording stays in this page session. Microphone access starts only when you choose
-            Speak.
-          </p>
         </div>
         {/* biome-ignore lint/a11y/useMediaCaption: Reference text is visible; recording repeats that prompt. */}
         <audio
@@ -306,7 +281,6 @@ export function ShadowingPractice({
         {/* biome-ignore lint/a11y/useMediaCaption: The selected reference text is visible. */}
         <audio
           ref={wordReplayAudioRef}
-          src={referenceAudioSource || undefined}
           preload="auto"
           data-testid="reference-word-audio"
           onEnded={actions.handleWordAudioEnded}
