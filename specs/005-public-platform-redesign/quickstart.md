@@ -93,7 +93,46 @@ local: `/tmp/echoflow-login-modal.png`. Nenhum deploy ou configuração remota f
   `/tmp/echoflow-polish-final-short-modal.png`. Simulação não prova dispositivo real.
 - Nenhuma alteração de backend/RLS/migrations, dependência, push, deploy ou operação remota.
 
-## Gates ainda não atendidos
+## Provisionamento remoto autorizado (T040, 2026-10-01)
+
+- CLI 2.118.0 já autenticado; projeto `echoflow`, ref `hllsxshahgvdqhzxdmef`, vinculado
+  ao checkout isolado. Antes da operação: zero tabelas públicas, usuários, buckets e objetos.
+- Backup local ignorado e restrito: `supabase/.temp/remote-before-hllsxshahgvdqhzxdmef-RToIcV/`,
+  schema público, dados public/auth/storage e configuração representável via CLI.
+  O CLI não exporta integralmente segredos/configurações não representáveis; nenhum serviço
+  externo foi reconfigurado. Não é um teste de restauração ou backup hospedado permanente.
+- Três migrations aplicadas e seed inicial: uma playlist, cinco frases, dez variantes ativas
+  e três arquivadas. Treze objetos no bucket privado `phrase-audio`, SHA-256 de cada origem
+  e destino conferido; importação sem sobrescrita. Importador local continua recusando cloud.
+- Auth `site_url=http://127.0.0.1:4177`; callbacks exatos em `127.0.0.1:4177/auth/callback`
+  e `localhost:4177/auth/callback`. Confirmação de email preservada; somente duas propriedades
+  alteradas, demais configurações remotas mantidas. Usar origem 127.0.0.1 para esta prévia.
+- `node scripts/configure-remote-preview.mjs --confirm-project=hllsxshahgvdqhzxdmef`
+  salva somente URL, chave anon pública e origem em `.env.remote.local` ignorado, modo 600.
+  `node scripts/preview-remote.mjs` inicia Next/Webpack em **4177**, usando esse perfil.
+  `.env.local`, Docker e testes 4175 continuam locais; CI não usa cloud/credenciais remotas.
+- Smoke remoto explícito: RLS como anon e duas identidades autenticadas; catálogo protegido,
+  conclusão própria, isolamento de leitura e inserção entre usuários, update/delete negados,
+  Storage privado e variantes arquivadas negadas, RPC anônimo negado. Login real no navegador,
+  catálogo/prática e endpoint de áudio 200/206 autenticado e 401 após limpar cookies: PASS.
+  Contas sintéticas removidas (não foram criadas contas pessoais nem enviados emails).
+- Duas execuções do smoke geraram agregados de teste em UTC **2026-10-02**: quatro cadastros
+  confirmados, duas conclusões e um acesso. Não são adoção real; foram preservados, não zerados.
+- Advisor de segurança: um WARN para `record_practice_access` SECURITY DEFINER executável por
+  authenticated. É intencional para incremento agregado sem grant de escrita na tabela;
+  search_path vazio, anon negado, sem PII. Contador pode ser inflado por conta autenticada,
+  limitação já aceita; não é auditoria/funil de usuários. Nenhuma proteção foi relaxada.
+- Lint, typecheck, build Webpack e três testes determinísticos do perfil remoto: PASS.
+  A primeira tentativa de smoke navegou antes de iniciar o servidor e falhou sem vazamento;
+  contas foram limpas. Uma leitura transitória de Storage falhou; repetição idempotente passou.
+- Para cadastrar sua conta, usar email de membro da equipe Supabase e abrir confirmação no
+  mesmo navegador. Entrega real/recuperação ainda não verificadas. SMTP padrão restringe
+  destinatários à equipe e atualmente duas mensagens/hora: [documentação oficial](https://supabase.com/docs/guides/auth/auth-smtp).
+  SMTP público e Google OAuth aguardam credenciais próprias; não solicitar segredos no chat.
+  Nenhuma publicação/deploy/push foi realizada; dispositivos, email público e release gates
+  T036/T037 permanecem abertos. Configuração remota deixou de ser pendência de T040 apenas.
+
+## Gates de lançamento restantes
 
 T036: dispositivos reais, entrega email/Google/domínio remotos. T037: termos/privacidade aprovados,
 teto de gasto, limites/alertas e tráfego de abuso em ambiente autorizado; autorização específica de

@@ -1,3 +1,9 @@
+Remote preview provisioned with explicit authorization on 2026-10-01: Supabase project
+`hllsxshahgvdqhzxdmef`, three migrations, private reference Storage and initial catalog.
+Frontend preview on 127.0.0.1:4177 is not a published deployment; local tests remain on 4175.
+Google OAuth, public SMTP and release-readiness gates remain pending. Evidence and secure
+profile commands: `specs/005-public-platform-redesign/quickstart.md` (T040).
+
 Current feature 005 architecture: public landing, authenticated catalog/practice, Supabase Auth,
 Postgres and private Storage. Local evidence is in `specs/005-public-platform-redesign/quickstart.md`;
 it does not prove remote deployment or real-device behavior.

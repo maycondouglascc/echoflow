@@ -150,3 +150,13 @@ Visitantes e pessoas autenticadas veem, respectivamente, a nova landing e a nova
 - A exigência nova de cadastro obrigatório supersede o plano legado de leitura pública de cenários/frases e bucket `phrase-audio` público em docs/IMPLEMENTATION_PLAN.md. docs/system_architecture.md contém direções conflitantes (URL direta no fluxo e URL assinada para objetos privados no modelo); esta feature escolhe áudio privado com acesso autenticado. Atualizar os documentos duráveis após aceite da spec.
 - Antes do slice de design, instalar e usar as skills fornecidas pelo usuário: `anthropics/skills/frontend-design`, `vercel-labs/agent-skills/web-design-guidelines`, `vercel-labs/agent-skills/vercel-react-best-practices` e `kylezantos/design-motion-principles/design-motion-principles` via skills.sh. A inspeção Figma precisa resolver conteúdos e estados exatos antes de implementar o redesign.
 - Esta spec autoriza planejamento e validação documental; instalação de dependências, mudanças de aplicação e publicação ficam para etapa posterior autorizada.
+
+## Autorizações posteriores (2026-10-01)
+
+A implementação foi autorizada posteriormente via `$speckit-implement`. O responsável criou
+o projeto Supabase `echoflow` (`hllsxshahgvdqhzxdmef`) e autorizou explicitamente seu
+provisionamento via CLI: backup, migrations, catálogo, áudios privados, Auth URLs e
+credenciais locais para visualizar a área interna. A prévia remota usa porta 4177 e não
+substitui o ambiente local/testes 4175. Essa autorização não inclui publicação, deploy,
+contratação de serviço pago, desativação da confirmação de email ou criação de conta
+pessoal do responsável. Google OAuth e SMTP público continuam dependentes de configuração.

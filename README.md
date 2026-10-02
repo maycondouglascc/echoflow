@@ -29,6 +29,19 @@ Useful checks:
 
 Automated behavior tests are added with the first feature that introduces behavior and become required CI checks.
 
+## Supabase remote preview (authorized project only)
+
+The CLI-linked project is `echoflow` (`hllsxshahgvdqhzxdmef`). See
+[feature quickstart](specs/005-public-platform-redesign/quickstart.md) for provisioning evidence.
+With the CLI authenticated, run `node scripts/configure-remote-preview.mjs --confirm-project=hllsxshahgvdqhzxdmef`,
+then `node scripts/preview-remote.mjs`. Open `http://127.0.0.1:4177`.
+Only the public anon key is written to ignored `.env.remote.local` (mode 600).
+The local `.env.local`, Supabase stack and browser tests on port 4175 remain separate.
+Do not run ordinary tests or the local audio importer against the remote project.
+Register with an organization team-member email and confirm in the same browser;
+public email delivery needs custom SMTP and Google login needs its OAuth credentials.
+This is a local frontend with remote Supabase, not a published deployment.
+
 ## AI development workflow
 
 Project-wide agent instructions are in AGENTS.md. Feature specifications live under specs/ and are created with the installed GitHub Spec Kit skills. Use a short codex/ branch for each change; use a separate Git worktree when multiple agents need to write in parallel.

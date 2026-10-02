@@ -101,3 +101,4 @@ Primeiro incremento funcional: US1 com fundação, acessível em ambiente de tes
 
 - [X] T038 Corrigir FR-001: Login, Sign up e Practice now abrem modal sobre a landing; alternar cadastro/entrada e recuperação sem navegação; manter foco/fechamento e validar login real e regressões em `tests/e2e/landing-redesign.spec.ts`.
 - [X] T039 Refinar as quatro anotações de design: instalar as cinco skills Emil, estabilizar hero desktop/ordem mobile e tipografia, mostrar/esconder senha com máscara inicial e adicionar movimento sutil acessível nas aberturas/trocas de auth; verificar regressões e evidência visual em múltiplos viewports.
+- [X] T040 Provisionar projeto remoto `hllsxshahgvdqhzxdmef` com autorização explícita: backup, três migrations, seed, 13 objetos privados/hash, Auth URLs, credenciais ignoradas e prévia remota em porta isolada; verificar RLS como anon/A/B e navegação autenticada sem conectar CI ao remoto. Google/SMTP público e deploy continuam gates separados.
