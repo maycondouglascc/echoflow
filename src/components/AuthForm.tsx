@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { authenticate, signInWithGoogle } from "@/app/(auth)/actions";
+import { PasswordField } from "./PasswordField";
 
 export function AuthForm({
   mode = "signup",
@@ -10,12 +11,14 @@ export function AuthForm({
   initialError = false,
   titleId,
   onModeChange,
+  onRecoveryChange,
 }: {
   mode?: "signup" | "login" | "reset";
   next?: string;
   initialError?: boolean;
   titleId?: string;
-  onModeChange?: (mode: "signup" | "login") => void;
+  onModeChange?: (mode: "signup" | "login", animate: boolean) => void;
+  onRecoveryChange?: (animate: boolean) => void;
 }) {
   const [recover, setRecover] = useState(false);
   const [email, setEmail] = useState("");
@@ -36,9 +39,15 @@ export function AuthForm({
               : "Welcome back"}
       </h1>
       <p className="auth-description">
-        {mode === "signup"
-          ? "Create your account to start practicing. It’s free!"
-          : "Find your rhythm in English again."}
+        {mode === "signup" ? (
+          <>
+            Create your account to start practicing. <span className="nowrap">It’s free!</span>
+          </>
+        ) : recover ? (
+          "We’ll email you a link to reset your password."
+        ) : (
+          "Find your rhythm in English again."
+        )}
       </p>
       {mode !== "reset" && !recover ? (
         <>
@@ -72,17 +81,10 @@ export function AuthForm({
           </label>
         ) : null}
         {!recover ? (
-          <label>
-            Password
-            <input
-              name="password"
-              type="password"
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              minLength={8}
-              required
-              disabled={pending}
-            />
-          </label>
+          <PasswordField
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
+            disabled={pending}
+          />
         ) : null}
         <button className="dark-button" disabled={pending || googlePending} type="submit">
           {pending
@@ -104,7 +106,14 @@ export function AuthForm({
         </p>
       ) : null}
       {mode === "login" ? (
-        <button type="button" className="text-button" onClick={() => setRecover(!recover)}>
+        <button
+          type="button"
+          className="text-button"
+          onClick={(event) => {
+            onRecoveryChange?.(event.detail > 0);
+            setRecover(!recover);
+          }}
+        >
           {recover ? "Back to login" : "Forgot password?"}
         </button>
       ) : null}
@@ -113,7 +122,11 @@ export function AuthForm({
           <>
             Already have an account?{" "}
             {onModeChange ? (
-              <button type="button" className="text-button" onClick={() => onModeChange("login")}>
+              <button
+                type="button"
+                className="text-button"
+                onClick={(event) => onModeChange("login", event.detail > 0)}
+              >
                 Log in
               </button>
             ) : (
@@ -124,7 +137,11 @@ export function AuthForm({
           <>
             New to EchoFlow?{" "}
             {onModeChange ? (
-              <button type="button" className="text-button" onClick={() => onModeChange("signup")}>
+              <button
+                type="button"
+                className="text-button"
+                onClick={(event) => onModeChange("signup", event.detail > 0)}
+              >
                 Sign up
               </button>
             ) : (

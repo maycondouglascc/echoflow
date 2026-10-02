@@ -70,6 +70,29 @@ Lint, typecheck e build: PASS. Nove testes de landing/modal (1440/375 px e login
 e oito testes de regressão de autenticação: PASS em rodadas focadas. Evidência visual
 local: `/tmp/echoflow-login-modal.png`. Nenhum deploy ou configuração remota foi alterado.
 
+## Evidência de refinamento visual (T039, 2026-10-01)
+
+- Cinco skills Emil instaladas antes dos ajustes; decisões, oportunidades rejeitadas e
+  revisão de motion em [design-polish.md](design-polish.md), verdict **Approve**.
+- Hero conserva largura/altura e tipografia em 960/1024/1200/1440/1543/1864 px; coluna
+  em 320/375/760/959 px. Text-wrap balance e “It’s free!” indivisível removem a viúva.
+- PasswordField preserva valor ao mostrar/esconder, começa mascarado, tem placeholder
+  de pontos e toggle com nome acessível/aria-pressed/alvo de 44 px. Fechamento limpa o formulário.
+- Motion: CSS starting-style, 250 ms na abertura; WAAPI 180 ms na troca com interrupção,
+  opacity/transform apenas, curva forte compartilhada. Reduced-motion: fade 120 ms;
+  teclado imediato. Modal curto tem scroll interno e close inteiro (375×556, y=16).
+- `npm run lint` / `npm run typecheck`: PASS na versão final (50 arquivos de lint).
+- `npm run build`: bloqueado pelo ambiente, Turbopack falha ao abrir porta interna
+  com `Operation not permitted`, inclusive na tentativa escalada. Alternativa oficial
+  `npm run build -- --webpack`: **PASS**, sem mudar scripts, dependências ou CI.
+- `npm run test:e2e`: **61 PASS (2.2m)**; após ajuste final de especificidade CSS
+  keyboard/reduced-motion, rebuild Webpack + **12 testes de polish PASS (12.4s)**.
+- Capturas revisadas: `/tmp/echoflow-polish-landing-{1864,1024,375,320}.png`,
+  `/tmp/echoflow-polish-final-signup-1543.png`, `/tmp/echoflow-polish-final-recovery.png`,
+  `/tmp/echoflow-polish-transition-login.png` (playback .2),
+  `/tmp/echoflow-polish-final-short-modal.png`. Simulação não prova dispositivo real.
+- Nenhuma alteração de backend/RLS/migrations, dependência, push, deploy ou operação remota.
+
 ## Gates ainda não atendidos
 
 T036: dispositivos reais, entrega email/Google/domínio remotos. T037: termos/privacidade aprovados,

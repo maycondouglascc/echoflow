@@ -46,6 +46,7 @@
 }
 
 :root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   color-scheme: light;
   background: #008ce3;
   color: #1a1e26;
@@ -147,13 +148,14 @@ button:disabled {
   align-items: start;
   padding-bottom: 180px;
 }
-.hero h1 {
+.hero-copy > h1 {
   font-size: 72px;
   line-height: 72px;
   font-weight: 800;
   letter-spacing: -1.5px;
+  text-wrap: balance;
 }
-:where(.hero h1) span {
+:where(.hero-copy > h1) span {
   display: inline-block;
   color: #1d410b;
   background: #77ff33;
@@ -170,6 +172,7 @@ button:disabled {
   font-size: 28px;
   line-height: 42px;
   font-weight: 700;
+  text-wrap: balance;
 }
 .dark-button {
   min-height: 48px;
@@ -255,31 +258,61 @@ button:disabled {
 .hero-kitten {
   position: absolute;
   left: 219px;
-  top: 188px;
+  top: 260px;
   max-width: none;
 }
 .hero-shadow {
   position: absolute;
   left: 317px;
-  top: 399px;
+  top: 471px;
   max-width: none;
 }
 .signup-dialog {
   overflow: visible;
-  background: transparent;
+  background: #0087da;
+  border-radius: 35.859px;
   color: white;
   width: 400px;
   padding: 0;
   border: 0;
   max-width: calc(100vw - 32px);
-  max-height: calc(100svh - 112px);
+  max-height: calc(100svh - 144px);
 }
 .signup-dialog[open] {
-  animation: modal-enter 180ms ease-out;
+  opacity: 1;
+  transform: none;
+  transform-origin: center;
+  transition:
+    opacity 250ms var(--ease-out),
+    transform 250ms var(--ease-out);
+}
+@starting-style {
+  .signup-dialog[open] {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.signup-dialog[open][data-instant="true"] {
+  transition-duration: 0s, 0s;
 }
 .signup-dialog::backdrop {
   background: rgba(26, 30, 38, 0.4);
   backdrop-filter: blur(5px);
+  transition: opacity 250ms var(--ease-out);
+}
+@starting-style {
+  .signup-dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+.signup-dialog[data-instant="true"]::backdrop {
+  transition: none;
+}
+.auth-view {
+  max-height: inherit;
+  overflow-y: auto;
+  border-radius: 35.859px;
+  overscroll-behavior: contain;
 }
 .close-signup {
   position: absolute;
@@ -299,11 +332,17 @@ button:disabled {
   font-weight: 900;
   font-size: 32px;
   line-height: 40px;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 .auth-form > p {
   font-size: 16px;
   font-weight: 600;
   line-height: 24px;
+  text-wrap: balance;
+}
+.nowrap {
+  white-space: nowrap;
 }
 .auth-description {
   margin-top: -16px;
@@ -329,6 +368,29 @@ button:disabled {
   min-width: 0;
 }
 .auth-form input::placeholder {
+  color: #d6eeff;
+}
+.password-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.password-input {
+  position: relative;
+}
+.password-input input {
+  width: 100%;
+  padding-right: 56px;
+}
+.password-toggle {
+  position: absolute;
+  right: 3px;
+  top: 2px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   color: #d6eeff;
 }
 .google-button {
@@ -722,49 +784,26 @@ button:disabled {
   font-size: 12px;
   color: #5f6672;
 }
-@keyframes modal-enter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 @media (max-width: 1200px) {
   .landing-header {
     margin: 0 40px;
   }
-  .hero {
-    margin-top: 120px;
-    width: calc(100% - 120px);
-    grid-template-columns: minmax(0, 1fr) 340px;
-  }
-  .hero h1 {
-    font-size: 60px;
-    line-height: 64px;
-  }
-  .hero h1 span {
-    font-size: 64px;
-  }
-  .hero-copy > p {
-    width: auto;
-    font-size: 24px;
-    line-height: 36px;
-  }
-  .how-panel {
-    width: 340px;
-    padding: 32px;
-  }
   .hero-playback {
-    left: 200px;
+    left: auto;
+    right: 0;
   }
   .hero-kitten {
-    left: 120px;
+    left: auto;
+    right: -16px;
+    top: 260px;
+    width: 280px;
+    height: auto;
   }
   .hero-shadow {
-    left: 220px;
+    left: auto;
+    right: 48px;
+    top: 417px;
+    width: 150px;
   }
   .platform-grid {
     grid-template-columns: 340px minmax(0, 1fr);
@@ -775,6 +814,41 @@ button:disabled {
   }
   .practice-panel {
     padding: 24px;
+  }
+}
+@media (min-width: 1201px) and (max-width: 1360px) {
+  .hero-kitten {
+    left: auto;
+    right: -96px;
+    width: 320px;
+    height: auto;
+    top: 280px;
+  }
+  .hero-shadow {
+    left: auto;
+    right: -20px;
+    top: 465px;
+  }
+  .hero-playback {
+    left: auto;
+    right: -40px;
+  }
+}
+@media (max-width: 959px) {
+  .hero {
+    margin: 56px auto 0;
+    width: min(100% - 40px, 486px);
+    display: flex;
+    flex-direction: column;
+    gap: 96px;
+    padding-bottom: 112px;
+  }
+  .hero-copy > p {
+    width: 100%;
+  }
+  .how-panel {
+    align-self: center;
+    max-width: 100%;
   }
 }
 @media (max-width: 760px) {
@@ -788,18 +862,18 @@ button:disabled {
   }
   .hero {
     margin: 56px auto 0;
-    width: calc(100% - 40px);
+    width: min(100% - 40px, 486px);
     display: flex;
     flex-direction: column;
     gap: 96px;
     padding-bottom: 112px;
   }
-  .hero h1 {
+  .hero-copy > h1 {
     font-size: 48px;
     line-height: 50px;
     letter-spacing: -1px;
   }
-  .hero h1 span {
+  .hero-copy > h1 span {
     font-size: 54px;
     line-height: 50px;
   }
@@ -810,6 +884,7 @@ button:disabled {
     max-width: 360px;
   }
   .how-panel {
+    width: 340px;
     align-self: center;
     max-width: 100%;
     min-height: 340px;
@@ -852,7 +927,7 @@ button:disabled {
     left: -15px;
   }
   .signup-dialog {
-    max-height: calc(100svh - 88px);
+    max-height: calc(100svh - 144px);
   }
   .auth-form {
     padding: 24px;
@@ -931,7 +1006,17 @@ button:disabled {
     scroll-behavior: auto;
   }
   .signup-dialog[open] {
-    animation: none;
+    transition:
+      opacity 120ms var(--ease-out),
+      transform 0s;
+  }
+  @starting-style {
+    .signup-dialog[open] {
+      transform: none;
+    }
+  }
+  .signup-dialog::backdrop {
+    transition-duration: 120ms;
   }
 }
 

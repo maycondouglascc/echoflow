@@ -23,6 +23,12 @@ Os frames inspecionados mostram landing com chamada de beta gratuito e modal de 
   sem navegar para uma página separada. Alternar cadastro/entrada e abrir recuperação mantém o
   mesmo modal; Escape/fechar devolve o foco ao acionador. Rotas diretas de autenticação continuam
   disponíveis para callbacks, recuperação e redirecionamentos protegidos.
+- Refinamento visual: hero desktop com largura estável de 894 px onde cabe (a partir de
+  960 px); abaixo disso, coluna com título/descrição/CTA antes de How it works e assets.
+  Textos devem ter linhas equilibradas, sem separar “It’s free!”. Campo de senha mascarado
+  por padrão, placeholder de pontos e controle acessível de mostrar/esconder sem perder valor.
+  Abertura e troca signup/login/recover têm movimento sutil de até 250 ms, sem bloquear ações;
+  teclado é imediato e reduced-motion remove deslocamento/escala.
 
 ## User Scenarios & Testing
 
