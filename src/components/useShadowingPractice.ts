@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { beginCapture, type CaptureSession, type CaptureStopReason } from "@/lib/capture-session";
 import type {
   AudioVariantFixture,
   PhraseFixture,
   ScenarioFixture,
 } from "@/lib/fixtures/voice-comparison";
-import { watchSpeechEnd } from "@/lib/speech-end";
 import { useReferenceBuffer } from "./useReferenceBuffer";
 
 type PlaybackKind =
@@ -16,32 +16,10 @@ type PlaybackKind =
   | "comparison-recording"
   | "word-replay";
 type ReturnPhase = "idle" | "ready";
-type CaptureStopReason = "manual" | "silence" | "limit" | "navigation" | "unmount" | "error";
 type CaptureStopRequest = Exclude<CaptureStopReason, "error">;
 
-interface WordReplayCue {
-  readonly wordIndex: number;
-  readonly startMs: number;
-  readonly endMs: number;
-}
-
 interface SessionRecording {
-  readonly blob: Blob;
   readonly objectUrl: string;
-  readonly durationMs: number;
-}
-
-interface CaptureSession {
-  readonly phraseId: string;
-  readonly recorder: MediaRecorder;
-  readonly stream: MediaStream;
-  readonly startedAt: number;
-  readonly chunks: Blob[];
-  intervalId: number | null;
-  limitId: number | null;
-  stopReason: CaptureStopReason | null;
-  tracksStopped: boolean;
-  stopSpeechWatch: (() => void) | null;
 }
 
 type PracticePhase =
@@ -56,13 +34,14 @@ type PracticePhase =
       readonly elapsedMs: number;
       readonly reason: "manual" | "silence" | "limit";
     }
-  | {
+  | ({
       readonly kind: "playing";
       readonly phraseId: string;
-      readonly playback: PlaybackKind;
       readonly returnTo: ReturnPhase;
-      readonly wordReplayCue?: WordReplayCue;
-    };
+    } & (
+      | { readonly playback: Exclude<PlaybackKind, "word-replay"> }
+      | { readonly playback: "word-replay"; readonly endMs: number }
+    ));
 
 interface PracticeError {
   readonly message: string;
@@ -78,9 +57,6 @@ interface PracticeState {
   readonly error: PracticeError | null;
 }
 
-const MAX_RECORDING_MS = 30_000;
-const MIME_CANDIDATES = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"];
-
 function createInitialState(selectedModelId: string): PracticeState {
   return {
     selectedIndex: 0,
@@ -95,17 +71,6 @@ function createInitialState(selectedModelId: string): PracticeState {
 function formatDuration(milliseconds: number) {
   const seconds = Math.floor(milliseconds / 1000);
   return `00:${String(seconds).padStart(2, "0")}`;
-}
-
-function stopTracks(stream: MediaStream) {
-  for (const track of stream.getTracks()) track.stop();
-}
-
-function stopSessionTracks(session: CaptureSession) {
-  if (session.tracksStopped) return;
-  session.tracksStopped = true;
-  session.stopSpeechWatch?.();
-  stopTracks(session.stream);
 }
 
 function readyPhase(phase: PracticePhase, phraseId: string): ReturnPhase {
@@ -131,8 +96,18 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
   const captureSessionRef = useRef<CaptureSession | null>(null);
   const recordingsRef = useRef<Readonly<Record<string, SessionRecording>>>(state.recordings);
 
-  phaseRef.current = state.phase;
-  recordingsRef.current = state.recordings;
+  const stateRef = useRef(state);
+  const updateState = useCallback(
+    (update: (current: PracticeState) => PracticeState) => {
+      const next = update(stateRef.current);
+      stateRef.current = next;
+      phaseRef.current = next.phase;
+      recordingsRef.current = next.recordings;
+      selectedPhraseIdRef.current = scenario.phrases[next.selectedIndex].id;
+      setState(next);
+    },
+    [scenario.phrases],
+  );
 
   const phrase = scenario.phrases[state.selectedIndex];
   const currentRecording = state.recordings[phrase.id];
@@ -186,10 +161,9 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
 
   const transition = useCallback(
     (nextPhase: PracticePhase, status: string, error: PracticeError | null = null) => {
-      phaseRef.current = nextPhase;
-      setState((current) => ({ ...current, phase: nextPhase, status, error }));
+      updateState((current) => ({ ...current, phase: nextPhase, status, error }));
     },
-    [],
+    [updateState],
   );
 
   const reportError = useCallback(
@@ -217,55 +191,19 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
 
   const stopCapture = useCallback(
     (reason: CaptureStopRequest, session = captureSessionRef.current) => {
-      if (!session || session.stopReason !== null) return;
-      session.stopReason = reason;
-      session.stopSpeechWatch?.();
-      if (session.intervalId !== null) window.clearInterval(session.intervalId);
-      if (session.limitId !== null) window.clearTimeout(session.limitId);
-      session.intervalId = null;
-      session.limitId = null;
-
-      if (reason === "navigation" || reason === "unmount") {
-        if (captureSessionRef.current === session) captureSessionRef.current = null;
-        try {
-          if (session.recorder.state === "recording") session.recorder.stop();
-        } catch {
-          // Closing the stream below still releases the microphone if the recorder already stopped.
-        }
-        stopSessionTracks(session);
-        return;
-      }
-
-      const elapsed = Math.min(MAX_RECORDING_MS, Date.now() - session.startedAt);
-      const savingPhase: PracticePhase = {
-        kind: "saving",
-        phraseId: session.phraseId,
-        elapsedMs: elapsed,
-        reason,
-      };
-      transition(
-        savingPhase,
-        reason === "limit" ? "30-second limit reached. Saving recording…" : "Saving recording…",
-      );
-      try {
-        if (session.recorder.state === "recording") session.recorder.stop();
-      } catch {
-        session.stopReason = "error";
-        stopSessionTracks(session);
-        if (captureSessionRef.current === session) captureSessionRef.current = null;
-        reportError(
-          "The recording could not be finished. Please try recording again.",
-          "Recording failed.",
-          true,
-          { kind: "ready" },
-        );
-      }
+      if (reason === "navigation" || reason === "unmount") captureSessionRef.current = null;
+      session?.stop(reason);
     },
-    [reportError, transition],
+    [],
   );
 
   const playSource = useCallback(
-    async (source: string, playback: PlaybackKind, phraseId: string, returnTo: ReturnPhase) => {
+    async (
+      source: string | Promise<string>,
+      playback: Exclude<PlaybackKind, "word-replay">,
+      phraseId: string,
+      returnTo: ReturnPhase,
+    ) => {
       const audio = audioRef.current;
       if (!audio) return;
       clearRecordReadyTimer();
@@ -287,9 +225,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       audio.pause();
       wordReplayAudioRef.current?.pause();
       try {
-        const resolved = source.startsWith("/api/reference-audio/")
-          ? await referenceBuffer.sourceFor(source)
-          : source;
+        const resolved = await source;
         if (playbackSequenceRef.current !== sequence) return;
         audio.src = resolved;
         audio.load();
@@ -314,7 +250,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
         );
       }
     },
-    [clearRecordReadyTimer, reportError, transition, referenceBuffer.sourceFor],
+    [clearRecordReadyTimer, reportError, transition],
   );
 
   const playReference = useCallback(
@@ -333,21 +269,9 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
         );
         return;
       }
-      void playSource(variant.src, kind, targetPhrase.id, returnTo);
+      void playSource(referenceBuffer.sourceFor(variant.src), kind, targetPhrase.id, returnTo);
     },
-    [playSource, reportError],
-  );
-
-  const playRecordingSource = useCallback(
-    (
-      recording: SessionRecording,
-      kind: "recording" | "comparison-recording",
-      phraseId: string,
-      returnTo: ReturnPhase,
-    ) => {
-      void playSource(recording.objectUrl, kind, phraseId, returnTo);
-    },
-    [playSource],
+    [playSource, reportError, referenceBuffer.sourceFor],
   );
 
   const handleAudioError = useCallback(() => {
@@ -413,7 +337,12 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
         );
         return;
       }
-      playRecordingSource(recording, "comparison-recording", active.phraseId, active.returnTo);
+      void playSource(
+        recording.objectUrl,
+        "comparison-recording",
+        active.phraseId,
+        active.returnTo,
+      );
       return;
     }
 
@@ -428,7 +357,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
         ? "Comparison complete. You can compare again or record another take."
         : "Recording playback finished.",
     );
-  }, [clearRecordReadyTimer, playRecordingSource, reportError, transition]);
+  }, [clearRecordReadyTimer, playSource, reportError, transition]);
 
   const handleWordAudioEnded = useCallback(() => {
     setCurrentWordIndex(null);
@@ -515,11 +444,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
           phraseId: phrase.id,
           playback: "word-replay",
           returnTo,
-          wordReplayCue: {
-            wordIndex,
-            startMs: cue.startMs,
-            endMs: cue.endMs,
-          },
+          endMs: cue.endMs,
         },
         "Replaying word.",
       );
@@ -567,138 +492,47 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     permissionRequestRef.current = requestId;
     transition({ kind: "requesting", phraseId }, "Requesting microphone permission…");
     let stream: MediaStream | null = null;
-    let session: CaptureSession | null = null;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       if (permissionRequestRef.current !== requestId || selectedPhraseIdRef.current !== phraseId) {
-        stopTracks(stream);
+        for (const track of stream.getTracks()) track.stop();
         return;
       }
-
-      const supportedMime = MIME_CANDIDATES.find((mime) => MediaRecorder.isTypeSupported?.(mime));
-      const recorder = supportedMime
-        ? new MediaRecorder(stream, { mimeType: supportedMime })
-        : new MediaRecorder(stream);
-      const capture: CaptureSession = {
-        phraseId,
-        recorder,
-        stream,
-        startedAt: Date.now(),
-        chunks: [],
-        intervalId: null,
-        limitId: null,
-        stopReason: null,
-        tracksStopped: false,
-        stopSpeechWatch: null,
-      };
-      session = capture;
-      captureSessionRef.current = capture;
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) session?.chunks.push(event.data);
-      };
-      recorder.onerror = () => {
-        if (session?.stopReason === "navigation" || session?.stopReason === "unmount") return;
-        if (!session) return;
-        session.stopReason = "error";
-        if (session.intervalId !== null) window.clearInterval(session.intervalId);
-        if (session.limitId !== null) window.clearTimeout(session.limitId);
-        stopSessionTracks(session);
-        if (captureSessionRef.current === session) captureSessionRef.current = null;
-        if (selectedPhraseIdRef.current !== phraseId) return;
-        reportError(
-          "The microphone recording failed. Check the microphone and try again.",
-          "Recording failed.",
-          true,
-          { kind: "ready" },
-        );
-      };
-      recorder.onstop = () => {
-        if (!session) return;
-        stopSessionTracks(session);
-        if (captureSessionRef.current === session) captureSessionRef.current = null;
-        if (
-          session.stopReason === "navigation" ||
-          session.stopReason === "unmount" ||
-          session.stopReason === "error"
-        ) {
-          return;
-        }
-        if (selectedPhraseIdRef.current !== phraseId) return;
-
-        const durationMs = Math.min(MAX_RECORDING_MS, Date.now() - session.startedAt);
-        const mimeType = recorder.mimeType || session.chunks[0]?.type || "application/octet-stream";
-        const blob = new Blob(session.chunks, { type: mimeType });
-        if (blob.size === 0 || durationMs <= 0) {
-          reportError(
-            "The recording was empty or could not be finished. Please try recording again.",
-            "Recording failed.",
-            true,
-            { kind: "ready" },
+      captureSessionRef.current = beginCapture(stream, {
+        onProgress(elapsedMs) {
+          if (selectedPhraseIdRef.current !== phraseId) return;
+          transition(
+            { kind: "recording", phraseId, elapsedMs },
+            `Recording your voice · ${formatDuration(elapsedMs)} / 00:30`,
           );
-          return;
-        }
-
-        const objectUrl = URL.createObjectURL(blob);
-        const previous = recordingsRef.current[phraseId];
-        if (previous) URL.revokeObjectURL(previous.objectUrl);
-        const recording = { blob, objectUrl, durationMs };
-        const nextRecordings = { ...recordingsRef.current, [phraseId]: recording };
-        recordingsRef.current = nextRecordings;
-        phaseRef.current = { kind: "ready" };
-        setState((current) => ({
-          ...current,
-          phase: { kind: "ready" },
-          recordings: { ...current.recordings, [phraseId]: recording },
-          status: "Recording saved in this page session. Play it back or compare.",
-          error: null,
-        }));
-      };
-
-      recorder.start();
-      capture.stopSpeechWatch = watchSpeechEnd(stream, () => stopCapture("silence", capture));
-      transition(
-        { kind: "recording", phraseId, elapsedMs: 0 },
-        "Recording your voice · 00:00 / 00:30",
-      );
-      capture.intervalId = window.setInterval(() => {
-        if (
-          captureSessionRef.current !== capture ||
-          phaseRef.current.kind !== "recording" ||
-          phaseRef.current.phraseId !== phraseId
-        ) {
-          return;
-        }
-        const elapsedMs = Math.min(MAX_RECORDING_MS, Date.now() - capture.startedAt);
-        phaseRef.current = { kind: "recording", phraseId, elapsedMs };
-        const status = `Recording your voice · ${formatDuration(elapsedMs)} / 00:30`;
-        setState((current) => {
-          if (current.phase.kind !== "recording" || current.phase.phraseId !== phraseId) {
-            return current;
-          }
-          return {
+        },
+        onSaving(reason, elapsedMs) {
+          transition(
+            { kind: "saving", phraseId, reason, elapsedMs },
+            reason === "limit" ? "30-second limit reached. Saving recording…" : "Saving recording…",
+          );
+        },
+        onSaved(blob) {
+          captureSessionRef.current = null;
+          if (selectedPhraseIdRef.current !== phraseId) return;
+          const objectUrl = URL.createObjectURL(blob);
+          const previous = recordingsRef.current[phraseId];
+          if (previous) URL.revokeObjectURL(previous.objectUrl);
+          updateState((current) => ({
             ...current,
-            phase: { kind: "recording", phraseId, elapsedMs },
-            status,
-          };
-        });
-        if (elapsedMs >= MAX_RECORDING_MS) stopCapture("limit", capture);
-      }, 1_000);
-      capture.limitId = window.setTimeout(() => stopCapture("limit", capture), MAX_RECORDING_MS);
+            phase: { kind: "ready" },
+            recordings: { ...current.recordings, [phraseId]: { objectUrl } },
+            status: "Recording saved in this page session. Play it back or compare.",
+            error: null,
+          }));
+        },
+        onError(message) {
+          captureSessionRef.current = null;
+          if (selectedPhraseIdRef.current !== phraseId) return;
+          reportError(message, "Recording failed.", true, { kind: "ready" });
+        },
+      });
     } catch (cause) {
-      if (session) {
-        if (session.intervalId !== null) window.clearInterval(session.intervalId);
-        if (session.limitId !== null) window.clearTimeout(session.limitId);
-        session.stopReason = "error";
-        try {
-          if (session.recorder.state === "recording") session.recorder.stop();
-        } catch {
-          // The stream cleanup below still runs if stopping the recorder fails.
-        }
-        stopSessionTracks(session);
-        if (captureSessionRef.current === session) captureSessionRef.current = null;
-      } else if (stream) {
-        stopTracks(stream);
-      }
       if (permissionRequestRef.current !== requestId || selectedPhraseIdRef.current !== phraseId)
         return;
 
@@ -711,7 +545,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
             : "Microphone access failed. Check the browser permission and try again.";
       reportError(message, "Microphone permission is needed to record.", true, { kind: "ready" });
     }
-  }, [clearRecordReadyTimer, reportError, stopCapture, transition]);
+  }, [clearRecordReadyTimer, reportError, transition, updateState]);
 
   const selectPhrase = useCallback(
     (index: number) => {
@@ -722,12 +556,10 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       const activeCapture = captureSessionRef.current;
       if (activeCapture) stopCapture("navigation", activeCapture);
       const nextPhrase = scenario.phrases[index];
-      selectedPhraseIdRef.current = nextPhrase.id;
       const nextPhase: PracticePhase = recordingsRef.current[nextPhrase.id]
         ? { kind: "ready" }
         : { kind: "idle" };
-      phaseRef.current = nextPhase;
-      setState((current) => ({
+      updateState((current) => ({
         ...current,
         selectedIndex: index,
         phase: nextPhase,
@@ -735,7 +567,14 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
         error: null,
       }));
     },
-    [clearRecordReadyTimer, scenario.phrases, state.selectedIndex, stopAudio, stopCapture],
+    [
+      clearRecordReadyTimer,
+      scenario.phrases,
+      state.selectedIndex,
+      stopAudio,
+      stopCapture,
+      updateState,
+    ],
   );
 
   const selectAudioModel = useCallback(
@@ -766,8 +605,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
         phaseRef.current.kind === "ready" || recordingsRef.current[selectedPhraseIdRef.current]
           ? { kind: "ready" }
           : { kind: "idle" };
-      phaseRef.current = nextPhase;
-      setState((current) => ({
+      updateState((current) => ({
         ...current,
         selectedModelId: model.id,
         phase: nextPhase,
@@ -781,6 +619,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       scenario.phrases,
       state.selectedModelId,
       stopAudio,
+      updateState,
     ],
   );
 
@@ -812,8 +651,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       if (
         currentPhase.kind !== "playing" ||
         currentPhase.playback !== "word-replay" ||
-        !currentPhase.wordReplayCue ||
-        audio.currentTime * 1000 < currentPhase.wordReplayCue.endMs
+        audio.currentTime * 1000 < currentPhase.endMs
       )
         return false;
       playbackSequenceRef.current += 1;
@@ -880,20 +718,13 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
 
   const playRecording = useCallback(() => {
     if (!currentRecording || isAudioBusy || isRequestingMicrophone || isRecording) return;
-    playRecordingSource(
-      currentRecording,
+    void playSource(
+      currentRecording.objectUrl,
       "recording",
       phrase.id,
       readyPhase(phaseRef.current, phrase.id),
     );
-  }, [
-    currentRecording,
-    isAudioBusy,
-    isRecording,
-    isRequestingMicrophone,
-    phrase.id,
-    playRecordingSource,
-  ]);
+  }, [currentRecording, isAudioBusy, isRecording, isRequestingMicrophone, phrase.id, playSource]);
 
   const compare = useCallback(() => {
     if (isAudioBusy || isRecording || isRequestingMicrophone) return;
@@ -951,7 +782,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       selectedIndex: state.selectedIndex,
       audioModels: selectableModels,
       selectedModelId: state.selectedModelId,
-      currentRecording,
+      hasRecording: Boolean(currentRecording),
       canRecord,
       isAudioBusy,
       isRequestingMicrophone,

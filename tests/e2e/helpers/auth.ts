@@ -4,9 +4,17 @@ import { createClient } from "@supabase/supabase-js";
 import { voiceComparisonScenario as fixture } from "../../../src/lib/fixtures/voice-comparison";
 
 export const password = "EchoFlow-test-only-123!";
+function testPort(value: string | undefined, fallback: number) {
+  if (value === undefined) return String(fallback);
+  if (!/^\d+$/.test(value) || Number(value) < 1024 || Number(value) > 65535)
+    throw new Error("Invalid isolated local test port.");
+  return value;
+}
+const apiPort = testPort(process.env.ECHOFLOW_TEST_API_PORT, 56321);
+export const localInbox = `http://127.0.0.1:${testPort(process.env.ECHOFLOW_TEST_INBOX_PORT, 56324)}`;
 export const localUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-if (new URL(localUrl).hostname !== "127.0.0.1" || new URL(localUrl).port !== "56321")
-  throw new Error("E2E requires the isolated local stack on 56321.");
+if (new URL(localUrl).hostname !== "127.0.0.1" || new URL(localUrl).port !== apiPort)
+  throw new Error("E2E requires the explicitly selected isolated local stack.");
 export const admin = createClient(localUrl, process.env.SUPABASE_SERVICE_ROLE_KEY ?? "", {
   auth: { persistSession: false },
 });

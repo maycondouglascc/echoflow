@@ -47,6 +47,20 @@ Key design decisions:
 
 ---
 
+## Practice implementation ownership
+
+`useShadowingPractice` owns practice transitions and page recording URLs. One synchronous
+state update keeps event-handler refs and the rendered state together. `capture-session.ts`
+owns the recorder, stream, progress/limit timers and speech watcher; all exits release those
+resources through one idempotent cleanup. Navigation/unmount discard late recorder output.
+Word replay requires an end time in the phase type; ordinary reference playback resolves
+through the page-owned buffer explicitly rather than inferring its kind from a URL prefix.
+
+The catalog decodes JSON model/audio/provenance/timing metadata before exposing typed values
+to practice. Shared fonts/tokens/base rules stay in `globals.css`; landing, auth/dialog,
+catalog/practice and privacy styles have separate sheets imported in fixed order by the root
+layout. They preserve existing selectors, responsive rules and reduced-motion behavior.
+
 ## Future Folder Structure (V2 sketch, not current routes)
 
 ```

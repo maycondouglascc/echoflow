@@ -27,7 +27,7 @@ export function ShadowingPractice({
     selectedIndex,
     audioModels,
     selectedModelId,
-    currentRecording,
+    hasRecording,
     canRecord,
     isAudioBusy,
     isRequestingMicrophone,
@@ -210,7 +210,7 @@ export function ShadowingPractice({
                   aria-label={
                     isRequestingMicrophone
                       ? "Waiting for microphone…"
-                      : currentRecording
+                      : hasRecording
                         ? "Record again"
                         : "Record"
                   }
