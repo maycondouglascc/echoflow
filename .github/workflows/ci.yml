@@ -57,6 +57,9 @@ jobs:
       - name: Test deterministic catalog and audio tooling
         run: npm run test:audio-generator
 
+      - name: Test deterministic application modules
+        run: npm run test:unit
+
       - name: Build
         run: npm run build
 
