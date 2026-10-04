@@ -2,7 +2,7 @@
 
 **Feature Branch**: `codex/contextual-feedback`
 **Created**: 2026-10-04
-**Status**: Implementing — authorized user request; documented navigation default
+**Status**: Implemented and verified — remote enablement authorized on 2026-10-04
 **Input**: Adicionar botão flutuante “Feedback” no canto inferior direito, receber sugestões de melhoria com screenshot da página e contexto de navegação recente.
 
 ## User Scenarios & Testing

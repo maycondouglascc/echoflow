@@ -21,7 +21,7 @@ Input: spec.md, plan.md, research.md, data-model.md, contracts/feedback.md. All 
 
 ## Phase 5: Validation and delivery
 - [X] T010 Update privacy page and durable docs/EchoFlow.md, docs/system_architecture.md (FR-011).
-- [ ] T011 Run lint/typecheck/build/unit, distinct-account table/Storage and feature browser tests; record evidence in quickstart.md. Apply additive migration to authorized remote project and verify live UI. Review authentication/RLS/dependency changes.
+- [X] T011 Run lint/typecheck/build/unit, distinct-account table/Storage and feature browser tests; record evidence in quickstart.md. Apply additive migration to authorized remote project and verify live UI. Review authentication/RLS/dependency changes.
 - [X] T012 Converge against spec/plan/tasks and commit coherent feature locally; report playlists and Feedback outcome and limits.
 
 ## Dependencies and acceptance
@@ -33,4 +33,11 @@ MVP includes all P1 stories; no deferred requested work. FR001–011 and SC001�
 
 27 requirements/success criteria/acceptance scenarios, five plan decisions and five constitution principles assessed. No code gap; one HIGH partial rollout gap: the remote-backed app cannot persist until the additive migration is explicitly authorized (automatic approval review blocked shared-environment mutation). Local storage/API/UI evidence passed. No extension hooks installed.
 
-- [ ] T013 Apply supabase/migrations/202610040001_contextual_feedback.sql to the authorized remote project only after explicit user approval, register migration version and verify private bucket/RLS/guest rejection per FR-006 and plan: remote enablement (partial). Finish T011 after remote verification.
+- [X] T013 Apply supabase/migrations/202610040001_contextual_feedback.sql to the authorized remote project only after explicit user approval, register migration version and verify private bucket/RLS/guest rejection per FR-006 and plan: remote enablement (partial). Finish T011 after remote verification.
+
+## Final convergence — 2026-10-04
+
+T013 completed after explicit remote-migration approval; the earlier HIGH rollout gap is resolved.
+All 27 criteria/scenarios, five plan decisions and five constitution principles remain covered by
+the recorded implementation and checks. The requested Vercel production deployment is READY;
+public/guest route smoke checks passed. No remaining feature implementation task.
