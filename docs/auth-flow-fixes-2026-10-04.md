@@ -51,3 +51,17 @@ so unrestricted public signup/recovery delivery still needs custom SMTP.
 Final default-email tests: 24/24 Chromium auth/modal tests passed on the isolated production server.
 Additional real-route check passed for forged email-link credentials, fragment removal and auth-route
 no-store/no-referrer headers. Production build, lint/typecheck and eight unit test files passed.
+
+## Production rollout
+
+Application commit `41f9c3d` on `codex/auth-flow-fixes` deployed to
+https://echoflow-delta.vercel.app as `dpl_4hohGAKEfu4fXeyYPmHhCr71Py1J` (READY).
+Vercel ran the normal Turbopack production build, including TypeScript, successfully.
+Anonymous `/auth/complete`, `/login` and `/home` returned private/no-store/no-referrer responses;
+no protected catalog content appeared. Local/preview completion redirects were added and verified,
+preserving existing entries. The remote email templates, SMTP, OAuth, confirmation and RLS remain unchanged.
+
+The fresh recovery email request hit the hosted email rate limit; the UI now reports that failure.
+An administrative one-time recovery link was proposed to restore the account without another email;
+automatic approval review requires explicit user authorization for this privileged operation.
+No administrative link or password change was performed while that approval was pending.

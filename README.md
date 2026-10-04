@@ -65,6 +65,11 @@ Preview environment variables are not configured. Public email delivery still ne
 and Google login needs its OAuth configuration; existing confirmed email/password accounts can log in.
 Deployment and remote migration evidence: [Feedback quickstart](specs/006-contextual-feedback/quickstart.md).
 
+Authentication fixes were deployed from `codex/auth-flow-fixes` at `41f9c3d`. Signup and recovery
+use default one-time Supabase emails and a verified session handoff at `/auth/complete`, including
+links opened in another browser. The new route is also allowed on development port 3000 and remote
+preview port 4177. [Diagnosis and validation](docs/auth-flow-fixes-2026-10-04.md).
+
 ## AI development workflow
 
 Project-wide agent instructions are in AGENTS.md. Feature specifications live under specs/ and are created with the installed GitHub Spec Kit skills. Use a short codex/ branch for each change; use a separate Git worktree when multiple agents need to write in parallel.
