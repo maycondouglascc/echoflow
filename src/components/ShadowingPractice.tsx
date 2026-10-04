@@ -1,16 +1,33 @@
 "use client";
-
+import { LayoutGroup, MotionConfig } from "motion/react";
+import * as motion from "motion/react-client";
+import Image from "next/image";
+import Link from "next/link";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { completePlaylist } from "@/app/(app)/actions";
 import { useShadowingPractice } from "@/components/useShadowingPractice";
 import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
 
-export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
-  const { audioRef, view, actions } = useShadowingPractice(scenario);
+export function ShadowingPractice({
+  scenario,
+  playlistId,
+  completed = false,
+  account,
+}: {
+  scenario: ScenarioFixture;
+  playlistId?: string;
+  completed?: boolean;
+  account?: ReactNode;
+}) {
+  const { audioRef, wordReplayAudioRef, view, actions } = useShadowingPractice(scenario);
   const {
     phrase,
+    activeWordIndex,
+    wordTimings,
     selectedIndex,
     audioModels,
     selectedModelId,
-    currentRecording,
+    hasRecording,
     canRecord,
     isAudioBusy,
     isRequestingMicrophone,
@@ -20,263 +37,260 @@ export function ShadowingPractice({ scenario }: { scenario: ScenarioFixture }) {
     error,
     canRetryRecording,
   } = view;
+  const [completion, setCompletion] = useState<"idle" | "saving" | "completed" | "error">(
+    completed ? "completed" : "idle",
+  );
+  const canComplete = view.comparedPhraseIds.length === scenario.phrases.length;
+  const saveCompletion = useCallback(async () => {
+    if (!playlistId || !canComplete) return;
+    setCompletion("saving");
+    try {
+      const result = await completePlaylist(playlistId);
+      setCompletion(result.ok ? "completed" : "error");
+    } catch {
+      setCompletion("error");
+    }
+  }, [playlistId, canComplete]);
+  useEffect(() => {
+    if (completion === "idle" && canComplete) void saveCompletion();
+  }, [completion, canComplete, saveCompletion]);
+  let nextWordIndex = 0;
+  const selectedVoiceName =
+    audioModels.find((model) => model.id === selectedModelId)?.voiceName ?? "the selected voice";
+  const phraseContent = phrase.text.split(/(\s+)/).map((part) => {
+    if (/^\s+$/.test(part)) return part;
+    const wordIndex = nextWordIndex++;
+    const highlighted = activeWordIndex === wordIndex;
+    const canReplayWord =
+      Boolean(wordTimings[wordIndex]) && !isRequestingMicrophone && !isRecording;
+    const text = (
+      <motion.span
+        animate={{ color: "#1a1e26" }}
+        transition={{ color: { duration: 0.12, ease: "easeOut" } }}
+        className="relative"
+      >
+        {part}
+      </motion.span>
+    );
+    return (
+      <motion.span
+        key={wordIndex}
+        data-word-index={wordIndex}
+        data-highlighted={highlighted ? "true" : undefined}
+        className="relative inline-block align-baseline"
+      >
+        {highlighted ? (
+          <motion.span
+            aria-hidden="true"
+            data-testid="word-highlight-indicator"
+            layoutId="spoken-word-highlight"
+            initial={false}
+            transition={{ layout: { duration: 0.18, ease: [0.77, 0, 0.175, 1] } }}
+            className="pointer-events-none absolute -inset-x-1 -inset-y-0.5 rounded-sm bg-[#77ff33]"
+          />
+        ) : null}
+        {canReplayWord ? (
+          <motion.button
+            type="button"
+            aria-label={`Replay word: ${part} in ${selectedVoiceName}`}
+            onClick={() => actions.replayWord(wordIndex)}
+            disabled={isRequestingMicrophone || isRecording}
+            className="word-replay"
+          >
+            {text}
+          </motion.button>
+        ) : (
+          text
+        )}
+      </motion.span>
+    );
+  });
 
   return (
-    <section className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[0.88fr_1.12fr]">
-      <aside className="rounded-[1.75rem] border border-[#dce4dc] bg-white/80 p-5 shadow-[0_20px_70px_rgba(16,43,38,0.06)] sm:p-7">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#638078]">
-              Your phrases
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#12332d]">
-              Practice phrases
-            </h2>
-          </div>
-          <span className="rounded-full bg-[#edf4e9] px-3 py-1.5 text-xs font-semibold text-[#315e4e]">
-            {scenario.phrases.length} phrases
-          </span>
-        </div>
-
-        <ol className="mt-6 space-y-3">
-          {scenario.phrases.map((item, index) => {
-            const active = index === selectedIndex;
-            return (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  aria-label={`Choose phrase ${index + 1}: ${item.text}`}
-                  aria-pressed={active}
-                  onClick={() => actions.selectPhrase(index)}
-                  className={[
-                    "w-full rounded-2xl border p-4 text-left transition",
-                    active
-                      ? "border-[#2a7058] bg-[#eff6ed] shadow-[0_8px_22px_rgba(42,112,88,0.08)]"
-                      : "border-[#e8ede7] bg-white hover:border-[#bdcec0] hover:bg-[#fafcf9]",
-                  ].join(" ")}
-                >
-                  <span className="flex items-center gap-3">
-                    <span
-                      className={[
-                        "grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold",
-                        active ? "bg-[#193f34] text-white" : "bg-[#eef1ec] text-[#60736a]",
-                      ].join(" ")}
-                    >
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span>
-                      <span className="block text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#638078]">
-                        {item.category}
-                      </span>
-                      <span className="mt-1 block text-sm font-medium leading-6 text-[#203e37]">
-                        {item.text}
-                      </span>
-                    </span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-
-        <div className="mt-5 flex items-center justify-between border-t border-[#e8ede7] pt-4">
-          <button
-            type="button"
-            aria-label="Previous phrase"
-            onClick={() => actions.selectPhrase(selectedIndex - 1)}
-            disabled={selectedIndex === 0}
-            className="rounded-full px-3 py-2 text-sm font-semibold text-[#3d5e53] transition hover:bg-[#f1f5ef] disabled:cursor-not-allowed disabled:text-[#aab8af]"
-          >
-            <span aria-hidden="true">←</span> Previous phrase
-          </button>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#73877e]">
-            Phrase {selectedIndex + 1} of {scenario.phrases.length}
-          </p>
-          <button
-            type="button"
-            aria-label="Next phrase"
-            onClick={() => actions.selectPhrase(selectedIndex + 1)}
-            disabled={selectedIndex === scenario.phrases.length - 1}
-            className="rounded-full px-3 py-2 text-sm font-semibold text-[#3d5e53] transition hover:bg-[#f1f5ef] disabled:cursor-not-allowed disabled:text-[#aab8af]"
-          >
-            Next phrase <span aria-hidden="true">→</span>
-          </button>
-        </div>
-      </aside>
-
-      <section
-        aria-labelledby="practice-title"
-        className="relative overflow-hidden rounded-[1.75rem] bg-[#173d33] p-6 text-white shadow-[0_26px_80px_rgba(18,51,45,0.18)] sm:p-9"
-      >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-16 -top-20 size-64 rounded-full border border-white/10"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-5 -top-9 size-40 rounded-full bg-[#d7ff7a]/10 blur-2xl"
-        />
-        <div className="relative">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#b5d0c4]">
-              Listen · repeat · compare
-            </p>
-            <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#d7e7dd]">
-              Local session
-            </span>
-          </div>
-          <h2
-            id="practice-title"
-            className="mt-8 text-sm font-semibold uppercase tracking-[0.16em] text-[#bad0c6]"
-          >
-            Reference phrase {String(selectedIndex + 1).padStart(2, "0")}
-          </h2>
-          <p className="mt-4 max-w-2xl text-3xl font-medium leading-[1.28] tracking-tight text-white sm:text-4xl">
-            {phrase.text}
-          </p>
-          <p className="mt-4 max-w-xl text-sm leading-6 text-[#d2e0d8]">
-            Listen once, then say it in your own voice. Your recording stays in this page session.
-          </p>
-
-          <fieldset
-            disabled={isAudioBusy || isRequestingMicrophone || isRecording}
-            className="mt-7"
-          >
-            <legend className="text-xs font-bold uppercase tracking-[0.16em] text-[#bad0c6]">
-              Reference voice
-            </legend>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {audioModels.map((model, index) => (
-                <label
-                  key={model.id}
-                  htmlFor={`reference-model-${index}`}
-                  className="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/15 bg-white/[0.06] p-4 transition hover:bg-white/10 has-[:checked]:border-[#d7ff7a] has-[:checked]:bg-white/10 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50"
-                >
-                  <input
-                    id={`reference-model-${index}`}
-                    type="radio"
-                    name="reference-model"
-                    value={model.id}
-                    checked={selectedModelId === model.id}
-                    onChange={() => actions.selectAudioModel(model.id)}
-                    aria-label={`Use ${model.vendor} ${model.displayName} voice ${model.voiceName}`}
-                    className="mt-1 size-4 accent-[#d7ff7a]"
-                  />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-bold text-white">
-                      {model.vendor} · {model.voiceName}
-                    </span>
-                    <span className="mt-1 block break-all text-xs leading-5 text-[#c1d7cb]">
-                      {model.displayName} · {model.id} · {model.voiceId} ·{" "}
-                      {model.outputFormat.toUpperCase()}
-                    </span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <div className="mt-8 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={actions.listenToReference}
-              disabled={isRequestingMicrophone || isRecording}
-              className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#d7ff7a] px-5 py-3 text-sm font-bold text-[#173d33] transition hover:bg-[#e5ffac] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <span aria-hidden="true" className="text-base">
-                ▶
-              </span>{" "}
-              Listen to reference
-            </button>
-            <button
-              type="button"
-              onClick={actions.startRecording}
-              disabled={!canRecord || isAudioBusy || isRequestingMicrophone || isRecording}
-              className="inline-flex min-h-12 items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              <span aria-hidden="true" className="size-2 rounded-full bg-[#ff8979]" />
-              {isRequestingMicrophone
-                ? "Waiting for microphone…"
-                : currentRecording
-                  ? "Record again"
-                  : "Record"}
-            </button>
-            {isRecording ? (
+    <section className="platform-grid">
+      <aside className="platform-sidebar practice-sidebar">
+        <Link href="/home" className="back-link">
+          <Image src="/design/back.svg" width={24} height={24} alt="" />
+          Playlists
+        </Link>
+        <h1>{scenario.title}</h1>
+        <h2 className="up-next">Practice phrases</h2>
+        <ol className="phrase-list">
+          {scenario.phrases.map((item, index) => (
+            <li key={item.id}>
               <button
                 type="button"
-                onClick={actions.stopRecording}
-                className="inline-flex min-h-12 items-center rounded-full border border-white/25 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                aria-label={`Choose phrase ${index + 1}: ${item.text}`}
+                aria-pressed={index === selectedIndex}
+                onClick={() => actions.selectPhrase(index)}
               >
-                Stop recording
+                <span className="phrase-number">{String(index + 1).padStart(2, "0")}</span>
+                <span>
+                  {item.text}
+                  <span className="sr-only">{item.category}</span>
+                </span>
               </button>
-            ) : null}
+            </li>
+          ))}
+        </ol>
+        {completion === "completed" ? <p className="completion-badge">✓ Completed</p> : null}
+        {completion === "saving" ? <p aria-live="polite">Saving completion…</p> : null}
+        {completion === "error" ? (
+          <div className="completion-error">
+            <p role="alert">Completion could not be saved. Your recordings remain in this page.</p>
+            <button className="text-button" type="button" onClick={saveCompletion}>
+              Try saving again
+            </button>
           </div>
-
-          <div className="mt-6 min-h-12">
-            <p role="status" aria-live="polite" className="text-sm font-medium text-[#dce9e2]">
+        ) : null}
+        {account}
+      </aside>
+      <section aria-labelledby="practice-title" className="platform-panel practice-panel">
+        <div className="practice-toolbar">
+          <fieldset
+            disabled={isAudioBusy || isRequestingMicrophone || isRecording}
+            className="voice-toggle"
+          >
+            <legend className="sr-only">Reference voice</legend>
+            {audioModels.map((model, index) => (
+              <label key={model.id} htmlFor={`reference-model-${index}`}>
+                <input
+                  id={`reference-model-${index}`}
+                  type="radio"
+                  name="reference-model"
+                  value={model.id}
+                  checked={selectedModelId === model.id}
+                  onChange={() => actions.selectAudioModel(model.id)}
+                  aria-label={model.voiceName}
+                />
+                <span className="voice-pill">{model.voiceName}</span>
+              </label>
+            ))}
+          </fieldset>
+          <span className="practice-mode">Shadowing</span>
+        </div>
+        <h2 id="practice-title" className="sr-only">
+          Reference phrase {String(selectedIndex + 1).padStart(2, "0")}
+        </h2>
+        <div className="transcript-area">
+          <MotionConfig reducedMotion="user">
+            <LayoutGroup id={`spoken-phrase-${phrase.id}`}>
+              <p className="practice-transcript">{phraseContent}</p>
+            </LayoutGroup>
+          </MotionConfig>
+        </div>
+        <div className="practice-bottom">
+          <div className="practice-actions">
+            <div className="numbered-action">
+              <span className="step-number" aria-hidden="true">
+                1
+              </span>
+              <button
+                type="button"
+                aria-label="Listen to reference"
+                onClick={actions.listenToReference}
+                disabled={isRequestingMicrophone || isRecording}
+                className="dark-button"
+              >
+                <Image src="/design/play.svg" width={24} height={24} alt="" />
+                Play reference
+              </button>
+            </div>
+            <div className="numbered-action">
+              <span className="step-number" aria-hidden="true">
+                2
+              </span>
+              {isRecording ? (
+                <button type="button" onClick={actions.stopRecording} className="dark-button">
+                  Stop recording
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  aria-label={
+                    isRequestingMicrophone
+                      ? "Waiting for microphone…"
+                      : hasRecording
+                        ? "Record again"
+                        : "Record"
+                  }
+                  onClick={actions.startRecording}
+                  disabled={!canRecord || isAudioBusy || isRequestingMicrophone}
+                  className="dark-button"
+                >
+                  <Image src="/design/speech.svg" width={24} height={24} alt="" />
+                  {isRequestingMicrophone ? "Waiting…" : "Speak"}
+                </button>
+              )}
+            </div>
+            <div className="numbered-action">
+              <span className="step-number" aria-hidden="true">
+                3
+              </span>
+              <button
+                type="button"
+                onClick={actions.compare}
+                disabled={isAudioBusy || isRequestingMicrophone || isRecording}
+                className="dark-button"
+              >
+                <Image src="/design/ear.svg" width={24} height={24} alt="" />
+                Compare
+              </button>
+            </div>
+          </div>
+          <div className="practice-feedback">
+            <p role="status" aria-live="polite" className="sr-only">
               {status}
             </p>
             {isRecording ? (
-              <p className="mt-2 font-mono text-xs font-semibold tracking-[0.14em] text-[#d7ff7a]">
-                {formatDuration(elapsedMs)} / 00:30
-              </p>
+              <p className="recording-clock">{formatDuration(elapsedMs)} / 00:30</p>
             ) : null}
             {error ? (
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <p role="alert" className="max-w-xl text-sm leading-6 text-[#ffd2c9]">
-                  {error}
-                </p>
+              <div>
+                <p role="alert">{error}</p>
                 {canRetryRecording ? (
-                  <button
-                    type="button"
-                    onClick={actions.startRecording}
-                    className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white underline decoration-white/50 underline-offset-4 hover:bg-white/15"
-                  >
+                  <button type="button" className="text-button" onClick={actions.startRecording}>
                     Try again
                   </button>
                 ) : null}
               </div>
             ) : null}
           </div>
-
-          <div className="mt-5 grid gap-3 border-t border-white/15 pt-5 sm:grid-cols-2">
+          <div className="phrase-navigation">
             <button
               type="button"
-              onClick={actions.playRecording}
-              disabled={!currentRecording || isAudioBusy || isRequestingMicrophone || isRecording}
-              className="min-h-11 rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:text-white/40"
+              aria-label="Next phrase"
+              className="next-phrase"
+              onClick={() => actions.selectPhrase(selectedIndex + 1)}
+              disabled={selectedIndex === scenario.phrases.length - 1}
             >
-              Play your recording
-            </button>
-            <button
-              type="button"
-              onClick={actions.compare}
-              disabled={!currentRecording || isAudioBusy || isRequestingMicrophone || isRecording}
-              className="min-h-11 rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:text-white/40"
-            >
-              Compare
+              <Image src="/design/forward.svg" width={24} height={24} alt="" />
+              Next phrase
             </button>
           </div>
-          <p className="mt-5 text-xs leading-5 text-[#b5cfc3]">
-            Microphone access starts only when you choose Record. Nothing is uploaded or saved after
-            you leave or reload this page.
-          </p>
         </div>
-        {/* The selected phrase remains visible beside these button-controlled clips. */}
-        {/* biome-ignore lint/a11y/useMediaCaption: Reference text is rendered in the practice panel; recordings repeat that prompt. */}
+        {/* biome-ignore lint/a11y/useMediaCaption: Reference text is visible; recording repeats that prompt. */}
         <audio
           ref={audioRef}
           preload="none"
+          data-testid="practice-audio"
           onEnded={actions.handleAudioEnded}
           onError={actions.handleAudioError}
+          className="sr-only"
+        />
+        {/* biome-ignore lint/a11y/useMediaCaption: The selected reference text is visible. */}
+        <audio
+          ref={wordReplayAudioRef}
+          preload="auto"
+          data-testid="reference-word-audio"
+          onEnded={actions.handleWordAudioEnded}
+          onError={actions.handleWordAudioError}
           className="sr-only"
         />
       </section>
     </section>
   );
 }
-
 function formatDuration(milliseconds: number) {
-  const seconds = Math.floor(milliseconds / 1000);
-  return `00:${String(seconds).padStart(2, "0")}`;
+  return `00:${String(Math.floor(milliseconds / 1000)).padStart(2, "0")}`;
 }

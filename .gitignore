@@ -1,5 +1,7 @@
 # Dependencies and package-manager state
 /node_modules/
+/.worktrees/
+*.tmp
 /.pnp
 .pnp.*
 .yarn/*
@@ -10,6 +12,7 @@
 
 # Next.js output
 /.next/
+/.next-remote/
 /out/
 /build/
 /dist/
