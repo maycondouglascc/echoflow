@@ -1,7 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
 import { safeNext } from "@/lib/auth-redirect";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createEmailClient } from "@/lib/supabase/server";
 
 export interface AuthResult {
   message: string;
@@ -34,9 +34,10 @@ export async function authenticate(_previous: AuthResult, form: FormData): Promi
     return { message: "Use a password with at least 8 characters." };
   let destination: string | null = null;
   try {
-    const client = await createClient();
+    const client =
+      mode === "signup" || mode === "recover" ? createEmailClient() : await createClient();
     const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://127.0.0.1:3000";
-    const callback = `${site}/auth/callback?next=${encodeURIComponent(next)}`;
+    const callback = `${site}/auth/complete?next=${encodeURIComponent(next)}`;
     if (mode === "signup") {
       const result = await client.auth.signUp({
         email,
@@ -59,7 +60,7 @@ export async function authenticate(_previous: AuthResult, form: FormData): Promi
     }
     if (mode === "recover") {
       const result = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: `${site}/auth/callback?next=/home&recovery=1`,
+        redirectTo: `${site}/auth/complete?next=/home&recovery=1`,
       });
       if (result.error)
         return authFailure(
@@ -121,4 +122,40 @@ export async function logout(): Promise<void> {
   const result = await client.auth.signOut({ scope: "local" });
   if (result.error) throw new Error("Sign out failed. Please try again.");
   redirect("/login");
+}
+
+// These bearer credentials travel only to this same-origin action. Supabase
+// validates the user before its SSR client persists session cookies.
+export async function completeEmailSignIn(input: {
+  accessToken: string;
+  refreshToken: string;
+  type: string;
+  next: string;
+}): Promise<AuthResult> {
+  if (
+    !input ||
+    typeof input.accessToken !== "string" ||
+    input.accessToken.length > 16384 ||
+    !/^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/.test(input.accessToken) ||
+    typeof input.refreshToken !== "string" ||
+    !/^[a-zA-Z0-9_-]{8,512}$/.test(input.refreshToken) ||
+    !["signup", "recovery"].includes(input.type)
+  )
+    return {
+      message: "This sign-in link is invalid or expired. Request a new email and try again.",
+    };
+  try {
+    const client = await createClient();
+    const result = await client.auth.setSession({
+      access_token: input.accessToken,
+      refresh_token: input.refreshToken,
+    });
+    if (result.error || !result.data.user?.email_confirmed_at)
+      return {
+        message: "This sign-in link is invalid or expired. Request a new email and try again.",
+      };
+  } catch {
+    return { message: "Authentication is unavailable. Please try again shortly." };
+  }
+  redirect(input.type === "recovery" ? "/login?mode=reset" : safeNext(input.next));
 }

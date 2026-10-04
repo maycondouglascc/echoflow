@@ -5,7 +5,7 @@ import test from "node:test";
 const mockUrl =
   "data:text/javascript," +
   encodeURIComponent(
-    "export let client; export function setClient(value) { client=value; } export async function createClient() { return client; }",
+    "export let client; export function setClient(value) { client=value; } export async function createClient() { return client; } export function createEmailClient() { return client; }",
   );
 const hook = registerHooks({
   resolve(specifier, context, next) {
@@ -19,7 +19,7 @@ const hook = registerHooks({
     return next(specifier, context);
   },
 });
-const { authenticate } = await import("../src/app/(auth)/actions.ts");
+const { authenticate, completeEmailSignIn } = await import("../src/app/(auth)/actions.ts");
 const { setClient } = await import(mockUrl);
 hook.deregister();
 function form(mode = "login") {
@@ -80,4 +80,27 @@ test("recovery is neutral, delivery failure is actionable, reset requires a sess
   assert.match((await authenticate({ message: "" }, form("recover"))).message, /Too many attempts/);
   fixture("getUser", null, { user: null });
   assert.match((await authenticate({ message: "" }, form("reset"))).message, /valid recovery link/);
+});
+
+test("email session completion validates bearer credentials before allowing a destination", async () => {
+  const input = {
+    accessToken: "a.b.c",
+    refreshToken: "synthetic123",
+    type: "recovery",
+    next: "https://evil.example",
+  };
+  fixture("setSession", null, { user: { email_confirmed_at: "2026-10-04" } });
+  await assert.rejects(completeEmailSignIn(input), (e) => e.digest.includes("/login?mode=reset"));
+  fixture("setSession", null, { user: { email_confirmed_at: "2026-10-04" } });
+  await assert.rejects(completeEmailSignIn({ ...input, type: "signup" }), (e) =>
+    e.digest.includes("/home"),
+  );
+  fixture("setSession", { code: "invalid_credentials" });
+  assert.match((await completeEmailSignIn(input)).message, /invalid or expired/);
+  const calls = fixture("setSession", null, { user: { email_confirmed_at: null } });
+  assert.match(
+    (await completeEmailSignIn({ ...input, accessToken: "fake" })).message,
+    /invalid or expired/,
+  );
+  assert.equal(calls(), 0);
 });

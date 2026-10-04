@@ -1,51 +1,53 @@
 # Authentication diagnosis and scoped fixes — 2026-10-04
 
 Intent: restore account access and fix regressions in the existing feature 005 authentication flows.
-This is a scoped bug fix against its accepted auth/access specification, not a new authentication product.
+This is a scoped bug fix against its accepted auth/access specification.
 
-Observed: the provided account exists in the remote project, is confirmed, and is neither banned nor
-soft-deleted. Both local and published password attempts fail. Public Vercel configuration matches
-local configuration. Recovery email arrives, but its callback fails. The existing PKCE email link
-requires a verifier cookie in the browser that requested the email; a different browser cannot exchange it.
-The initial password failure itself cannot be attributed to a password mismatch without its provider
-response; no password was requested or changed administratively.
+The reported account exists, is confirmed, and is neither banned nor soft-deleted. Public Vercel
+configuration matches local configuration. Password attempts fail in both environments; no password
+was requested or changed administratively. A recovery email arrived but its callback failed.
+A local regression reproduces the same callback error when the email opens in a different browser:
+the previous PKCE link depended on a verifier cookie belonging to the initiating browser.
 
-Acceptance and plan:
+## Final implementation
 
-- Use server-side Supabase verifyOtp with a one-time token hash for signup/recovery emails, independent
-  of initiating-browser cookies. Keep PKCE code exchange for OAuth and previously sent links.
-- Strictly restrict token types and internal destinations; remove token-bearing URL after verification,
-  reject invalid/reused links, and mark every callback response no-store/no-referrer. No service key.
-- Preserve confirmation, caller sessions, protected routes and RLS. No arbitrary account confirmation,
-  password replacement, data deletion, provider enabling or security weakening.
-- Distinguish invalid credentials, unconfirmed email, throttling, unavailable service and delivery failure.
-  Keep duplicate signup/recovery replies neutral; reject unsupported action modes.
-- Clear obsolete form outcomes when switching between login, recovery and Google/email attempts.
-- Regression checks: real action calls with deterministic provider responses; local email inbox tests
-  for confirmation, recovery in another browser, new password login, token reuse/invalid types,
-  direct destinations, logout, tampered/revoked sessions and form outcomes. No production test accounts.
-- Deploy callback support before updating the two remote email templates. Send a fresh recovery email
-  to the user afterward; user chooses/submits their own new password.
+- Signup/recovery requests use a server-only, non-persisting Supabase client with implicit email flow.
+  Supabase verifies its default one-time email link. Its returned fragment reaches `/auth/complete`,
+  where the client immediately removes it from the visible URL and submits the transient session
+  credentials to a same-origin server action. The SSR SDK verifies them against Supabase before
+  persisting session cookies; only confirmed accounts continue. No provider/service-role key.
+- Recovery continues to `/login?mode=reset`; the user chooses their password. Signup honors only
+  allowlisted internal destinations. OAuth and previously sent links retain the PKCE callback.
+  `/auth/callback` also accepts strictly validated signup/recovery token hashes for custom templates.
+- The verification response and auth routes are private/no-store and no-referrer. Tokens are not
+  reflected in error messages, persisted in local storage or passed to final destinations. Invalid,
+  expired/reused links and forged session credentials fail with a new-email instruction.
+- Invalid credentials, unconfirmed email, throttling, unavailable service and delivery failures have
+  distinct safe messages. Duplicate signup/recovery replies stay neutral. Unknown action modes fail.
+- Login/recovery and Google/email attempts clear obsolete outcomes. Confirmation copy no longer asks
+  the user to keep the initiating browser.
+- Local/preview callback allowlist additions retain existing entries and target only the new
+  `/auth/complete` route on the already used localhost/127.0.0.1 ports 3000 and 4177.
 
-External limits: Google OAuth is disabled until credentials are configured. Default hosted SMTP is
-restricted; general public delivery needs custom SMTP. Local browser tests cannot prove delivery
-for arbitrary production addresses or physical-device behavior.
-
-Evidence and final rollout results will be appended after verification.
+The hosted free project rejected custom email-template changes with its default mail provider.
+No template change was applied. The final implementation therefore supports the provider's existing
+emails without a plan upgrade, new credential or schema change. Local tests use those same defaults.
+Google remains disabled until OAuth credentials are configured; default hosted SMTP is restricted,
+so unrestricted public signup/recovery delivery still needs custom SMTP.
 
 ## Verification
 
-- Reproduced in local Chromium: recovery requested in one browser and opened in another redirected to
-  `/login?error=callback`; switching to recovery retained the previous login error. Both regression
-  tests passed after the callback/template and form fixes.
-- `npm run lint`, `npm run typecheck`, `npm run test:unit`: passed (eight test files, including real
-  action/callback seams with deterministic provider fixtures).
-- Production build passed using `npm run build -- --webpack` in isolated `.next-remote`; Turbopack's
-  internal compilation socket was denied by the host environment. No build/typecheck gate removed.
-- Local production server 4185 and isolated Supabase 56321–56324: 24/24 Chromium tests passed,
-  including signup/recovery in separate browsers, token reuse, password change and login, session
-  refresh, logout, tampered/revoked sessions, internal redirects and desktop/mobile auth modals.
-- Focused auth review: only signup/recovery OTP types accepted, server verifies tokens using the public
-  caller client, ambiguous inputs fail, tokens do not reach redirect destinations, no-referrer/no-store
-  on every callback, current session verified before password update. Confirmation/RLS remain required.
-- Remote Google is disabled and default SMTP remains restricted; no credentials or auth protections changed.
+- Before fix, local Chromium reproduced `/login?error=callback` for recovery in another browser and
+  a stale login error after switching to recovery. Both are covered by regression tests.
+- `npm run lint`, `npm run typecheck`, `npm run test:unit`: passed (eight test files, including actual
+  action/callback calls with deterministic provider responses).
+- Isolated `.next-remote` production build passed with `npm run build -- --webpack`; the host denied
+  Turbopack's internal compilation socket. Vercel's earlier build ran Turbopack successfully. No gate weakened.
+- Browser evidence against the final default-email implementation and production rollout follows below.
+- Focused auth review: SDK verifies credentials before cookie persistence, confirmed-user check,
+  strict email flow/token inputs, safeNext restrictions, secret-free errors, no-referrer/no-store,
+  account isolation/session verification retained, and no administrative account/password changes.
+
+Final default-email tests: 24/24 Chromium auth/modal tests passed on the isolated production server.
+Additional real-route check passed for forged email-link credentials, fragment removal and auth-route
+no-store/no-referrer headers. Production build, lint/typecheck and eight unit test files passed.

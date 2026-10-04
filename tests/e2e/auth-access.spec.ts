@@ -238,7 +238,7 @@ test("email recovery completes when the email opens in another browser session",
     await otherPage.getByRole("button", { name: "Not now", exact: true }).click();
     await otherPage.getByRole("button", { name: "Log out" }).click();
     await otherPage.goto(link);
-    await expect(otherPage).toHaveURL(/\/login\?error=callback$/);
+    await expect(otherPage).toHaveURL(/\/auth\/complete$/);
     await expect(otherPage.locator(".auth-form").getByRole("alert")).toContainText(
       "invalid or expired",
     );
@@ -272,7 +272,10 @@ test("signup confirmation works in another browser and rejects reused links", as
     await nextPage.getByRole("button", { name: "Not now", exact: true }).click();
     await nextPage.getByRole("button", { name: "Log out" }).click();
     await nextPage.goto(link);
-    await expect(nextPage).toHaveURL(/\/login\?error=callback$/);
+    await expect(nextPage).toHaveURL(/\/auth\/complete$/);
+    await expect(nextPage.locator(".auth-form").getByRole("alert")).toContainText(
+      "invalid or expired",
+    );
   } finally {
     await other.close();
   }
@@ -300,4 +303,18 @@ test("refresh persists renewed session cookies on protected navigation", async (
   expect(Boolean(renewed && renewed.value !== oldCookie)).toBe(true);
   await page.goto("/login");
   await expect(page).toHaveURL(/\/home$/);
+});
+
+test("forged email-link credentials are removed from the URL and cannot authorize a user", async ({
+  page,
+}) => {
+  const response = await page.goto(
+    "/auth/complete#access_token=a.b.c&refresh_token=not-a-session&type=recovery",
+  );
+  expect(response?.headers()["cache-control"]).toContain("no-store");
+  expect(response?.headers()["referrer-policy"]).toBe("no-referrer");
+  await expect(page.locator(".auth-form").getByRole("alert")).toBeVisible();
+  await expect(page).toHaveURL(/\/auth\/complete$/);
+  await page.goto("/home");
+  await expect(page).toHaveURL(/\/login/);
 });

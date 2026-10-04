@@ -200,7 +200,8 @@ pessoal do responsável. Google OAuth e SMTP público continuam dependentes de c
 ## Scoped authentication correction — 2026-10-04
 
 Signup confirmation and password recovery email links must also work when opened in a different
-browser from the request, using server-side verification of a one-time token hash. OAuth and older
+browser from the request. Supabase verifies its default one-time email link; the app removes the returned
+URL fragment and verifies the session server-side before writing cookies. OAuth and older
 links retain PKCE handling. Invalid or reused tokens must fail without exposing credentials or an
 external redirect. Signup/recovery remain neutral about account existence. Form errors must identify
 provider outage/throttling separately from bad credentials and disappear when changing auth modes.
