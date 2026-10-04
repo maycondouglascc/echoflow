@@ -92,6 +92,7 @@ export function ShadowingPractice({
         {canReplayWord ? (
           <motion.button
             type="button"
+            data-feedback-action="replay-word"
             aria-label={`Replay word: ${part} in ${selectedVoiceName}`}
             onClick={() => actions.replayWord(wordIndex)}
             disabled={isRequestingMicrophone || isRecording}
@@ -120,6 +121,7 @@ export function ShadowingPractice({
             <li key={item.id}>
               <button
                 type="button"
+                data-feedback-action="select-phrase"
                 aria-label={`Choose phrase ${index + 1}: ${item.text}`}
                 aria-pressed={index === selectedIndex}
                 onClick={() => actions.selectPhrase(index)}
@@ -155,6 +157,7 @@ export function ShadowingPractice({
             {audioModels.map((model, index) => (
               <label key={model.id} htmlFor={`reference-model-${index}`}>
                 <input
+                  data-feedback-action="select-voice"
                   id={`reference-model-${index}`}
                   type="radio"
                   name="reference-model"
@@ -187,6 +190,7 @@ export function ShadowingPractice({
               </span>
               <button
                 type="button"
+                data-feedback-action="listen-reference"
                 aria-label="Listen to reference"
                 onClick={actions.listenToReference}
                 disabled={isRequestingMicrophone || isRecording}
@@ -201,7 +205,12 @@ export function ShadowingPractice({
                 2
               </span>
               {isRecording ? (
-                <button type="button" onClick={actions.stopRecording} className="dark-button">
+                <button
+                  type="button"
+                  data-feedback-action="stop-recording"
+                  onClick={actions.stopRecording}
+                  className="dark-button"
+                >
                   Stop recording
                 </button>
               ) : (
@@ -214,6 +223,7 @@ export function ShadowingPractice({
                         ? "Record again"
                         : "Record"
                   }
+                  data-feedback-action="record"
                   onClick={actions.startRecording}
                   disabled={!canRecord || isAudioBusy || isRequestingMicrophone}
                   className="dark-button"
@@ -229,6 +239,7 @@ export function ShadowingPractice({
               </span>
               <button
                 type="button"
+                data-feedback-action="compare"
                 onClick={actions.compare}
                 disabled={isAudioBusy || isRequestingMicrophone || isRecording}
                 className="dark-button"
@@ -249,7 +260,12 @@ export function ShadowingPractice({
               <div>
                 <p role="alert">{error}</p>
                 {canRetryRecording ? (
-                  <button type="button" className="text-button" onClick={actions.startRecording}>
+                  <button
+                    type="button"
+                    className="text-button"
+                    data-feedback-action="record"
+                    onClick={actions.startRecording}
+                  >
                     Try again
                   </button>
                 ) : null}
@@ -259,6 +275,7 @@ export function ShadowingPractice({
           <div className="phrase-navigation">
             <button
               type="button"
+              data-feedback-action="next-phrase"
               aria-label="Next phrase"
               className="next-phrase"
               onClick={() => actions.selectPhrase(selectedIndex + 1)}

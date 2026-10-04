@@ -63,6 +63,26 @@ export default function PrivacyPage() {
             transcript. Practice access events are not counts of unique people.
           </p>
         </section>
+        <section aria-labelledby="feedback-privacy">
+          <h2 id="feedback-privacy">Feedback and page context</h2>
+          <p>
+            Feedback lets you send improvement suggestions linked to your account and the current
+            page. Opening the form prepares a local screenshot of the visible app and a history of
+            up to 20 recent pages and selected actions from the last five minutes.
+          </p>
+          <p>
+            You can review and remove either attachment before sending. Form fields, private
+            elements, microphone audio and video are excluded. Navigation context contains no typed
+            values, URL queries or fragments; it stays in memory and is discarded when you leave the
+            authenticated area.
+          </p>
+          <p>
+            Nothing is submitted until you choose Send feedback. Submitted suggestions and optional
+            screenshots are stored privately in Supabase for the team to review. Other accounts
+            cannot access them. Avoid personal or sensitive information in your suggestion or
+            screenshot.
+          </p>
+        </section>
         <section aria-labelledby="beta-privacy">
           <h2 id="beta-privacy">About this beta</h2>
           <p>
