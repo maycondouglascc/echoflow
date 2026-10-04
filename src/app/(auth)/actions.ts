@@ -7,11 +7,27 @@ export interface AuthResult {
   message: string;
   success?: boolean;
 }
+function authFailure(error: { code?: string; status?: number }, fallback: string): AuthResult {
+  if (error.status === 429)
+    return { message: "Too many attempts. Wait a few minutes, then try again." };
+  if (error.code === "invalid_credentials")
+    return { message: "Email or password is incorrect. Try again or use Forgot password." };
+  if (error.code === "email_not_confirmed")
+    return { message: "Confirm your email using the link sent to you before signing in." };
+  if (error.code === "email_address_not_authorized" || error.code === "email_send_failed")
+    return { message: "Email delivery is unavailable. Please contact support or try again later." };
+  if (error.status === 0 || error.status === 401 || (error.status ?? 0) >= 500)
+    return { message: "Authentication is unavailable. Please try again shortly." };
+  return { message: fallback };
+}
+
 export async function authenticate(_previous: AuthResult, form: FormData): Promise<AuthResult> {
   const email = String(form.get("email") ?? "").trim();
   const password = String(form.get("password") ?? "");
   const mode = String(form.get("mode") ?? "login");
   const next = safeNext(form.get("next"));
+  if (!["login", "signup", "recover", "reset"].includes(mode))
+    return { message: "Invalid authentication request. Please reload and try again." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && mode !== "reset")
     return { message: "Enter a valid email address." };
   if (mode !== "recover" && password.length < 8)
@@ -31,7 +47,10 @@ export async function authenticate(_previous: AuthResult, form: FormData): Promi
         result.error &&
         !["user_already_exists", "email_exists"].includes(result.error.code ?? "")
       )
-        return { message: "Your signup request could not be completed. Please try again." };
+        return authFailure(
+          result.error,
+          "Your signup request could not be completed. Please try again.",
+        );
       return {
         success: true,
         message:
@@ -43,7 +62,10 @@ export async function authenticate(_previous: AuthResult, form: FormData): Promi
         redirectTo: `${site}/auth/callback?next=/home&recovery=1`,
       });
       if (result.error)
-        return { message: "The recovery request could not be sent. Please try again." };
+        return authFailure(
+          result.error,
+          "The recovery request could not be sent. Please try again.",
+        );
       return {
         success: true,
         message: "If this address can receive a recovery email, instructions will arrive shortly.",
@@ -54,15 +76,12 @@ export async function authenticate(_previous: AuthResult, form: FormData): Promi
       if (!user.data.user || user.error)
         return { message: "Open a valid recovery link before changing your password." };
       const result = await client.auth.updateUser({ password });
-      if (result.error) return { message: "The password could not be changed. Please try again." };
+      if (result.error)
+        return authFailure(result.error, "The password could not be changed. Please try again.");
       destination = "/home";
     } else {
       const result = await client.auth.signInWithPassword({ email, password });
-      if (result.error)
-        return {
-          message:
-            "Unable to sign in. Check your credentials and confirm your email, then try again.",
-        };
+      if (result.error) return authFailure(result.error, "Unable to sign in. Please try again.");
       destination = next;
     }
   } catch {

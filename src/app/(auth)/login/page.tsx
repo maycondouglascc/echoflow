@@ -18,7 +18,13 @@ export default async function Login({
       <AuthForm
         mode={query.mode === "reset" ? "reset" : "login"}
         next={safeNext(query.next)}
-        initialError={Boolean(query.error)}
+        initialError={
+          query.error === "callback"
+            ? "callback"
+            : query.error === "unavailable"
+              ? "unavailable"
+              : undefined
+        }
       />
     </main>
   );

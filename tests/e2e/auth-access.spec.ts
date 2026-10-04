@@ -72,7 +72,9 @@ test("signup is neutral, login failure recovers and invalid callbacks cannot red
   await page.getByLabel("Email address").fill("redirect@example.test");
   await page.getByLabel("Password", { exact: true }).fill("wrong-password");
   await page.getByRole("button", { name: "Log in", exact: true }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "Unable to sign in" })).toBeVisible();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Email or password is incorrect" }),
+  ).toBeVisible();
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Log in", exact: true }).click();
   await expect(page).toHaveURL(/\/home$/);
@@ -138,10 +140,15 @@ async function localEmailLink(request: APIRequestContext, email: string, subject
     })
     .toBe(true);
   const message = await (await request.get(`${localInbox}/api/v1/message/${id}`)).json();
-  const match = String(message.HTML).match(/href="([^"]*\/auth\/v1\/verify[^"]*)"/);
+  const match = String(message.HTML).match(/href="([^"]*\/auth\/(?:v1\/verify|callback)[^"]*)"/);
   if (!match) throw new Error("Local confirmation link missing.");
   const link = match[1].replaceAll("&amp;", "&");
-  if (new URL(link).origin !== new URL(localUrl).origin)
+  if (
+    ![
+      new URL(localUrl).origin,
+      process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4175",
+    ].includes(new URL(link).origin)
+  )
     throw new Error("Refusing nonlocal auth link.");
   return link;
 }
@@ -160,7 +167,7 @@ test("a revoked account session cannot make new protected requests", async ({ pa
   await expect(page).toHaveURL(/\/login/);
 });
 
-test("email confirmation and recovery complete through the local inbox and PKCE", async ({
+test("email confirmation and recovery complete through the local inbox", async ({
   page,
   request,
 }) => {
@@ -188,5 +195,109 @@ test("email confirmation and recovery complete through the local inbox and PKCE"
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(`${password}new`);
   await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await expect(page).toHaveURL(/\/home$/);
+});
+
+test("switching between login and recovery clears the previous outcome", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Email address").fill("missing-auth-flow@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("incorrect-password-123!");
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await expect(page.locator(".auth-form").getByRole("alert")).toContainText(
+    "Email or password is incorrect",
+  );
+  await page.getByRole("button", { name: "Forgot password?" }).click();
+  await expect(page.locator(".auth-form").getByRole("alert")).toHaveCount(0);
+  await page.getByRole("button", { name: "Send recovery email" }).click();
+  await expect(page.getByRole("status")).toContainText("instructions");
+  await page.getByRole("button", { name: "Back to login" }).click();
+  await expect(page.getByRole("status")).toHaveCount(0);
+});
+
+test("email recovery completes when the email opens in another browser session", async ({
+  page,
+  browser,
+  request,
+}) => {
+  const account = await ensureAccount(`cross-browser-${Date.now()}`);
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Forgot password?" }).click();
+  await page.getByLabel("Email address").fill(account.email);
+  await page.getByRole("button", { name: "Send recovery email" }).click();
+  await expect(page.getByRole("status")).toContainText("instructions");
+  const link = await localEmailLink(request, account.email, "reset");
+  const otherContext = await browser.newContext();
+  try {
+    const otherPage = await otherContext.newPage();
+    await otherPage.goto(link);
+    await expect(otherPage).toHaveURL(/\/login\?mode=reset$/);
+    await expect(otherPage.getByRole("heading", { name: "Choose a new password" })).toBeVisible();
+    await otherPage.getByLabel("Password", { exact: true }).fill(`${password}-recovered`);
+    await otherPage.getByRole("button", { name: "Save password" }).click();
+    await expect(otherPage).toHaveURL(/\/home$/);
+    await otherPage.getByRole("button", { name: "Not now", exact: true }).click();
+    await otherPage.getByRole("button", { name: "Log out" }).click();
+    await otherPage.goto(link);
+    await expect(otherPage).toHaveURL(/\/login\?error=callback$/);
+    await expect(otherPage.locator(".auth-form").getByRole("alert")).toContainText(
+      "invalid or expired",
+    );
+    await page.goto("/login");
+    await page.getByLabel("Email address").fill(account.email);
+    await page.getByLabel("Password", { exact: true }).fill(`${password}-recovered`);
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
+    await expect(page).toHaveURL(/\/home$/);
+  } finally {
+    await otherContext.close();
+  }
+});
+
+test("signup confirmation works in another browser and rejects reused links", async ({
+  page,
+  browser,
+  request,
+}) => {
+  const email = `cross-signup-${Date.now()}@example.test`;
+  await page.goto("/signup?next=/scenarios/voice-comparison");
+  await page.getByLabel("Email address").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Check your email", exact: true })).toBeVisible();
+  const link = await localEmailLink(request, email, "confirm");
+  const other = await browser.newContext();
+  try {
+    const nextPage = await other.newPage();
+    await nextPage.goto(link);
+    await expect(nextPage).toHaveURL(/\/scenarios\/voice-comparison$/);
+    await nextPage.getByRole("button", { name: "Not now", exact: true }).click();
+    await nextPage.getByRole("button", { name: "Log out" }).click();
+    await nextPage.goto(link);
+    await expect(nextPage).toHaveURL(/\/login\?error=callback$/);
+  } finally {
+    await other.close();
+  }
+});
+
+test("refresh persists renewed session cookies on protected navigation", async ({
+  page,
+  context,
+}) => {
+  await login(page, "refresh-auth", "/home");
+  const cookies = await context.cookies();
+  const session = cookies.find(
+    (c) => c.name.includes("auth-token") && !c.name.includes("verifier"),
+  );
+  if (!session?.value.startsWith("base64-")) throw new Error("Expected synthetic session cookie.");
+  const value = JSON.parse(Buffer.from(session.value.slice(7), "base64url").toString());
+  value.expires_at = 1;
+  await context.addCookies([
+    { ...session, value: `base64-${Buffer.from(JSON.stringify(value)).toString("base64url")}` },
+  ]);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Available playlists" })).toBeVisible();
+  const renewed = (await context.cookies()).find((c) => c.name === session.name);
+  const oldCookie = `base64-${Buffer.from(JSON.stringify(value)).toString("base64url")}`;
+  expect(Boolean(renewed && renewed.value !== oldCookie)).toBe(true);
+  await page.goto("/login");
   await expect(page).toHaveURL(/\/home$/);
 });

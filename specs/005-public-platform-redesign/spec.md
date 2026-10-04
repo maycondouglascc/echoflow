@@ -196,3 +196,12 @@ credenciais locais para visualizar a área interna. A prévia remota usa porta 4
 substitui o ambiente local/testes 4175. Essa autorização não inclui publicação, deploy,
 contratação de serviço pago, desativação da confirmação de email ou criação de conta
 pessoal do responsável. Google OAuth e SMTP público continuam dependentes de configuração.
+
+## Scoped authentication correction — 2026-10-04
+
+Signup confirmation and password recovery email links must also work when opened in a different
+browser from the request, using server-side verification of a one-time token hash. OAuth and older
+links retain PKCE handling. Invalid or reused tokens must fail without exposing credentials or an
+external redirect. Signup/recovery remain neutral about account existence. Form errors must identify
+provider outage/throttling separately from bad credentials and disappear when changing auth modes.
+Diagnosis, acceptance and evidence: docs/auth-flow-fixes-2026-10-04.md.

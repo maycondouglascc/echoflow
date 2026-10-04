@@ -6,17 +6,26 @@ export async function GET(request: Request) {
   // Use the configured public origin, not Next's internal listener/forwarded Host.
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? url.origin;
   const code = url.searchParams.get("code");
+  const tokenHash = url.searchParams.get("token_hash");
+  const type = url.searchParams.get("type");
   try {
-    if (code) {
+    const validToken =
+      tokenHash &&
+      /^[a-zA-Z0-9_-]{32,256}$/.test(tokenHash) &&
+      (type === "signup" || type === "recovery");
+    if ((code && !tokenHash) || (validToken && !code)) {
       const client = await createClient();
-      const { error } = await client.auth.exchangeCodeForSession(code);
+      const { error } = validToken
+        ? await client.auth.verifyOtp({ token_hash: tokenHash, type })
+        : await client.auth.exchangeCodeForSession(code ?? "");
       if (!error) {
         const next =
-          url.searchParams.get("recovery") === "1"
+          type === "recovery" || (!tokenHash && url.searchParams.get("recovery") === "1")
             ? "/login?mode=reset"
             : safeNext(url.searchParams.get("next"));
         const response = NextResponse.redirect(new URL(next, origin));
         response.headers.set("Cache-Control", "private, no-store");
+        response.headers.set("Referrer-Policy", "no-referrer");
         return response;
       }
     }
@@ -25,5 +34,6 @@ export async function GET(request: Request) {
   }
   const response = NextResponse.redirect(new URL("/login?error=callback", origin));
   response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }

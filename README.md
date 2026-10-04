@@ -41,7 +41,7 @@ from `.next` and local tests; rebuild this profile after source changes.
 Only the public anon key is written to ignored `.env.remote.local` (mode 600).
 The local `.env.local`, Supabase stack and browser tests on port 4175 remain separate.
 Do not run ordinary tests or the local audio importer against the remote project.
-Register with an organization team-member email and confirm in the same browser;
+Register with an organization team-member email and confirm the emailed link;
 public email delivery needs custom SMTP and Google login needs its OAuth credentials.
 This is a local frontend with remote Supabase, not a published deployment.
 
@@ -98,7 +98,7 @@ The local setup helper uses that origin for callbacks; for normal development se
 subject to RLS. Service role is maintenance-only and is never read by application code.
 
 Email confirmation is enabled locally; inspect the test inbox to open confirmation/recovery links
-in the same browser that requested them (PKCE). Google is deliberately disabled until a test
+through the server-verified one-time email links. OAuth uses PKCE. Google is deliberately disabled until a test
 OAuth client is provided. Configure its secret server-side, enable the provider, and allow only
 the exact `/auth/callback` origins in both Google and Supabase. Production SMTP, redirect origins,
 legal content, spend/abuse limits, device checks and deployment need separate approval.
