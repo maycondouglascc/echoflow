@@ -63,5 +63,755 @@
     "path": "openrouter/job-interview-basics-02--microsoft-mai-voice-2--en-us-harper-mai-voice-2.mp3",
     "sha256": "b69a8ef2795436ca954d29d494667856556bd3841960adc968206f7e1a8081dd",
     "active": true
+  },
+  {
+    "path": "work/team-meetings/01--puck.wav",
+    "sha256": "94375dc865b190b1bd8e0bb11560d4a42f12d517dd7668f513e293a3d8d88e5e",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/01--harper.mp3",
+    "sha256": "48670b8465d16bce9e1c02275458b209574c90af9f4f531afff243ece42a212e",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/02--puck.wav",
+    "sha256": "062ab53ea8a457b02149b069e11d2ea740af77fdd82e8c456806a1e639f4d1a2",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/02--harper.mp3",
+    "sha256": "1c47312a44aa727b09c44f9532eb4c6d243d4a22bce0597977e4340ee1d6666d",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/03--puck.wav",
+    "sha256": "5e8db462ac4d8eeea5aa2bacfd610fe30e2f17928fadc8856202a9d6feb221bb",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/03--harper.mp3",
+    "sha256": "19032e9e64e4a4bee32976f19ae6e9d57679a6b72e4d7e1bf7feea9ae2065b1e",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/04--puck.wav",
+    "sha256": "7fc2a7b4a23350654587bccddf9347ffd24b01bfc843c37694406653fada8dbe",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/04--harper.mp3",
+    "sha256": "52e39f40f89fe191a0d39ccfcdc7adfa66d560b92e19216cbf17b26bd21d772f",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/05--puck.wav",
+    "sha256": "54d77b33105e393889f7d024fe9a7b37dd8f6e7cd346479e46775c95363997e5",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/05--harper.mp3",
+    "sha256": "1117afb8be3f4f2e905d4b20f63029a87d53c4ee2de3026f9cfc2346f4755820",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/06--puck.wav",
+    "sha256": "342c9a7d1c2c4e6fc2cda9325afeb46670c13700bbe1e50c22ee2a1979b3a143",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/06--harper.mp3",
+    "sha256": "c67b63da5f3bcb67d14ed0c747b16ea6536dbe5e0d142d2bcac31de10868c228",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/07--puck.wav",
+    "sha256": "4d490d34efa589d517b2653cb419e84b43124260864342b4e1ee72e946516058",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/07--harper.mp3",
+    "sha256": "8ec037c8e003dbb0de096d9a322b819032ed6917c8fef1cf05b8b3f8087bfd9b",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/08--puck.wav",
+    "sha256": "aed39521f22946a02adea60079c1a8799136c3dbbc0586dd1b70cdeaf1a46f4b",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/08--harper.mp3",
+    "sha256": "0c91ec86b9b81f2911f9a21b4612e23a11acc23da213402357e1e5d1d5e08536",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/09--puck.wav",
+    "sha256": "e5b616277c64106fdf6b2990b7127d4ec3c7a7f3f8891472f0105b40db05609b",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/09--harper.mp3",
+    "sha256": "61dbc6c62609e3d01da406773e925f455d52348ddfd36d56310429ae6c978f0b",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/10--puck.wav",
+    "sha256": "6b701e4e62d71198ca4c585ccbfa77d0be03793c129d13d10b050402c7170012",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/10--harper.mp3",
+    "sha256": "5c9f4ee7f3564398d65541822b73578ab8a8cb40713cf8af1b36cd193f48ff9e",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/11--puck.wav",
+    "sha256": "efc92e4b2577d65b65f3b28d550bfa178d890b8678b604382aaf6c3994085f6b",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/11--harper.mp3",
+    "sha256": "ccdcf965d0ba6a8ffe1c3391c014ba46e7edadbe0e8f0e855f8b83c636e4a3e8",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/12--puck.wav",
+    "sha256": "950c85b70b432b09fc3da00e78d437bdd40b02b3d5e22accca4373c366e89d2b",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/12--harper.mp3",
+    "sha256": "9cc2a79fbffc4ec04efcd0972b990dfe8d41710163f737894ef76d1346a00782",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/13--puck.wav",
+    "sha256": "38d77ff9aff79390b195f29180fc1e368b4529fb683750c759897f3933caabd3",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/13--harper.mp3",
+    "sha256": "b2bd2df8ca60ebd6c0c6f587c30bd3b34c937523cdaecf2c9b4b3033dce828a5",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/14--puck.wav",
+    "sha256": "dd0085f168786a99568e61ce4fc082a09c1d7edac9d8fa0d4fea230e6ebf80af",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/14--harper.mp3",
+    "sha256": "4b778cec79249164778f1d7fff00821a7e65e05a0accd42d599d9c901c1b93a7",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/15--puck.wav",
+    "sha256": "28a3bd176b93b5f12a46e5c3fd0fe4957662c702118ce9cf527432433db4aafe",
+    "active": true
+  },
+  {
+    "path": "work/team-meetings/15--harper.mp3",
+    "sha256": "68602976a66ba0722677f0a1f023f934b9a9d1bd003c2a7e6e6900987e131a15",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/01--puck.wav",
+    "sha256": "b4bfc40716c36ac8b89a6236635d22ad06aec5db0a87eff0dd306213294891fb",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/01--harper.mp3",
+    "sha256": "0d8dfff26ddf9ac02be047cf621537409f1ffc8ab877d334ab87d62cc9f98a93",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/02--puck.wav",
+    "sha256": "b4b1ab06ff243a46868baa8abf097c53f5763a96d60e53a1227064182aa9a2f7",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/02--harper.mp3",
+    "sha256": "c68eeaf91e05a20cbda935baa0709608d9c40506a40ba3ec5e74ea7f7d2f56c7",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/03--puck.wav",
+    "sha256": "3e4f5c9bfef2f0e7c22cd7122743963f101ee8f16c054c99eb808574ca902b9b",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/03--harper.mp3",
+    "sha256": "0b94cf3f822d36986640f0ec1eb6e3ac4ae764d01ca6b793c507d530f71cd992",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/04--puck.wav",
+    "sha256": "efa57f0e909091684afce169441decb40f73b46ea486c9c0dba8a25af8d45495",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/04--harper.mp3",
+    "sha256": "3a550714168e2ef0b472a0a4a69942c13ff9a9e2757739793072c874412c7823",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/05--puck.wav",
+    "sha256": "ea3431c54514c05219a5633f6723242b676ec7f7d0a773167fad9ab38a16b061",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/05--harper.mp3",
+    "sha256": "5178b2985dccfd11b9ffbf8c9872228b26156eb5927b9f3ec04d45ef3d097791",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/06--puck.wav",
+    "sha256": "8a0e9ddb13d58a9743b165201b71e13cdc48ad11ed58990b3c8a4eb0827c318a",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/06--harper.mp3",
+    "sha256": "7c1f5b456175dc64387fb57cb7777bb5a312dc8b74a9f62cee4fb95bc40163e7",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/07--puck.wav",
+    "sha256": "a4b04cfed940f0f8ffc723301ca9d651c8aac19191510a1c6c64cc5c1e9a852c",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/07--harper.mp3",
+    "sha256": "84b9f66b78b50e085e392d81d4e59264c269c0f230a46cc8393c214371895e5f",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/08--puck.wav",
+    "sha256": "8ee0d423528c4eb6aabddea10d7745a283aee74322dc565665910bd40eefbc35",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/08--harper.mp3",
+    "sha256": "ba1a3ea5f57da063e0968c6e443598cb0c56151d023932a58d35c57aa413b698",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/09--puck.wav",
+    "sha256": "dc8468e6e0e778379fea9f3cb265c4fec880dfe05ecb31f78dd6cabc8254f123",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/09--harper.mp3",
+    "sha256": "a241db9132b2cc3bade8225cba32e365601d575ba620a579d501598381616ce8",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/10--puck.wav",
+    "sha256": "e2b3b2c1bc6dab1408a6f7e2c50227404173df11fe4b47d848393380c4d8a6dc",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/10--harper.mp3",
+    "sha256": "e5f252f8ee17e902a62093e1fedfc9796ed4e66c45ecbe6a6e4c94d2d145cff6",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/11--puck.wav",
+    "sha256": "d870c73b786edd361f1858b5817c00a7c2a5d7ec5b2176943e81a3502fdd6ac8",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/11--harper.mp3",
+    "sha256": "2ba11f85bca08876f1343060b957c0b55867f61f4185a52cf2bab69b98edeada",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/12--puck.wav",
+    "sha256": "deabfd8b434043843e200392911d986e8007d64f8afa3bcf3effe2f029b235ae",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/12--harper.mp3",
+    "sha256": "289bd630ba28a1a6e50c2721700ad142cbb53778231e8f9d746f2daee1128997",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/13--puck.wav",
+    "sha256": "2ef86f55721b3454c08efb036d1e6988d8b008816b0a4fd763dcfe8480a4d44f",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/13--harper.mp3",
+    "sha256": "9a877b19cd8e653a953db2d4d6a356051e4aedcbdaa953cd821be454adc38294",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/14--puck.wav",
+    "sha256": "2d5bd5e9819cc2078a95c243964f374ce536f15059ff42672db3be99142ad19e",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/14--harper.mp3",
+    "sha256": "85708512f19a36ee8964ebda36bb1dfa2fde383d4ef2060686364a3a0fd659bc",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/15--puck.wav",
+    "sha256": "11ef10691fb09edc25ffdf6bd807910ca3faaa4c4b4227ce1217dcbe160b5f18",
+    "active": true
+  },
+  {
+    "path": "work/deadlines-and-priorities/15--harper.mp3",
+    "sha256": "9a95f40207ff227953b323ab0d9a0a76cca8dc344c7af3cdb9c455f828d0d8a5",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/01--puck.wav",
+    "sha256": "4491aec50b3b43923e3fc95b4d05dd2d6d22a051d0fb9f0f2363b1d698952f20",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/01--harper.mp3",
+    "sha256": "11a366585fcb530b0d6f1c1394d143b6473149d42bdf540a1d4e042d29488a87",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/02--puck.wav",
+    "sha256": "09c005453fb08b662837327a4877e65572fb748f3be0c7cc698e2e648e4c080b",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/02--harper.mp3",
+    "sha256": "6d222d3cf28b2f2844134551ca043530967b1017f7f48b930ca62830a0c6fdf5",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/03--puck.wav",
+    "sha256": "86b9f1635952d5a3ea7ebebe8919e818cc77ea24abd0641550e9f747d2358f1b",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/03--harper.mp3",
+    "sha256": "4218e57889c137f0afcc23a4fe30fca622dab59475b864a115e0a6309abb16d7",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/04--puck.wav",
+    "sha256": "6bc8a27b3cc9157cea70b812800c7246b1875057900400c35bdfed407d3c1538",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/04--harper.mp3",
+    "sha256": "895f576b192c4888bbaa629ba516215cf47af3ca047654c282c95ee64a7591eb",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/05--puck.wav",
+    "sha256": "c3990fccec0a31432355220e563e3065fd4418e62b8fa7bda97e8c5985386778",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/05--harper.mp3",
+    "sha256": "73c631458e857915c4069d5f7659e1a9deacda2e9e21957310db400bfba89b2e",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/06--puck.wav",
+    "sha256": "185b530ed686ba85e01a9eeae56a02d2d4a2ad268959fcdb0fa622bfca52d7a3",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/06--harper.mp3",
+    "sha256": "88d7aa2ea2e312deb8e882237b9f82226e54cc4fc04ac5cedb032c4577bf063a",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/07--puck.wav",
+    "sha256": "fbf387233b82c2a84db10c74ded0fe20535576fa63afc82ede1371a0fa60dfed",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/07--harper.mp3",
+    "sha256": "78e2982f633de0e9d18f6d603343675bb4bd807d9ddee7e3ed129e91bd07a760",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/08--puck.wav",
+    "sha256": "93cb3570ce1d29f5068c8d2a2ce7845bfef67b275002c5800c340756e64ba6bb",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/08--harper.mp3",
+    "sha256": "872f70781da1a2c4dd9452fe019fb894717faae3cadabedaaa08ff13b4c6ccab",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/09--puck.wav",
+    "sha256": "8eb5f22057636a2793b4fc55a07a9cf8e8fadb7de0981335b5befd9d2099e353",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/09--harper.mp3",
+    "sha256": "646733e3265eebb7dd1ff0600ae352752bd0075ed7312ab4cb800ab655d944b5",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/10--puck.wav",
+    "sha256": "0b1a6db24b331c7ee2e97c0a7d5938d469b03162763fa27d601b674c903f5f70",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/10--harper.mp3",
+    "sha256": "505616de58f9a955c3a875888889be91e000f5d4ec075b87ee897aec8078e41b",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/11--puck.wav",
+    "sha256": "0221e66294d7871adb7b22a311e54e687e15359a81f18b5eae358273e88464ca",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/11--harper.mp3",
+    "sha256": "55b89aef03fd3796c4f8deff7afa8bfb3a47a893a89eccdba9d7b54b400c2069",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/12--puck.wav",
+    "sha256": "58461ba86de7eb0b910763c05589514bddd93891c7e9cb5194cd58adc242c8f8",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/12--harper.mp3",
+    "sha256": "3c15d5ca0b4d998b4e6f957e17dcc67ffb66f21f623d9d7eccde8655698de814",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/13--puck.wav",
+    "sha256": "5055550d77562fc48e1c87522109cf75955262a10dbf41e30a529192183339cd",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/13--harper.mp3",
+    "sha256": "bff31620aee7b89ebad77e5fe638b3951c1ef03d193dd4d8479a378cf71e17a6",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/14--puck.wav",
+    "sha256": "5c659d2eb5d69ff3cafc3501a961c494edc00bef33f379a6c3848a50a5cfd05a",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/14--harper.mp3",
+    "sha256": "12d6572a6726162ff31a5e624af4a66c4e6de80f7cbc72685a57c34ab65afeec",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/15--puck.wav",
+    "sha256": "f02b0820b82050adc0db81b352286ebe4d6d7649483743c84d5cb50ab769831f",
+    "active": true
+  },
+  {
+    "path": "work/working-with-colleagues/15--harper.mp3",
+    "sha256": "151cfa191d9e88d570a4b33a08d30f159d3ab27bd1dbbd05e254793781d5e088",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/01--puck.wav",
+    "sha256": "165a4cc3da35dcde2a591850a0b42bf7c3f842c07a653d0d6091447c1d77e504",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/01--harper.mp3",
+    "sha256": "632118d290c36eaf07f17e1587f8cb74cffa5fad6ec9a54cb4d3440a71888ec6",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/02--puck.wav",
+    "sha256": "592e856c38a25aae60a262136062c8f02ac87dac19702065e19b576e9c5a499f",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/02--harper.mp3",
+    "sha256": "1f1f844aa0446a3004a2b459e1c7f57f8dd4931331395063ac4ac777568ffaaa",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/03--puck.wav",
+    "sha256": "8863ff30beb6b271f4e9aa9ff74d76de49fae3d3688f3da54fd75131f26752ea",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/03--harper.mp3",
+    "sha256": "f1dfb3ce3c0a9b1713f297fa08e8f06809621814789d2d5d49a86fabd8bdf364",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/04--puck.wav",
+    "sha256": "381fb7d4fb2aa707a2e2fd7b3d1878fc6097e2dcece03c8b9953becc8b648fa7",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/04--harper.mp3",
+    "sha256": "5659a39a66b24cb12788b05f1b92b735f34e48a279c51c8dc623b6b64db9c9d6",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/05--puck.wav",
+    "sha256": "eaeec1f0b84e325b1bd9d81805dbda03fda23cfc312c56e873c883c6fc3bcb40",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/05--harper.mp3",
+    "sha256": "92b5cd47a94b2554e5e7208c805be4cb57f0095d8863aeec93c2b3214d422e22",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/06--puck.wav",
+    "sha256": "849f062f5c138d027b1a43d70445f8bdf3bfad38fc136dda2a123e98ff8a1a8c",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/06--harper.mp3",
+    "sha256": "ecc338b19756ceb9117f13de32a972a04e7561020b85e207633f0f6830e8e71b",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/07--puck.wav",
+    "sha256": "32d0bc7bd69e0ffae3b1df646d1530ed206820141c89c652cff8987ddbefc370",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/07--harper.mp3",
+    "sha256": "38dccb6aeb33cf86aae2214b4e18eb791182ad5db50d85acf7fa2927497bef43",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/08--puck.wav",
+    "sha256": "afcd599cb0354f808ae60edbf08e5b29c0c56f58a76fb569a22d7ccb42f3a4dd",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/08--harper.mp3",
+    "sha256": "050cda7428f1052e227be707697a96c9e581ba194681a10a20afdf6978be1441",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/09--puck.wav",
+    "sha256": "c9baa7799168e380f540f3fc238c14a5389858542ecb5f6674ea72f47c0c3505",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/09--harper.mp3",
+    "sha256": "28d94da67e4a4c6a6a0347f99c77420eb97895c6e50b0df1fac1bb3ff8660b75",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/10--puck.wav",
+    "sha256": "b4580e35d36f094846bac7a3c015ca8df1746ca163fff11c43dc8363d5837ed2",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/10--harper.mp3",
+    "sha256": "99668d81618f4934af53e1853430692f9d935ac0019d284abda4826ad9d0d916",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/11--puck.wav",
+    "sha256": "ffaf0760321d1599c8da39e9b9f4fe8a78eb1cee4b5d7691c60ee9e62ba72d02",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/11--harper.mp3",
+    "sha256": "b7547c60ab30f90a5d35e41544ec02973838d4b5aebec5d0a5588f0e7f1eba81",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/12--puck.wav",
+    "sha256": "12aab99ccabe0b79ab34eb8598c6b7a4cf0b6e4c2f4dfa4b25a4362184df111b",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/12--harper.mp3",
+    "sha256": "c0770622448585847b3b1cebad28b383acfbb4c0fdf36760a623f628093e7641",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/13--puck.wav",
+    "sha256": "ec5b578459d9b4b7bb40467b87cbcd1eb6231608d0a13347cb3428b4e175d6c3",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/13--harper.mp3",
+    "sha256": "6a855ec7c21a00bbe9ac15d35113ce02e5334df5339a74d3188786cf0df344af",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/14--puck.wav",
+    "sha256": "cbbb6674cd929b52b5adaf23b9727844b991fb3b743cc1122433be39bb5ba2d7",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/14--harper.mp3",
+    "sha256": "525266420bd7b69bf1b430f7569d7840a45f95aeaf0485ff9e561e1976cb710c",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/15--puck.wav",
+    "sha256": "fcf388fce53a982e416ab0597dee478c89ef0a82d0ea607e2784bc8547a45f1b",
+    "active": true
+  },
+  {
+    "path": "work/client-conversations/15--harper.mp3",
+    "sha256": "a5d39942d1f09eda286c8c2d657a6ab542a903b3f17674aa0a4e5c33edb4a74e",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/01--puck.wav",
+    "sha256": "2d6faafbd579aebfd5c281e09b351c10ce5fcb438d53dcf1ced7960f53933fb2",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/01--harper.mp3",
+    "sha256": "72a762697279a1b038c096a38a89e2d4e4d08f9ace4e259fc23731d37b590bdd",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/02--puck.wav",
+    "sha256": "b9c624fd23e7f729258d661ef55d2ecfb5d04e3a72da3b122fbf6b7c85c2b37f",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/02--harper.mp3",
+    "sha256": "b6a3bedc003d0cde75e97c3e3e0501325fdcfe95665884baf7a696aa41d25e6b",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/03--puck.wav",
+    "sha256": "4f96563ccec9a2a37d36efd0377aa1b882df1148c0f34e45fa30f4cae646a31a",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/03--harper.mp3",
+    "sha256": "fc0954c86c7ee4e2d12245595b7e58425db3e01c3f82edadab439a647c0ce021",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/04--puck.wav",
+    "sha256": "66b90a17cb0605a692e1f210757460b505a8fd6cdf64268563a559945ea393e5",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/04--harper.mp3",
+    "sha256": "58a177bfdaba141a14576e186e455a9bcd2e028ce8ba09419d3f5556f511bd1c",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/05--puck.wav",
+    "sha256": "978354b32e7a9b0805cedbd1bfe2e0f5bce2aa865fd1d43b4a8f3af01338cbfd",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/05--harper.mp3",
+    "sha256": "edb3c2131dbe3ee96cc553a6174dd62a0b3a7036abffcda69f05342abc05d050",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/06--puck.wav",
+    "sha256": "b17e265b9196f25a721aa75472b2f589f380f2b17704d8c1efd85e2011878a6a",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/06--harper.mp3",
+    "sha256": "c9c37a46ea71bd247d733d3ff2d2da5bc9afb18a86845e74fbb57cce2f6378e9",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/07--puck.wav",
+    "sha256": "3076275f7df782db9e81f8791eb8d338e0e55a579acdd775a65c6e344efe11c2",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/07--harper.mp3",
+    "sha256": "b0db28e93cc5bb3f9b0eb944870e8614cba9e0426c5c1176b249e564901fcfbf",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/08--puck.wav",
+    "sha256": "65e6b13c744e0ed74236a785fe18acc4cb433c8594b3da4637764328ea1ce199",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/08--harper.mp3",
+    "sha256": "c7dc07288b946b0dcb428fbe14ca6e79aa0f96a5243acddb2ba690f20cf63a80",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/09--puck.wav",
+    "sha256": "a011c826fc1ddd41f7c6ed35d15013c1757534d430ab0ffe56d7c6f91070ad21",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/09--harper.mp3",
+    "sha256": "dc03a37b55187a007b9f4f34a1f7db7acb11f188f7ab5016929f20c4fa536551",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/10--puck.wav",
+    "sha256": "9cee3e826f9329a06243b0db9324db890bb786f55d14dc825c3db83473d33356",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/10--harper.mp3",
+    "sha256": "adb582707a737b136cce06931878f411a30aabd122c2cb9564b487bfb1e517fa",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/11--puck.wav",
+    "sha256": "c76a547b11b279db5f5d82ffa0f7d52a5b818fa92bbd108f092fca1be64a5ed0",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/11--harper.mp3",
+    "sha256": "20f399aa4d99a3a3c30992e46a2282e6a0367468b8ce71e04d0e7832e3d89215",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/12--puck.wav",
+    "sha256": "0475cb947aab501b3f58fc66b931bffe7f0c172553430483e05864293816d00a",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/12--harper.mp3",
+    "sha256": "fe750602a6b379efc1b55fc3ed07cca1c775a3cb587b1f7a50c447a64541f31f",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/13--puck.wav",
+    "sha256": "2b235de81bb352c4305e166f89d118b74249acc56f6d6686ad56f21b7f5d937a",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/13--harper.mp3",
+    "sha256": "b62dc04edf1f2d3afda5b02303d46de94561a07d7df1f3ce1343dad1fd40f4b5",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/14--puck.wav",
+    "sha256": "78a6ef4e361b789910121eb0266ce1d24989476cf89646e97c8b4dfe06f0a009",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/14--harper.mp3",
+    "sha256": "51e32644456052a3acc20329f27256a7119abce839ee651e94c38b86a4f1d06b",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/15--puck.wav",
+    "sha256": "881fa3c66f1e2c976942f1f300e2dc49817d441e32fc826b5d636c1222eb3a1b",
+    "active": true
+  },
+  {
+    "path": "work/feedback-and-career-growth/15--harper.mp3",
+    "sha256": "f2e233fd24c5a7782339adc9004c90e97f92a11978264c6057db85d0ad5da6bd",
+    "active": true
   }
 ]

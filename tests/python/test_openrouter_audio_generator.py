@@ -53,6 +53,52 @@ def valid_mp3_frames(count: int = 2) -> bytes:
 
 
 class AudioGeneratorTests(unittest.TestCase):
+    def test_work_batch_has_75_phrases_and_150_private_audio_destinations(self) -> None:
+        catalog = generator.load_catalog(ROOT / "docs/content/work-playlists.json")
+        with patch.object(generator.urllib.request, "urlopen", side_effect=AssertionError("network")):
+            jobs = generator.validate_catalog(catalog)
+        self.assertEqual(len(jobs), 150)
+        self.assertEqual(len({j["phrase"]["id"] for j in jobs}), 75)
+        self.assertEqual(len({j["variant"]["src"] for j in jobs}), 150)
+        self.assertEqual({j["model"]["voiceName"] for j in jobs}, {"Puck", "Harper"})
+        for job in jobs:
+            self.assertIn(ROOT / "assets/reference-audio", generator.resolve_asset_path(ROOT, job["variant"]).parents)
+
+    def test_work_batch_rejects_missing_voice_and_wrong_playlist_size(self) -> None:
+        catalog = generator.load_catalog(ROOT / "docs/content/work-playlists.json")
+        catalog["playlists"][0]["phrases"][0]["audioVariants"].pop()
+        with self.assertRaises(ValueError):
+            generator.validate_catalog(catalog)
+        catalog["playlists"][0]["phrases"].pop()
+        with self.assertRaises(ValueError):
+            generator.validate_catalog(catalog)
+
+    def test_work_batch_generates_and_resumes_without_duplicate_provider_calls(self) -> None:
+        catalog = generator.load_catalog(ROOT / "docs/content/work-playlists.json")
+        calls = []
+        def opener(request, timeout):
+            body = json.loads(request.data)
+            calls.append(body)
+            return (FakeResponse(b"\x01\x00" * 100, "audio/pcm")
+                    if body["response_format"] == "pcm"
+                    else FakeResponse(valid_mp3_frames(), "audio/mpeg"))
+        with tempfile.TemporaryDirectory() as directory, contextlib.redirect_stdout(io.StringIO()):
+            root = Path(directory)
+            path = root / "work.json"
+            catalog["playlists"][0]["phrases"][0]["audioVariants"][0]["wordTimings"] = [
+                {"word": "stale", "startMs": 0, "endMs": 100}
+            ]
+            path.write_text(json.dumps(catalog))
+            self.assertEqual(generator.generate_batch(path, root, "fake-key", opener=opener), (150, 0))
+            self.assertEqual(generator.generate_batch(path, root, "fake-key", opener=opener), (0, 150))
+            self.assertEqual(len(calls), 150)
+            saved = generator.load_catalog(path)
+            for job in generator.validate_catalog(saved):
+                variant = job["variant"]
+                self.assertNotIn("wordTimings", variant)
+                self.assertEqual(variant["provenance"]["kind"], "openrouter-api")
+                self.assertEqual(hashlib.sha256(generator.resolve_asset_path(root, variant).read_bytes()).hexdigest(), variant["sha256"])
+
     def setUp(self) -> None:
         self.catalog = generator.load_catalog()
         self.jobs = generator.validate_catalog(self.catalog)
@@ -283,4 +329,3 @@ class AudioGeneratorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

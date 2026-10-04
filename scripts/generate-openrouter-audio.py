@@ -32,14 +32,26 @@ def load_catalog(path: Path = CATALOG_PATH) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def catalog_phrases(catalog: dict[str, Any]) -> list[dict[str, Any]]:
+    if "playlists" not in catalog:
+        return catalog["phrases"]
+    playlists = catalog["playlists"]
+    if len(playlists) != 5 or any(len(p["phrases"]) != 15 for p in playlists):
+        raise ValueError("The work batch requires five playlists with fifteen phrases each.")
+    return [phrase for playlist in playlists for phrase in playlist["phrases"]]
+
+
 def validate_catalog(catalog: dict[str, Any]) -> list[dict[str, Any]]:
     models = {model["id"]: model for model in catalog["audioModels"]}
     active_models = [model for model in catalog["audioModels"] if model["selectable"]]
     if len(active_models) != 2:
-        raise ValueError("The comparison catalog must have exactly two selectable models.")
+        raise ValueError("The catalog must have exactly two selectable models.")
 
     jobs: list[dict[str, Any]] = []
-    for phrase in catalog["phrases"]:
+    phrases = catalog_phrases(catalog)
+    if len({phrase["id"] for phrase in phrases}) != len(phrases):
+        raise ValueError("Phrase IDs must be unique.")
+    for phrase in phrases:
         seen: set[str] = set()
         for variant in phrase["audioVariants"]:
             model = models.get(variant["modelId"])
@@ -58,8 +70,15 @@ def validate_catalog(catalog: dict[str, Any]) -> list[dict[str, Any]]:
         if seen != {model["id"] for model in active_models}:
             raise ValueError("Every phrase must have one variant for each selectable model.")
 
-    if len(jobs) != ACTIVE_EXPECTED:
-        raise ValueError(f"The batch must contain exactly {ACTIVE_EXPECTED} active variants.")
+    expected = 150 if "playlists" in catalog else ACTIVE_EXPECTED
+    if len(jobs) != expected:
+        raise ValueError(f"The batch must contain exactly {expected} active variants.")
+    paths = [job["variant"]["src"] for job in jobs]
+    if len(set(paths)) != len(paths):
+        raise ValueError("Audio destinations must be unique.")
+    ids = [job["variant"]["id"] for job in jobs]
+    if len(set(ids)) != len(ids):
+        raise ValueError("Audio variant IDs must be unique.")
     return jobs
 
 
@@ -277,7 +296,7 @@ def recover_pending_generation(catalog_path: Path, repo_root: Path) -> bool:
     variant = next(
         (
             candidate
-            for phrase in catalog["phrases"]
+            for phrase in catalog_phrases(catalog)
             for candidate in phrase["audioVariants"]
             if candidate["id"] == variant_id
         ),
@@ -297,6 +316,7 @@ def recover_pending_generation(catalog_path: Path, repo_root: Path) -> bool:
     variant["sha256"] = pending["sha256"]
     variant["sizeBytes"] = pending["sizeBytes"]
     variant.pop("durationMs", None)
+    variant.pop("wordTimings", None)
     variant["provenance"] = pending["provenance"]
     atomic_write_catalog(catalog_path, catalog)
     pending_path.unlink(missing_ok=True)
@@ -355,6 +375,7 @@ def generate_batch(
         variant["sha256"] = checksum
         variant["sizeBytes"] = len(payload)
         variant.pop("durationMs", None)
+        variant.pop("wordTimings", None)
         variant["provenance"] = provenance
         atomic_write_catalog(catalog_path, catalog)
         pending_path.unlink(missing_ok=True)
@@ -366,6 +387,12 @@ def generate_batch(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--catalog",
+        type=Path,
+        default=CATALOG_PATH,
+        help="Catalog to preview or generate; defaults to Voice Comparison.",
+    )
     parser.add_argument(
         "--execute",
         action="store_true",
@@ -381,14 +408,14 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--force requires --execute.")
 
     try:
-        catalog = load_catalog()
+        catalog = load_catalog(args.catalog)
         if not args.execute:
             preview(catalog)
             return 0
 
         api_key = os.environ.get("OPENROUTER_API_KEY", "")
         generated, skipped = generate_batch(
-            CATALOG_PATH, REPO_ROOT, api_key, force=args.force
+            args.catalog, REPO_ROOT, api_key, force=args.force
         )
         print(f"Batch complete: {generated} generated, {skipped} skipped.")
         return 0
