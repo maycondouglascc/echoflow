@@ -319,6 +319,17 @@ export function ShadowingPractice({
           ) : null}
         </div>
       ) : null}
+      {cuesEnabled ? (
+        <p className="practice-cue-status" aria-live="polite">
+          {completion === "completed"
+            ? "Playlist completed"
+            : view.status === "Reference finished. You can record now."
+              ? "Ready to record"
+              : view.status === "Recording saved in this page session. Play it back or compare."
+                ? "Recording saved"
+                : "Sound cues on"}
+        </p>
+      ) : null}
       <details className="practice-optional-feedback">
         <summary>Optional feedback</summary>
         <label>
@@ -346,8 +357,17 @@ export function ShadowingPractice({
         actions={{
           ...actions,
           listenToReference: () => {
+            cuePlayer?.stop();
             listenCueEventId.current = crypto.randomUUID();
             actions.listenToReference();
+          },
+          playRecording: () => {
+            cuePlayer?.stop();
+            actions.playRecording();
+          },
+          compare: () => {
+            cuePlayer?.stop();
+            actions.compare();
           },
           startRecording: () => {
             cuePlayer?.stop();
