@@ -27,7 +27,11 @@ export function LivePracticeTranscript({
   const available = availability === "ready" && !withReference;
   const showText = available && enabled && !error;
   return (
-    <section className="practice-live-transcript" aria-label="Live transcription" data-feedback-private>
+    <section
+      className="practice-live-transcript"
+      aria-label="Live transcription"
+      data-feedback-private
+    >
       <label>
         <input
           type="checkbox"

@@ -1,8 +1,8 @@
 import "server-only";
 import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
 import { requireUser } from "@/lib/supabase/server";
-import { decodeLearningUnits, decodeModel, decodeVariant } from "./catalog-metadata";
 import learningAnnotations from "../../docs/content/practice-learning-units.json";
+import { decodeLearningUnits, decodeModel, decodeVariant } from "./catalog-metadata";
 import { loadPracticeHistory } from "./practice-history";
 import type { PracticeHistoryInitial } from "./practice-history-core";
 
