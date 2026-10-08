@@ -28,16 +28,19 @@ async function noHorizontalOverflow(page: Page) {
 }
 
 async function notCovered(target: Locator) {
-  expect(
-    await target.evaluate((node) => {
-      const box = node.getBoundingClientRect();
-      return [box.left + box.width / 2, box.right - 4].every((x) => {
-        const top = document.elementFromPoint(x, box.top + box.height / 2);
-        return top === node || (top !== null && node.contains(top));
-      });
-    }),
-    "A floating control must not cover practice actions",
-  ).toBe(true);
+  await expect
+    .poll(
+      () =>
+        target.evaluate((node) => {
+          const box = node.getBoundingClientRect();
+          return [box.left + box.width / 2, box.right - 4].every((x) => {
+            const top = document.elementFromPoint(x, box.top + box.height / 2);
+            return top === node || (top !== null && node.contains(top));
+          });
+        }),
+      "A floating control must not cover practice actions",
+    )
+    .toBe(true);
 }
 
 async function keyboardReach(page: Page, target: Locator) {

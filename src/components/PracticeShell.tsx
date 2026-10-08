@@ -50,18 +50,24 @@ export function PracticeShell({
 
   const keepPanelFocusVisible = (event: React.FocusEvent<HTMLElement>) => {
     if (!isMobile || !(event.target instanceof HTMLElement)) return;
-    const feedback = document.querySelector(".feedback-trigger");
-    if (!feedback) return;
-    const focused = event.target.getBoundingClientRect();
-    const overlay = feedback.getBoundingClientRect();
-    if (
-      focused.left < overlay.right &&
-      focused.right > overlay.left &&
-      focused.top < overlay.bottom &&
-      focused.bottom > overlay.top
-    ) {
-      event.target.scrollIntoView({ block: "center", behavior: "instant" });
-    }
+    const target = event.target;
+    // Native focus scrolling happens after the focus event. Inspect the final
+    // position next frame, and ignore a target that has since lost focus.
+    requestAnimationFrame(() => {
+      if (!target.isConnected || document.activeElement !== target) return;
+      const feedback = document.querySelector(".feedback-trigger");
+      if (!feedback) return;
+      const focused = target.getBoundingClientRect();
+      const overlay = feedback.getBoundingClientRect();
+      if (
+        focused.left < overlay.right &&
+        focused.right > overlay.left &&
+        focused.top < overlay.bottom &&
+        focused.bottom > overlay.top
+      ) {
+        target.scrollIntoView({ block: "center", behavior: "instant" });
+      }
+    });
   };
 
   const handleCollapse = () => {
