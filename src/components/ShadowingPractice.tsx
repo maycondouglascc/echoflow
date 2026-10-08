@@ -5,6 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { completePlaylist } from "@/app/(app)/actions";
+import { PhrasePracticeList } from "@/components/PhrasePracticeList";
+import { PracticeControls } from "@/components/PracticeControls";
+import { PracticeShell } from "@/components/PracticeShell";
 import { useShadowingPractice } from "@/components/useShadowingPractice";
 import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
 
@@ -27,15 +30,9 @@ export function ShadowingPractice({
     selectedIndex,
     audioModels,
     selectedModelId,
-    hasRecording,
-    canRecord,
     isAudioBusy,
     isRequestingMicrophone,
     isRecording,
-    elapsedMs,
-    status,
-    error,
-    canRetryRecording,
   } = view;
   const [completion, setCompletion] = useState<"idle" | "saving" | "completed" | "error">(
     completed ? "completed" : "idle",
@@ -108,206 +105,98 @@ export function ShadowingPractice({
   });
 
   return (
-    <section className="platform-grid">
-      <aside className="platform-sidebar practice-sidebar">
-        <Link href="/home" className="back-link">
-          <Image src="/design/back.svg" width={24} height={24} alt="" />
-          Playlists
-        </Link>
-        <h1>{scenario.title}</h1>
-        <h2 className="up-next">Practice phrases</h2>
-        <ol className="phrase-list">
-          {scenario.phrases.map((item, index) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                data-feedback-action="select-phrase"
-                aria-label={`Choose phrase ${index + 1}: ${item.text}`}
-                aria-pressed={index === selectedIndex}
-                onClick={() => actions.selectPhrase(index)}
-              >
-                <span className="phrase-number">{String(index + 1).padStart(2, "0")}</span>
-                <span>
-                  {item.text}
-                  <span className="sr-only">{item.category}</span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ol>
-        {completion === "completed" ? <p className="completion-badge">✓ Completed</p> : null}
-        {completion === "saving" ? <p aria-live="polite">Saving completion…</p> : null}
-        {completion === "error" ? (
-          <div className="completion-error">
-            <p role="alert">Completion could not be saved. Your recordings remain in this page.</p>
-            <button className="text-button" type="button" onClick={saveCompletion}>
-              Try saving again
-            </button>
-          </div>
-        ) : null}
-        {account}
-      </aside>
-      <section aria-labelledby="practice-title" className="platform-panel practice-panel">
-        <div className="practice-toolbar">
-          <fieldset
-            disabled={isAudioBusy || isRequestingMicrophone || isRecording}
-            className="voice-toggle"
-          >
-            <legend className="sr-only">Reference voice</legend>
-            {audioModels.map((model, index) => (
-              <label key={model.id} htmlFor={`reference-model-${index}`}>
-                <input
-                  data-feedback-action="select-voice"
-                  id={`reference-model-${index}`}
-                  type="radio"
-                  name="reference-model"
-                  value={model.id}
-                  checked={selectedModelId === model.id}
-                  onChange={() => actions.selectAudioModel(model.id)}
-                  aria-label={model.voiceName}
-                />
-                <span className="voice-pill">{model.voiceName}</span>
-              </label>
-            ))}
-          </fieldset>
-          <span className="practice-mode">Shadowing</span>
-        </div>
-        <h2 id="practice-title" className="sr-only">
-          Reference phrase {String(selectedIndex + 1).padStart(2, "0")}
-        </h2>
-        <div className="transcript-area">
-          <MotionConfig reducedMotion="user">
-            <LayoutGroup id={`spoken-phrase-${phrase.id}`}>
-              <p className="practice-transcript">{phraseContent}</p>
-            </LayoutGroup>
-          </MotionConfig>
-        </div>
-        <div className="practice-bottom">
-          <div className="practice-actions">
-            <div className="numbered-action">
-              <span className="step-number" aria-hidden="true">
-                1
-              </span>
-              <button
-                type="button"
-                data-feedback-action="listen-reference"
-                aria-label="Listen to reference"
-                onClick={actions.listenToReference}
-                disabled={isRequestingMicrophone || isRecording}
-                className="dark-button"
-              >
-                <Image src="/design/play.svg" width={24} height={24} alt="" />
-                Play reference
+    <PracticeShell
+      sidebar={
+        <>
+          <Link href="/home" className="back-link">
+            <Image src="/design/back.svg" width={24} height={24} alt="" />
+            Playlists
+          </Link>
+          <h1>{scenario.title}</h1>
+          <h2 className="up-next">Practice phrases</h2>
+          <PhrasePracticeList
+            phrases={scenario.phrases}
+            selectedId={phrase.id}
+            onSelect={actions.selectPhrase}
+          />
+          {completion === "completed" ? <p className="completion-badge">✓ Completed</p> : null}
+          {completion === "saving" ? <p aria-live="polite">Saving completion…</p> : null}
+          {completion === "error" ? (
+            <div className="completion-error">
+              <p role="alert">
+                Completion could not be saved. Your recordings remain in this page.
+              </p>
+              <button className="text-button" type="button" onClick={saveCompletion}>
+                Try saving again
               </button>
             </div>
-            <div className="numbered-action">
-              <span className="step-number" aria-hidden="true">
-                2
-              </span>
-              {isRecording ? (
-                <button
-                  type="button"
-                  data-feedback-action="stop-recording"
-                  onClick={actions.stopRecording}
-                  className="dark-button"
-                >
-                  Stop recording
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  aria-label={
-                    isRequestingMicrophone
-                      ? "Waiting for microphone…"
-                      : hasRecording
-                        ? "Record again"
-                        : "Record"
-                  }
-                  data-feedback-action="record"
-                  onClick={actions.startRecording}
-                  disabled={!canRecord || isAudioBusy || isRequestingMicrophone}
-                  className="dark-button"
-                >
-                  <Image src="/design/speech.svg" width={24} height={24} alt="" />
-                  {isRequestingMicrophone ? "Waiting…" : "Speak"}
-                </button>
-              )}
-            </div>
-            <div className="numbered-action">
-              <span className="step-number" aria-hidden="true">
-                3
-              </span>
-              <button
-                type="button"
-                data-feedback-action="compare"
-                onClick={actions.compare}
-                disabled={isAudioBusy || isRequestingMicrophone || isRecording}
-                className="dark-button"
-              >
-                <Image src="/design/ear.svg" width={24} height={24} alt="" />
-                Compare
-              </button>
-            </div>
-          </div>
-          <div className="practice-feedback">
-            <p role="status" aria-live="polite" className="sr-only">
-              {status}
-            </p>
-            {isRecording ? (
-              <p className="recording-clock">{formatDuration(elapsedMs)} / 00:30</p>
-            ) : null}
-            {error ? (
-              <div>
-                <p role="alert">{error}</p>
-                {canRetryRecording ? (
-                  <button
-                    type="button"
-                    className="text-button"
-                    data-feedback-action="record"
-                    onClick={actions.startRecording}
-                  >
-                    Try again
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-          <div className="phrase-navigation">
-            <button
-              type="button"
-              data-feedback-action="next-phrase"
-              aria-label="Next phrase"
-              className="next-phrase"
-              onClick={() => actions.selectPhrase(selectedIndex + 1)}
-              disabled={selectedIndex === scenario.phrases.length - 1}
+          ) : null}
+          {account}
+        </>
+      }
+      toolbar={
+        <>
+          {" "}
+          <div className="practice-toolbar">
+            <fieldset
+              disabled={isAudioBusy || isRequestingMicrophone || isRecording}
+              className="voice-toggle"
             >
-              <Image src="/design/forward.svg" width={24} height={24} alt="" />
-              Next phrase
-            </button>
+              <legend className="sr-only">Reference voice</legend>
+              {audioModels.map((model, index) => (
+                <label key={model.id} htmlFor={`reference-model-${index}`}>
+                  <input
+                    data-feedback-action="select-voice"
+                    id={`reference-model-${index}`}
+                    type="radio"
+                    name="reference-model"
+                    value={model.id}
+                    checked={selectedModelId === model.id}
+                    onChange={() => actions.selectAudioModel(model.id)}
+                    aria-label={model.voiceName}
+                  />
+                  <span className="voice-pill">{model.voiceName}</span>
+                </label>
+              ))}
+            </fieldset>
+            <span className="practice-mode">Shadowing</span>
           </div>
-        </div>
-        {/* biome-ignore lint/a11y/useMediaCaption: Reference text is visible; recording repeats that prompt. */}
-        <audio
-          ref={audioRef}
-          preload="none"
-          data-testid="practice-audio"
-          onEnded={actions.handleAudioEnded}
-          onError={actions.handleAudioError}
-          className="sr-only"
-        />
-        {/* biome-ignore lint/a11y/useMediaCaption: The selected reference text is visible. */}
-        <audio
-          ref={wordReplayAudioRef}
-          preload="auto"
-          data-testid="reference-word-audio"
-          onEnded={actions.handleWordAudioEnded}
-          onError={actions.handleWordAudioError}
-          className="sr-only"
-        />
-      </section>
-    </section>
+        </>
+      }
+    >
+      <h2 id="practice-title" className="sr-only">
+        Reference phrase {String(selectedIndex + 1).padStart(2, "0")}
+      </h2>
+      <div className="transcript-area">
+        <MotionConfig reducedMotion="user">
+          <LayoutGroup id={`spoken-phrase-${phrase.id}`}>
+            <p className="practice-transcript">{phraseContent}</p>
+          </LayoutGroup>
+        </MotionConfig>
+      </div>
+      <PracticeControls
+        state={view}
+        actions={{ ...actions, nextPhrase: () => actions.selectPhrase(selectedIndex + 1) }}
+        isLastPhrase={selectedIndex === scenario.phrases.length - 1}
+      />
+      {/* biome-ignore lint/a11y/useMediaCaption: Reference text is visible; recording repeats that prompt. */}
+      <audio
+        ref={audioRef}
+        preload="none"
+        data-testid="practice-audio"
+        onEnded={actions.handleAudioEnded}
+        onError={actions.handleAudioError}
+        className="sr-only"
+      />
+      {/* biome-ignore lint/a11y/useMediaCaption: The selected reference text is visible. */}
+      <audio
+        ref={wordReplayAudioRef}
+        preload="auto"
+        data-testid="reference-word-audio"
+        onEnded={actions.handleWordAudioEnded}
+        onError={actions.handleWordAudioError}
+        className="sr-only"
+      />
+    </PracticeShell>
   );
-}
-function formatDuration(milliseconds: number) {
-  return `00:${String(Math.floor(milliseconds / 1000)).padStart(2, "0")}`;
 }
