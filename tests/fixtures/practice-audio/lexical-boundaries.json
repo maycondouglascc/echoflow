@@ -1,0 +1,9 @@
+{
+  "description": "Synthetic amplitude markers represent target/neighbor segments; they are not spoken words or listener approvals.",
+  "sampleRateHz": 1000,
+  "durationMs": 180,
+  "target": { "startMs": 20, "endMs": 100, "amplitude": 0.25 },
+  "neighbor": { "startMs": 105, "endMs": 160, "amplitude": 0.75 },
+  "foregroundTicksMs": [20, 36, 52, 68, 84, 96, 112],
+  "delayedTicksMs": [20, 36, 52, 68, 84, 96, 180]
+}
