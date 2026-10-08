@@ -28,9 +28,11 @@ function setup(t, { failStart = false, suspended = false } = {}) {
         stop() {
           node.stopped = true;
         },
-        start(time) {
+        start(...args) {
+          const [time] = args;
           if (failStart && nodes.length === 2) throw new Error("start failed");
           node.time = time;
+          node.arguments = args;
         },
       };
       nodes.push(node);
@@ -91,6 +93,23 @@ test("volume controls retain defaults and clamp the combined output before start
     f.gains.map((gain) => gain.gain.value),
     [1 / 1.5, 0.5 / 1.5],
   );
+});
+test("reviewed replay uses exact source range without padding into neighboring markers", async (t) => {
+  const f = setup(t);
+  const prepared = await f.transport.prepare("reference");
+  const syntheticMarkers = [700, 800, 1_300, 1_400];
+  const startMs = syntheticMarkers[1];
+  const endMs = syntheticMarkers[2];
+  f.transport.startRange(prepared.reference, startMs, endMs - startMs, {
+    onEnded() {},
+    onError() {},
+  });
+
+  assert.deepEqual(f.nodes[0].arguments, [10.1, 0.8, 0.5]);
+  f.context.currentTime = 10.35;
+  assert.ok(Math.abs(f.transport.referenceTimeMs() - 1_050) < 1e-8);
+  f.context.currentTime = 10.7;
+  assert.equal(f.transport.referenceTimeMs(), 1_300);
 });
 test("second source failure stops first and releases context", async (t) => {
   const f = setup(t, { failStart: true });

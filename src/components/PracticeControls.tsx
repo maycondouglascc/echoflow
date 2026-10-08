@@ -79,14 +79,14 @@ export function PracticeControls({
           <span className="step-number" aria-hidden="true">
             2
           </span>
-          {isRecording && !isSaving ? (
+          {isRequestingMicrophone || (isRecording && !isSaving) ? (
             <button
               type="button"
               data-feedback-action="stop-recording"
               onClick={actions.stop}
               className="dark-button"
             >
-              {isRequestingMicrophone ? "Cancel" : "Stop recording"}
+              {isRequestingMicrophone ? "Cancel microphone request" : "Stop recording"}
             </button>
           ) : isSaving ? (
             <button type="button" className="dark-button" disabled>
@@ -210,14 +210,14 @@ export function PracticeControls({
         Your microphone is recorded while the reference plays separately. The saved take contains
         microphone audio only.
       </p>
-      {isPlaybackActive || isRequestingMicrophone ? (
+      {isPlaybackActive ? (
         <button
           type="button"
           data-feedback-action="stop-playback"
           onClick={actions.stop}
           className="dark-button"
         >
-          {isRequestingMicrophone ? "Cancel" : "Stop playback"}
+          Stop playback
         </button>
       ) : null}
       <div className="practice-feedback">

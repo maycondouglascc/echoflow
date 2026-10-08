@@ -554,54 +554,109 @@ export function useShadowingPractice(
       completionRef.current = null;
       const requestedPhrase = phrase.id;
       const requestedSequence = ++playbackSequenceRef.current;
+      const scheduledRange = replay.kind !== "whole-phrase";
+      const returnTo = readyPhase(currentPhase, phrase.id);
+      let rangeTransport: PracticeTransport | null = null;
+      let scheduledSequence: number | null = null;
       try {
         const source =
           replay.src === selectedAudioVariant.src
             ? await referenceBuffer.sourceFor(selectedAudioVariant.src)
             : replay.src;
+        let prepared: PreparedAudio | undefined;
+        if (scheduledRange) {
+          rangeTransport = createPracticeTransport();
+          transportRef.current = rangeTransport;
+          prepared = await rangeTransport.prepare(source);
+        }
         if (
           selectedPhraseIdRef.current !== requestedPhrase ||
           playbackSequenceRef.current !== requestedSequence ||
           ["requesting", "recording", "saving"].includes(phaseRef.current.kind)
+        ) {
+          rangeTransport?.cancel();
+          if (transportRef.current === rangeTransport) transportRef.current = null;
+          return;
+        }
+        if (!scheduledRange) {
+          if (audio.src !== source) audio.src = source;
+          audio.currentTime = replay.startMs / 1000;
+        }
+
+        clearRecordReadyTimer();
+        const sequence = playbackSequenceRef.current + 1;
+        scheduledSequence = sequence;
+        playbackSequenceRef.current = sequence;
+        audioRef.current?.pause();
+        audio.pause();
+        setCurrentWordIndex(wordIndex);
+        transition(
+          {
+            kind: "playing",
+            phraseId: phrase.id,
+            playback: "word-replay",
+            returnTo,
+            runId: null,
+            endMs: replay.endMs,
+          },
+          replay.label,
+        );
+        if (scheduledRange && prepared && rangeTransport) {
+          rangeTransport.startRange(
+            prepared.reference,
+            replay.startMs,
+            replay.endMs - replay.startMs,
+            {
+              onEnded() {
+                if (playbackSequenceRef.current !== sequence) return;
+                if (transportRef.current === rangeTransport) transportRef.current = null;
+                rangeTransport?.cancel();
+                setTransportActive(false);
+                handleWordAudioEnded();
+              },
+              onError() {
+                if (playbackSequenceRef.current !== sequence) return;
+                if (transportRef.current === rangeTransport) transportRef.current = null;
+                rangeTransport?.cancel();
+                setTransportActive(false);
+                handleWordAudioError();
+              },
+            },
+          );
+          setTransportActive(true);
+          return;
+        }
+        void audio.play().catch(() => {
+          if (playbackSequenceRef.current !== sequence) return;
+          handleWordAudioError();
+        });
+      } catch {
+        rangeTransport?.cancel();
+        if (transportRef.current === rangeTransport) {
+          transportRef.current = null;
+          setTransportActive(false);
+        }
+        if (
+          playbackSequenceRef.current !== requestedSequence &&
+          playbackSequenceRef.current !== scheduledSequence
         )
           return;
-        if (audio.src !== source) audio.src = source;
-      } catch {
-        if (playbackSequenceRef.current !== requestedSequence) return;
+        if (phaseRef.current.kind === "playing" && phaseRef.current.playback === "word-replay") {
+          handleWordAudioError();
+          return;
+        }
         reportError(
           "The word could not be replayed. You can try it again.",
           "Word replay failed.",
           false,
+          returnTo === "ready" ? { kind: "ready" } : { kind: "idle" },
         );
         return;
       }
-
-      clearRecordReadyTimer();
-      const returnTo = readyPhase(currentPhase, phrase.id);
-      const sequence = playbackSequenceRef.current + 1;
-      playbackSequenceRef.current = sequence;
-      audioRef.current?.pause();
-      audio.pause();
-      audio.currentTime = replay.startMs / 1000;
-      setCurrentWordIndex(wordIndex);
-      transition(
-        {
-          kind: "playing",
-          phraseId: phrase.id,
-          playback: "word-replay",
-          returnTo,
-          runId: null,
-          endMs: replay.endMs,
-        },
-        replay.label,
-      );
-      void audio.play().catch(() => {
-        if (playbackSequenceRef.current !== sequence) return;
-        handleWordAudioError();
-      });
     },
     [
       clearRecordReadyTimer,
+      handleWordAudioEnded,
       handleWordAudioError,
       phrase.id,
       selectedAudioVariant,
@@ -855,7 +910,12 @@ export function useShadowingPractice(
     const audio =
       activePlaybackKind === "word-replay" ? wordReplayAudioRef.current : audioRef.current;
     const timings = selectedAudioVariant?.wordTimings ?? [];
-    if (!audio || !isReferencePlayback || timings.length === 0) {
+    if (
+      (transportActive && activePlaybackKind === "word-replay") ||
+      !audio ||
+      !isReferencePlayback ||
+      timings.length === 0
+    ) {
       setCurrentWordIndex(null);
       return;
     }
@@ -937,7 +997,13 @@ export function useShadowingPractice(
       audio.removeEventListener("ended", clear);
       audio.removeEventListener("error", clear);
     };
-  }, [activePlaybackKind, isReferencePlayback, selectedAudioVariant?.wordTimings, transition]);
+  }, [
+    activePlaybackKind,
+    isReferencePlayback,
+    selectedAudioVariant?.wordTimings,
+    transition,
+    transportActive,
+  ]);
 
   useEffect(() => {
     if (!transportActive) return;

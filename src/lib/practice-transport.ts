@@ -19,6 +19,7 @@ export function createPracticeTransport(createContext = () => new AudioContext()
   let cancelled = false;
   let started = false;
   let referenceStart: number | null = null;
+  let referenceOffsetMs = 0;
   let referenceDuration = 0;
   let referenceEnded = false;
   const cancel = () => {
@@ -87,6 +88,7 @@ export function createPracticeTransport(createContext = () => new AudioContext()
       started = true;
       const start = context.currentTime + 0.1;
       referenceStart = start + offsetMs / 1000;
+      referenceOffsetMs = 0;
       referenceDuration = audio.reference.duration;
       context.onstatechange = () => {
         if (!cancelled && context.state !== "running") {
@@ -124,6 +126,60 @@ export function createPracticeTransport(createContext = () => new AudioContext()
         referenceStartedAtMs: performance.now() + (referenceStart - context.currentTime) * 1000,
       };
     },
+    // A reviewed contextual unit plays only its annotated range. Keep the
+    // source start and duration exact; adjacent speech is never added as padding.
+    startRange(
+      reference: AudioBuffer,
+      startMs: number,
+      durationMs: number,
+      callbacks: TransportCallbacks,
+    ) {
+      check();
+      if (
+        started ||
+        !Number.isFinite(startMs) ||
+        startMs < 0 ||
+        !Number.isFinite(durationMs) ||
+        durationMs <= 0 ||
+        startMs + durationMs > reference.duration * 1000
+      )
+        throw new Error("Invalid range timing.");
+      started = true;
+      const start = context.currentTime + 0.1;
+      referenceStart = start;
+      referenceOffsetMs = startMs;
+      referenceDuration = durationMs / 1000;
+      context.onstatechange = () => {
+        if (!cancelled && context.state !== "running") {
+          cancel();
+          callbacks.onError();
+        }
+      };
+      try {
+        const source = context.createBufferSource();
+        nodes.push(source);
+        const gain = context.createGain();
+        gains.reference = gain;
+        source.buffer = reference;
+        source.connect(gain);
+        gain.connect(context.destination);
+        gain.gain.value = 1;
+        source.onended = () => {
+          if (cancelled) return;
+          referenceEnded = true;
+          source.disconnect();
+          gain.disconnect();
+          callbacks.onEnded("reference");
+        };
+        source.start(start, startMs / 1000, durationMs / 1000);
+      } catch (error) {
+        cancel();
+        throw error;
+      }
+      return {
+        referenceStartedAtMs: performance.now() + (start - context.currentTime) * 1000,
+      };
+    },
     referenceTimeMs(): number | null {
       if (
         cancelled ||
@@ -132,7 +188,10 @@ export function createPracticeTransport(createContext = () => new AudioContext()
         context.currentTime < referenceStart
       )
         return null;
-      return Math.min(referenceDuration * 1000, (context.currentTime - referenceStart) * 1000);
+      return Math.min(
+        referenceOffsetMs + referenceDuration * 1000,
+        referenceOffsetMs + (context.currentTime - referenceStart) * 1000,
+      );
     },
   };
 }

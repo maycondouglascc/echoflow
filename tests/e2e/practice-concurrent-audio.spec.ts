@@ -156,3 +156,40 @@ test("a rejected solo take replay keeps Record again ready", async ({ page }) =>
   await expect(page.locator("p[role=alert]")).toContainText("could not be played");
   await expect(page.getByRole("button", { name: "Record again", exact: true })).toBeEnabled();
 });
+
+test("canceling a pending microphone request releases its late stream and keeps the previous take", async ({
+  page,
+}) => {
+  await login(page, "pending-record-cancel");
+  await recordTake(page);
+  const stoppedBeforeRequest = await page.evaluate(() => window.__echoTest.tracksStopped);
+  await page.evaluate(() => {
+    const original = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+      configurable: true,
+      value: () =>
+        new Promise<MediaStream>((resolve) => {
+          Object.defineProperty(window, "__resolveDelayedMic", {
+            configurable: true,
+            value: async () => resolve(await original({ audio: true })),
+          });
+        }),
+    });
+  });
+
+  await page.getByRole("button", { name: "Record again", exact: true }).click();
+  const cancel = page.getByRole("button", { name: "Cancel microphone request", exact: true });
+  await expect(cancel).toBeVisible();
+  await cancel.click();
+  await expect(page.getByRole("button", { name: "Record again", exact: true })).toBeEnabled();
+  await page.evaluate(() =>
+    (window as unknown as { __resolveDelayedMic: () => Promise<void> }).__resolveDelayedMic(),
+  );
+
+  await expect
+    .poll(() => page.evaluate(() => window.__echoTest.tracksStopped))
+    .toBe(stoppedBeforeRequest + 1);
+  await page.getByRole("button", { name: "My recording", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Playing your recording");
+  expect(await page.evaluate(() => window.__echoTest.recorderStarts)).toBe(1);
+});
