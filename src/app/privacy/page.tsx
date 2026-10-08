@@ -38,6 +38,19 @@ export default function PrivacyPage() {
             Automatic stop checks sound levels locally in your browser. It does not transcribe your
             voice or send it to a speech service.
           </p>
+          <p>
+            Optional live transcription is available only after on-device processing has been
+            verified. It is currently unavailable on unverified devices; recording still works. When
+            supported and enabled, recognized words stay in page memory and are cleared for another
+            take or when you leave. They are excluded from feedback screenshots and recent actions,
+            and are not uploaded or used as a pronunciation score. Transcription does not decide
+            when recording stops.
+          </p>
+          <p>
+            No speech model is downloaded automatically. Any future on-device model installation
+            requires a separate informed action explaining its download destination and device
+            storage. There is no cloud transcription fallback.
+          </p>
         </section>
         <section aria-labelledby="account-privacy">
           <h2 id="account-privacy">Your account and progress</h2>
