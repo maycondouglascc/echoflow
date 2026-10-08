@@ -137,10 +137,10 @@ async function finishListen(page: Page) {
     .poll(() => page.evaluate(() => window.__echoTest.currentAudioTimeMs()))
     .not.toBeNull();
   await page.evaluate(() => window.__echoTest.finishCurrentAudio());
-  await expect(page.getByRole("button", { name: "Record", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /^Record( again)?$/ })).toBeEnabled();
 }
 async function savedTake(page: Page) {
-  await page.getByRole("button", { name: "Record", exact: true }).click();
+  await page.getByRole("button", { name: /^Record( again)?$/ }).click();
   await page.getByRole("button", { name: "Stop recording", exact: true }).click();
   await expect(page.getByRole("button", { name: "My recording", exact: true })).toBeEnabled();
 }

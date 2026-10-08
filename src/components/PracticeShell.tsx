@@ -48,6 +48,22 @@ export function PracticeShell({
     }
   };
 
+  const keepPanelFocusVisible = (event: React.FocusEvent<HTMLElement>) => {
+    if (!isMobile || !(event.target instanceof HTMLElement)) return;
+    const feedback = document.querySelector(".feedback-trigger");
+    if (!feedback) return;
+    const focused = event.target.getBoundingClientRect();
+    const overlay = feedback.getBoundingClientRect();
+    if (
+      focused.left < overlay.right &&
+      focused.right > overlay.left &&
+      focused.top < overlay.bottom &&
+      focused.bottom > overlay.top
+    ) {
+      event.target.scrollIntoView({ block: "center", behavior: "instant" });
+    }
+  };
+
   const handleCollapse = () => {
     if (isMobile) {
       setDrawerOpen(false);
@@ -184,6 +200,7 @@ export function PracticeShell({
       <section
         aria-labelledby="practice-title"
         className="platform-panel practice-panel"
+        onFocusCapture={keepPanelFocusVisible}
         inert={isMobile && drawerOpen ? true : undefined}
       >
         <div className="practice-mobile-navigation">
