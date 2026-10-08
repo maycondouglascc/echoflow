@@ -97,6 +97,8 @@ test("replays an unreviewed token as full reference context in the selected voic
     await expect
       .poll(() => wordAudio.evaluate((element) => (element as HTMLAudioElement).paused), {
         timeout: 4_000,
+        // Avoid a final 1s polling gap around the 3.216s Harper phrase.
+        intervals: [50, 100],
       })
       .toBe(true);
 
