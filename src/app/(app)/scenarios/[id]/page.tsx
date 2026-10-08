@@ -20,6 +20,7 @@ export default async function ScenarioPage({ params }: { params: Promise<{ id: s
         scenario={result.scenario}
         playlistId={result.playlistId}
         completed={result.completed}
+        history={result.history}
         account={<AccountControl />}
       />
     </main>
