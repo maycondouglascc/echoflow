@@ -1113,7 +1113,7 @@ export function useShadowingPractice(
       selectPhrase,
       selectAudioModel,
       listenToReference,
-      startRecording,
+      startRecording: () => startRecording("repeat"),
       stopRecording,
       playRecording,
       compare,
