@@ -202,10 +202,13 @@ test("distinct completed events from concurrent tabs aggregate without losing in
   page,
   context,
 }) => {
-  const { client } = await account(page, "tabs");
+  const { client, user } = await account(page, "tabs");
   const other = await context.newPage();
   try {
     await other.addInitScript(installMediaMocks);
+    await other.addInitScript((userId) => {
+      sessionStorage.setItem(`echoflow-microphone-explained:${userId}`, "yes");
+    }, user.id);
     await other.goto(practicePath);
     await expectCount(other, 0);
     await Promise.all(
