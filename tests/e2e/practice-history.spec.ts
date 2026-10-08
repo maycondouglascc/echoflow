@@ -86,6 +86,7 @@ test("only full reference ends count; duplicate ends, contextual replay and solo
 
   await fullListen(page);
   await expectCount(page, 1);
+  await expect(page.getByRole("button", { name: /^Choose phrase 1:/ })).toContainText("Heard");
   await page.getByTestId("practice-audio").dispatchEvent("ended");
   await expectCount(page, 1);
   await page.getByRole("button", { name: "Record", exact: true }).click();
@@ -182,6 +183,9 @@ test("a failed history request is Unsaved, does not block recording and retries 
   await fullListen(page);
   await expect(progress(page)).toContainText("Unsaved");
   await expect(progress(page)).toContainText("Not heard yet");
+  const selectedPhrase = page.getByRole("button", { name: /^Choose phrase 1:/ });
+  await expect(selectedPhrase).toContainText("Unsaved");
+  await expect(selectedPhrase).not.toContainText("Heard");
   expect(await storedCount(client)).toBe(0);
   await page.getByRole("button", { name: "Record", exact: true }).click();
   await expect(page.getByRole("button", { name: "Stop recording", exact: true })).toBeVisible();
@@ -191,6 +195,8 @@ test("a failed history request is Unsaved, does not block recording and retries 
   await page.unroute(`**${practicePath}`);
   await page.getByRole("button", { name: "Retry history save", exact: true }).click();
   await expectCount(page, 1);
+  await expect(selectedPhrase).toContainText("Heard");
+  await expect(selectedPhrase).not.toContainText("Unsaved");
   const events = await storedEvents(client);
   expect(events).toHaveLength(1);
   expect(bodies.length).toBeGreaterThanOrEqual(2);

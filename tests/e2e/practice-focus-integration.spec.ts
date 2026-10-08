@@ -51,9 +51,10 @@ for (const viewport of [
 ]) {
   test(`real desktop practice fits ${viewport.width}×${viewport.height} before and after a take`, async ({
     page,
-  }) => {
+  }, testInfo) => {
     await page.setViewportSize(viewport);
     await login(page, `focus-geometry-${viewport.width}`);
+    await expect(page.locator(".practice-panel")).toBeVisible();
     const assertGeometry = async () => {
       const geometry = await page.evaluate(() => {
         const panel = document.querySelector(".practice-panel");
@@ -101,6 +102,7 @@ for (const viewport of [
     await assertGeometry();
     await saveTake(page);
     await assertGeometry();
+    await page.screenshot({ path: testInfo.outputPath("desktop-practice.png") });
   });
 }
 
@@ -151,7 +153,7 @@ for (const viewport of [
 ]) {
   test(`narrow practice ${viewport.width}×${viewport.height} exposes drawer and reachable Stop`, async ({
     page,
-  }) => {
+  }, testInfo) => {
     await page.setViewportSize(viewport);
     await login(page, `focus-narrow-${viewport.width}`);
     const show = page.getByRole("button", { name: "Show practice phrases", exact: true });
@@ -172,6 +174,7 @@ for (const viewport of [
     const stop = page.getByRole("button", { name: "Stop recording", exact: true });
     await expect(stop).toBeVisible();
     await keyboardReach(page, stop);
+    await page.screenshot({ path: testInfo.outputPath("narrow-recording-stop.png") });
     await stop.press("Enter");
     await expect(page.getByRole("button", { name: "My recording", exact: true })).toBeEnabled();
     await noHorizontalOverflow(page);

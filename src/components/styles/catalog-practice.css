@@ -710,6 +710,11 @@
   cursor: pointer;
   min-height: 24px;
 }
+.practice-grid .practice-panel:has(.practice-optional-feedback[open]),
+.practice-grid .practice-panel:has(.practice-feedback [role="alert"]) {
+  /* Expanded explanations and errors must remain reachable at any text size. */
+  overflow-y: auto;
+}
 .practice-mobile-navigation {
   display: none;
 }

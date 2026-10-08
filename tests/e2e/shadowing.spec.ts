@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "@playwright/test";
 import { audioUrl, login, voiceComparisonScenario } from "./helpers/auth";
 import { installMediaMocks } from "./helpers/media";
@@ -12,7 +13,7 @@ const phraseTexts = [
 ];
 
 async function openPractice(page: Page) {
-  await login(page);
+  await login(page, `shadowing-${randomUUID()}`);
   await expect(page.getByRole("heading", { name: "Voice Comparison" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Practice phrases" })).toBeVisible();
 }

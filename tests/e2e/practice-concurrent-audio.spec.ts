@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { login } from "./helpers/auth";
 import { installMediaMocks } from "./helpers/media";
@@ -90,7 +91,7 @@ async function recordTake(page: import("@playwright/test").Page) {
 test("paired playback shares a clock, waits for both ends and Stop cancels outstanding source", async ({
   page,
 }) => {
-  await login(page, "paired-end");
+  await login(page, `paired-end-${randomUUID()}`);
   await recordTake(page);
   await page.getByRole("radio", { name: "Both together", exact: true }).check();
   await expect(page.getByLabel("Reference volume")).toHaveValue("0.5");
