@@ -3,6 +3,66 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      phrase_listen_events: {
+        Row: {
+          created_at: string;
+          event_id: string;
+          phrase_id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          event_id: string;
+          phrase_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          event_id?: string;
+          phrase_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "phrase_listen_events_phrase_id_fkey";
+            columns: ["phrase_id"];
+            isOneToOne: false;
+            referencedRelation: "phrases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+
+      phrase_listen_counts: {
+        Row: {
+          count: number;
+          phrase_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          count: number;
+          phrase_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          count?: number;
+          phrase_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "phrase_listen_counts_phrase_id_fkey";
+            columns: ["phrase_id"];
+            isOneToOne: false;
+            referencedRelation: "phrases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+
       feedback_notion_exports: {
         Row: {
           feedback_id: string;
@@ -262,6 +322,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      record_phrase_listen: {
+        Args: { p_event_id: string; p_expected_user_id: string; p_phrase_id: string };
+        Returns: Json;
+      };
       claim_notion_feedback: { Args: Record<PropertyKey, never>; Returns: Json };
       start_notion_feedback: { Args: { p_id: string; p_token: string }; Returns: boolean };
       finish_notion_feedback: {

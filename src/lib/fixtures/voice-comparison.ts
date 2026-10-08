@@ -54,6 +54,7 @@ export interface AudioVariantFixture {
 }
 
 export interface PhraseFixture {
+  readonly databasePhraseId?: string;
   readonly id: string;
   readonly category: string;
   readonly order: number;

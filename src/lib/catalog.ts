@@ -2,6 +2,8 @@ import "server-only";
 import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
 import { requireUser } from "@/lib/supabase/server";
 import { decodeModel, decodeVariant } from "./catalog-metadata";
+import { loadPracticeHistory } from "./practice-history";
+import type { PracticeHistoryInitial } from "./practice-history-core";
 
 export interface PlaylistSummary {
   id: string;
@@ -25,10 +27,13 @@ export async function getPlaylists(): Promise<PlaylistSummary[]> {
   }));
 }
 
-export async function getScenario(
-  slug: string,
-): Promise<{ playlistId: string; scenario: ScenarioFixture; completed: boolean } | null> {
-  const { client } = await requireUser(`/scenarios/${slug}`);
+export async function getScenario(slug: string): Promise<{
+  playlistId: string;
+  scenario: ScenarioFixture;
+  completed: boolean;
+  history: PracticeHistoryInitial;
+} | null> {
+  const { client, user } = await requireUser(`/scenarios/${slug}`);
   const playlist = await client
     .from("playlists")
     .select(
@@ -50,6 +55,11 @@ export async function getScenario(
     ).values(),
   ].sort((a, b) => a.id.localeCompare(b.id));
   return {
+    history: await loadPracticeHistory(
+      client,
+      user.id,
+      phrases.map((p) => p.id),
+    ),
     playlistId: playlist.data.id,
     completed: playlist.data.playlist_completions.length > 0,
     scenario: {
@@ -59,6 +69,7 @@ export async function getScenario(
       audioModels,
       phrases: phrases.map((p) => ({
         id: p.slug,
+        databasePhraseId: p.id,
         text: p.text,
         category: p.category,
         order: p.sort_order,
