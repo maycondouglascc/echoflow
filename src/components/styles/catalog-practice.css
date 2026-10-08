@@ -721,6 +721,9 @@
 .practice-grid .phrase-retry-button {
   width: auto;
 }
+.practice-grid .phrase-navigation {
+  justify-content: flex-start;
+}
 /* High-frequency phrase navigation needs immediate, stable feedback. */
 .practice-grid .phrase-list button,
 .practice-collapse-button,
@@ -767,6 +770,11 @@
     font-size: 24px;
     line-height: 30px;
     font-weight: 700;
+  }
+  .practice-grid .next-phrase {
+    font-size: 14px;
+    padding: 0 10px;
+    gap: 6px;
   }
   .practice-grid .practice-sidebar,
   .practice-grid .practice-sidebar.is-collapsed {

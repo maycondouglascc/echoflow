@@ -27,6 +27,19 @@ async function noHorizontalOverflow(page: Page) {
   );
 }
 
+async function notCovered(target: Locator) {
+  expect(
+    await target.evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      return [box.left + box.width / 2, box.right - 4].every((x) => {
+        const top = document.elementFromPoint(x, box.top + box.height / 2);
+        return top === node || (top !== null && node.contains(top));
+      });
+    }),
+    "A floating control must not cover practice actions",
+  ).toBe(true);
+}
+
 async function keyboardReach(page: Page, target: Locator) {
   // Begin at a real application control, then use native sequential navigation.
   await page.getByRole("button", { name: "Listen to reference", exact: true }).focus();
@@ -38,6 +51,7 @@ async function keyboardReach(page: Page, target: Locator) {
       expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(
         (page.viewportSize()?.height ?? 0) + 1,
       );
+      await notCovered(target);
       return;
     }
     await page.keyboard.press("Tab");
@@ -96,6 +110,7 @@ for (const viewport of [
         expect((box?.y ?? 0) + (box?.height ?? 0), name).toBeLessThanOrEqual(
           geometry.panel.bottom + 1,
         );
+        await notCovered(page.getByRole("button", { name, exact: true }));
       }
       await noHorizontalOverflow(page);
     };
@@ -148,6 +163,7 @@ test("collapse preserves selected phrase, take and microphone capture and restor
 // responsive reachability; browser/device optical zoom is a separate device check.
 for (const viewport of [
   { width: 390, height: 844 },
+  { width: 320, height: 556 },
   { width: 844, height: 390 },
   { width: 512, height: 384 },
 ]) {

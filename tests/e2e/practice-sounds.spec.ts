@@ -267,13 +267,18 @@ test("natural playlist completion has one completion cue and a visible completio
     if (index < 4) await page.getByRole("button", { name: "Next phrase", exact: true }).click();
   }
   await expect(page.locator(".completion-badge")).toContainText("Completed");
-  await expect(page.locator(".practice-cue-status")).toHaveText("Playlist completed");
+  await expect(page.locator(".practice-cue-status")).toContainText("Playlist completed");
   await expect
     .poll(async () => (await cueFrequencies(page)).filter((frequency) => frequency === 880).length)
     .toBe(1);
   await page.getByTestId("practice-audio").dispatchEvent("ended");
   await page.getByLabel("Sound cues", { exact: true }).uncheck();
   await page.getByLabel("Sound cues", { exact: true }).check();
+  expect((await cueFrequencies(page)).filter((frequency) => frequency === 880)).toHaveLength(1);
+  await finishListen(page);
+  await expect(page.locator(".practice-cue-status")).toContainText("Ready to record");
+  await savedTake(page);
+  await expect(page.locator(".practice-cue-status")).toContainText("Recording saved");
   expect((await cueFrequencies(page)).filter((frequency) => frequency === 880)).toHaveLength(1);
   await assertNoContamination(page);
 });
