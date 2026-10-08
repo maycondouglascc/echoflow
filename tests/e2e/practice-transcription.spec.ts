@@ -68,6 +68,11 @@ test("private transcript distinguishes provisional/final words and never substit
   const privateRoot = page.locator("[data-feedback-private]");
   await expect(privateRoot).toContainText("I ate");
   await expect(privateRoot).toContainText("maybe a pear");
+  await page.evaluate(() => {
+    const publicText = document.createElement("p");
+    publicText.textContent = "Public screenshot fixture";
+    document.body.appendChild(publicText);
+  });
   // Run the actual capture walker; stub only PNG encoding to inspect its staged screenshot DOM.
   const shareable = await page.evaluate(async (source) => {
     let staged = "";
@@ -87,6 +92,7 @@ test("private transcript distinguishes provisional/final words and never substit
     await exports.captureFeedbackViewport();
     return staged;
   }, captureCompiled);
+  expect(shareable).toContain("Public screenshot fixture");
   expect(shareable).not.toContain("I ate");
   expect(shareable).not.toContain("maybe a pear");
 });
