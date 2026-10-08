@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createPracticeTransport } from "../src/lib/practice-transport.ts";
+import {
+  createPracticeTransport,
+  createTransportForCurrentRequest,
+} from "../src/lib/practice-transport.ts";
 
 function setup(t, { failStart = false, suspended = false } = {}) {
   const nodes = [],
@@ -110,6 +113,45 @@ test("reviewed replay uses exact source range without padding into neighboring m
   assert.ok(Math.abs(f.transport.referenceTimeMs() - 1_050) < 1e-8);
   f.context.currentTime = 10.7;
   assert.equal(f.transport.referenceTimeMs(), 1_300);
+});
+test("a deferred stale replay cannot replace the active transport that Stop owns", async (t) => {
+  const slot = { current: null };
+  const active = setup(t);
+  const prepared = await active.transport.prepare("take-B-reference");
+  active.transport.start(prepared, 0, { onEnded() {}, onError() {} });
+  slot.current = active.transport;
+
+  let resolveSource;
+  const sourceA = new Promise((resolve) => {
+    resolveSource = resolve;
+  });
+  let requestSequence = 1;
+  let staleTransportCreations = 0;
+  const deferredReplayA = (async () => {
+    await sourceA;
+    const transport = createTransportForCurrentRequest(
+      slot,
+      () => {
+        staleTransportCreations++;
+        return setup(t).transport;
+      },
+      () => requestSequence === 1,
+    );
+    if (transport) await transport.prepare("replay-A");
+  })();
+
+  requestSequence = 2;
+  resolveSource("replay-A");
+  await deferredReplayA;
+  assert.equal(staleTransportCreations, 0);
+  assert.equal(slot.current, active.transport);
+
+  slot.current.cancel();
+  assert.equal(
+    active.nodes.every((node) => node.stopped),
+    true,
+  );
+  assert.equal(active.closes, 1);
 });
 test("second source failure stops first and releases context", async (t) => {
   const f = setup(t, { failStart: true });

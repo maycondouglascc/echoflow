@@ -20,6 +20,7 @@ import {
 } from "@/lib/practice-learning-units";
 import {
   createPracticeTransport,
+  createTransportForCurrentRequest,
   type PracticeTransport,
   type PreparedAudio,
 } from "@/lib/practice-transport";
@@ -554,6 +555,12 @@ export function useShadowingPractice(
       completionRef.current = null;
       const requestedPhrase = phrase.id;
       const requestedSequence = ++playbackSequenceRef.current;
+      const requestAccountGeneration = accountGenerationRef.current;
+      const requestIsCurrent = () =>
+        selectedPhraseIdRef.current === requestedPhrase &&
+        playbackSequenceRef.current === requestedSequence &&
+        accountGenerationRef.current === requestAccountGeneration &&
+        !["requesting", "recording", "saving"].includes(phaseRef.current.kind);
       const scheduledRange = replay.kind !== "whole-phrase";
       const returnTo = readyPhase(currentPhase, phrase.id);
       let rangeTransport: PracticeTransport | null = null;
@@ -563,17 +570,18 @@ export function useShadowingPractice(
           replay.src === selectedAudioVariant.src
             ? await referenceBuffer.sourceFor(selectedAudioVariant.src)
             : replay.src;
+        if (!requestIsCurrent()) return;
         let prepared: PreparedAudio | undefined;
         if (scheduledRange) {
-          rangeTransport = createPracticeTransport();
-          transportRef.current = rangeTransport;
+          rangeTransport = createTransportForCurrentRequest(
+            transportRef,
+            createPracticeTransport,
+            requestIsCurrent,
+          );
+          if (!rangeTransport) return;
           prepared = await rangeTransport.prepare(source);
         }
-        if (
-          selectedPhraseIdRef.current !== requestedPhrase ||
-          playbackSequenceRef.current !== requestedSequence ||
-          ["requesting", "recording", "saving"].includes(phaseRef.current.kind)
-        ) {
+        if (!requestIsCurrent()) {
           rangeTransport?.cancel();
           if (transportRef.current === rangeTransport) transportRef.current = null;
           return;

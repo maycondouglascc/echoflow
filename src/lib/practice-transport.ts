@@ -8,6 +8,22 @@ export interface TransportCallbacks {
   onError(): void;
 }
 
+/** Do not allocate or publish a transport after its async request went stale. */
+export function createTransportForCurrentRequest<T extends { cancel(): void }>(
+  slot: { current: T | null },
+  create: () => T,
+  isCurrent: () => boolean,
+) {
+  if (!isCurrent()) return null;
+  const transport = create();
+  if (!isCurrent()) {
+    transport.cancel();
+    return null;
+  }
+  slot.current = transport;
+  return transport;
+}
+
 // Receives only page-owned reference/take URLs. The graph has output-only gain
 // paths; it never accepts a microphone stream or a recording destination.
 export function createPracticeTransport(createContext = () => new AudioContext()) {
