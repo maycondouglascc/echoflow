@@ -5,17 +5,26 @@ type SaveReason = "manual" | "silence" | "limit";
 export interface CaptureSession {
   stop(reason: Exclude<CaptureStopReason, "error">): void;
 }
+export interface CaptureTiming {
+  readonly startedAtMonotonicMs: number;
+  readonly durationMs: number;
+}
 interface CaptureCallbacks {
+  onStarted?(startedAtMonotonicMs: number): void;
   onProgress(elapsedMs: number): void;
   onSaving(reason: SaveReason, elapsedMs: number): void;
-  onSaved(blob: Blob): void;
+  onSaved(blob: Blob, timing: CaptureTiming): void;
   onError(message: string): void;
 }
 const LIMIT_MS = 30_000;
 const MIME_CANDIDATES = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"];
 
 // Own all resources from recorder construction through save, failure or cancellation.
-export function beginCapture(stream: MediaStream, callbacks: CaptureCallbacks): CaptureSession {
+export function beginCapture(
+  stream: MediaStream,
+  callbacks: CaptureCallbacks,
+  options: { stopOnSilence?: boolean } = {},
+): CaptureSession {
   let recorder: MediaRecorder | undefined;
   let interval: ReturnType<typeof setInterval> | undefined;
   let limit: ReturnType<typeof setTimeout> | undefined;
@@ -25,6 +34,7 @@ export function beginCapture(stream: MediaStream, callbacks: CaptureCallbacks): 
   let reason: CaptureStopReason | null = null;
   const chunks: Blob[] = [];
   const startedAt = Date.now();
+  let startedAtMonotonicMs = 0;
   const elapsed = () => Math.min(LIMIT_MS, Date.now() - startedAt);
   const release = () => {
     if (released) return;
@@ -80,11 +90,14 @@ export function beginCapture(stream: MediaStream, callbacks: CaptureCallbacks): 
         );
         return;
       }
-      callbacks.onSaved(blob);
+      callbacks.onSaved(blob, { startedAtMonotonicMs, durationMs: elapsed() });
     };
     recorder.start();
+    startedAtMonotonicMs = performance.now();
+    callbacks.onStarted?.(startedAtMonotonicMs);
     callbacks.onProgress(0);
-    stopSpeechWatch = watchSpeechEnd(stream, () => stop("silence"));
+    if (options.stopOnSilence !== false)
+      stopSpeechWatch = watchSpeechEnd(stream, () => stop("silence"));
     interval = setInterval(() => {
       if (finished || reason !== null) return;
       const duration = elapsed();

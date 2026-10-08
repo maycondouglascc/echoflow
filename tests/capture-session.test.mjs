@@ -155,3 +155,44 @@ test("a recorder error cancels timers and ignores late stop output", (t) => {
   assert.equal(fixture.events.saved.length, 0);
   assert.deepEqual(fixture.events.progress, [0]);
 });
+
+test("with-reference policy skips the energy watcher but keeps manual/limit and capture timing", (t) => {
+  const fixture = setup(t);
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "AudioContext");
+  let contexts = 0;
+  Object.defineProperty(globalThis, "AudioContext", {
+    configurable: true,
+    value: class {
+      constructor() {
+        contexts++;
+        throw new Error("should not open watcher");
+      }
+    },
+  });
+  t.after(() => {
+    if (descriptor) Object.defineProperty(globalThis, "AudioContext", descriptor);
+    else delete globalThis.AudioContext;
+  });
+  let startTime, timing;
+  beginCapture(
+    fixture.stream,
+    {
+      ...fixture.callbacks,
+      onStarted: (time) => {
+        startTime = time;
+      },
+      onSaved: (blob, value) => {
+        fixture.callbacks.onSaved(blob);
+        timing = value;
+      },
+    },
+    { stopOnSilence: false },
+  );
+  t.mock.timers.tick(30000);
+  fixture.recorder.finish();
+  assert.equal(contexts, 0);
+  assert.equal(Number.isFinite(startTime), true);
+  assert.equal(timing.startedAtMonotonicMs, startTime);
+  assert.equal(timing.durationMs, 30000);
+  assert.equal(fixture.stops, 1);
+});
