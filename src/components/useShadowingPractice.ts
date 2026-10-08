@@ -7,6 +7,16 @@ import type {
   PhraseFixture,
   ScenarioFixture,
 } from "@/lib/fixtures/voice-comparison";
+import {
+  type CaptureMode,
+  type FullReferenceEvent,
+  trackPlaybackCompletion,
+} from "@/lib/practice-events";
+import {
+  createPracticeTransport,
+  type PracticeTransport,
+  type PreparedAudio,
+} from "@/lib/practice-transport";
 import { useReferenceBuffer } from "./useReferenceBuffer";
 
 type PlaybackKind =
@@ -14,12 +24,16 @@ type PlaybackKind =
   | "recording"
   | "comparison-reference"
   | "comparison-recording"
-  | "word-replay";
+  | "word-replay"
+  | "comparison-together";
 type ReturnPhase = "idle" | "ready";
 type CaptureStopRequest = Exclude<CaptureStopReason, "error">;
 
 interface SessionRecording {
   readonly objectUrl: string;
+  readonly voiceId: string;
+  readonly referenceOffsetMs: number;
+  readonly durationMs: number;
 }
 
 type PracticePhase =
@@ -27,7 +41,12 @@ type PracticePhase =
   | { readonly kind: "waiting"; readonly phraseId: string }
   | { readonly kind: "ready" }
   | { readonly kind: "requesting"; readonly phraseId: string }
-  | { readonly kind: "recording"; readonly phraseId: string; readonly elapsedMs: number }
+  | {
+      readonly kind: "recording";
+      readonly phraseId: string;
+      readonly elapsedMs: number;
+      readonly mode: CaptureMode;
+    }
   | {
       readonly kind: "saving";
       readonly phraseId: string;
@@ -81,7 +100,13 @@ function readyPhase(phase: PracticePhase, phraseId: string): ReturnPhase {
       : "idle";
 }
 
-export function useShadowingPractice(scenario: ScenarioFixture) {
+export function useShadowingPractice(
+  scenario: ScenarioFixture,
+  options: {
+    accountGeneration?: string;
+    onFullReferenceComplete?(event: FullReferenceEvent): void;
+  } = {},
+) {
   const defaultModelId = scenario.audioModels.find((model) => model.selectable)?.id ?? "";
   const [state, setState] = useState(() => createInitialState(defaultModelId));
   const [currentWordIndex, setCurrentWordIndex] = useState<number | null>(null);
@@ -94,6 +119,12 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
   const recordReadyTimerRef = useRef<number | null>(null);
   const permissionRequestRef = useRef(0);
   const captureSessionRef = useRef<CaptureSession | null>(null);
+  const transportRef = useRef<PracticeTransport | null>(null);
+  const completionRef = useRef<ReturnType<typeof trackPlaybackCompletion> | null>(null);
+  const referenceCallbackRef = useRef(options.onFullReferenceComplete);
+  referenceCallbackRef.current = options.onFullReferenceComplete;
+  const accountGeneration = options.accountGeneration ?? "page";
+  const [transportActive, setTransportActive] = useState(false);
   const recordingsRef = useRef<Readonly<Record<string, SessionRecording>>>(state.recordings);
 
   const stateRef = useRef(state);
@@ -141,7 +172,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       phase.playback === "comparison-reference" ||
       phase.playback === "word-replay") &&
     phase.phraseId === phrase.id;
-  const activeWordIndex = isReferencePlayback ? currentWordIndex : null;
+  const activeWordIndex = isReferencePlayback || transportActive ? currentWordIndex : null;
   const isAudioBusy = phase.kind === "playing";
   const isRequestingMicrophone = phase.kind === "requesting";
   const isRecording = phase.kind === "recording" || phase.kind === "saving";
@@ -181,6 +212,11 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
   const stopAudio = useCallback(() => {
     setCurrentWordIndex(null);
     playbackSequenceRef.current += 1;
+    completionRef.current?.cancel();
+    completionRef.current = null;
+    transportRef.current?.cancel();
+    transportRef.current = null;
+    setTransportActive(false);
     const audio = audioRef.current;
     wordReplayAudioRef.current?.pause();
     if (!audio) return;
@@ -197,6 +233,42 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     [],
   );
 
+  const finishSource = useCallback((source: "reference" | "take") => {
+    const tracker = completionRef.current;
+    if (!tracker) return false;
+    const result = tracker.ended(source);
+    if (result.referenceComplete) {
+      try {
+        referenceCallbackRef.current?.({
+          kind: "full-reference-complete",
+          eventId: tracker.run.runId,
+          run: tracker.run,
+        });
+      } catch {
+        /* Optional history failures must not interrupt local practice. */
+      }
+    }
+    return result.comparisonComplete;
+  }, []);
+
+  const beginRun = useCallback(
+    (
+      mode: "reference" | "sequential" | "simultaneous" | "speak-along",
+      target: PhraseFixture,
+      variant: AudioVariantFixture,
+    ) => {
+      completionRef.current?.cancel();
+      completionRef.current = trackPlaybackCompletion({
+        runId: crypto.randomUUID(),
+        phraseId: target.id,
+        variantId: variant.id,
+        accountGeneration,
+        mode,
+      });
+    },
+    [accountGeneration],
+  );
+
   const playSource = useCallback(
     async (
       source: string | Promise<string>,
@@ -207,6 +279,13 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       const audio = audioRef.current;
       if (!audio) return;
       clearRecordReadyTimer();
+      transportRef.current?.cancel();
+      transportRef.current = null;
+      setTransportActive(false);
+      if (playback === "recording") {
+        completionRef.current?.cancel();
+        completionRef.current = null;
+      }
       setCurrentWordIndex(null);
       const sequence = playbackSequenceRef.current + 1;
       playbackSequenceRef.current = sequence;
@@ -269,9 +348,10 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
         );
         return;
       }
+      beginRun(kind === "reference" ? "reference" : "sequential", targetPhrase, variant);
       void playSource(referenceBuffer.sourceFor(variant.src), kind, targetPhrase.id, returnTo);
     },
-    [playSource, reportError, referenceBuffer.sourceFor],
+    [playSource, reportError, referenceBuffer.sourceFor, beginRun],
   );
 
   const handleAudioError = useCallback(() => {
@@ -280,6 +360,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     if (
       active.kind !== "playing" ||
       active.playback === "word-replay" ||
+      active.playback === "comparison-together" ||
       active.phraseId !== selectedPhraseIdRef.current
     )
       return;
@@ -303,12 +384,14 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     if (
       active.kind !== "playing" ||
       active.playback === "word-replay" ||
+      active.playback === "comparison-together" ||
       active.phraseId !== selectedPhraseIdRef.current
     )
       return;
     playbackSequenceRef.current += 1;
 
     if (active.playback === "reference") {
+      finishSource("reference");
       const waitingPhase: PracticePhase = { kind: "waiting", phraseId: active.phraseId };
       transition(waitingPhase, "Reference finished. Recording will be ready in a moment.");
       clearRecordReadyTimer();
@@ -327,6 +410,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     }
 
     if (active.playback === "comparison-reference") {
+      finishSource("reference");
       const recording = recordingsRef.current[active.phraseId];
       if (!recording) {
         reportError(
@@ -347,6 +431,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     }
 
     if (active.playback === "comparison-recording") {
+      finishSource("take");
       setComparedPhraseIds((ids) =>
         ids.includes(active.phraseId) ? ids : [...ids, active.phraseId],
       );
@@ -357,7 +442,7 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
         ? "Comparison complete. You can compare again or record another take."
         : "Recording playback finished.",
     );
-  }, [clearRecordReadyTimer, playSource, reportError, transition]);
+  }, [clearRecordReadyTimer, playSource, reportError, transition, finishSource]);
 
   const handleWordAudioEnded = useCallback(() => {
     setCurrentWordIndex(null);
@@ -409,6 +494,11 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       const audio = wordReplayAudioRef.current;
       if (!cue || !audio) return;
 
+      transportRef.current?.cancel();
+      transportRef.current = null;
+      setTransportActive(false);
+      completionRef.current?.cancel();
+      completionRef.current = null;
       const requestedPhrase = phrase.id;
       const requestedSequence = ++playbackSequenceRef.current;
       try {
@@ -464,88 +554,162 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     ],
   );
 
-  const startRecording = useCallback(async () => {
-    const currentPhase = phaseRef.current;
-    if (currentPhase.kind !== "ready") return;
-    clearRecordReadyTimer();
-    const phraseId = selectedPhraseIdRef.current;
-    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
-      reportError(
-        "Microphone access is unavailable in this browser. You can still listen and navigate.",
-        "Microphone unavailable.",
-        true,
-        { kind: "ready" },
-      );
-      return;
-    }
-    if (typeof window.MediaRecorder !== "function") {
-      reportError(
-        "Audio recording isn't supported in this browser. You can still listen and navigate.",
-        "Recording isn't supported.",
-        true,
-        { kind: "ready" },
-      );
-      return;
-    }
-
-    const requestId = permissionRequestRef.current + 1;
-    permissionRequestRef.current = requestId;
-    transition({ kind: "requesting", phraseId }, "Requesting microphone permission…");
-    let stream: MediaStream | null = null;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      if (permissionRequestRef.current !== requestId || selectedPhraseIdRef.current !== phraseId) {
-        for (const track of stream.getTracks()) track.stop();
+  const startRecording = useCallback(
+    async (mode: CaptureMode = "repeat") => {
+      const currentPhase = phaseRef.current;
+      if (
+        mode === "repeat"
+          ? currentPhase.kind !== "ready"
+          : ["requesting", "recording", "saving"].includes(currentPhase.kind)
+      )
+        return;
+      if (mode === "with-reference" && !selectedAudioVariant) return;
+      clearRecordReadyTimer();
+      stopAudio();
+      const phraseId = selectedPhraseIdRef.current;
+      if (!navigator.mediaDevices?.getUserMedia || typeof window.MediaRecorder !== "function") {
+        reportError(
+          "Microphone recording is unavailable in this browser. You can still listen and navigate.",
+          "Microphone unavailable.",
+          true,
+          { kind: "ready" },
+        );
         return;
       }
-      captureSessionRef.current = beginCapture(stream, {
-        onProgress(elapsedMs) {
-          if (selectedPhraseIdRef.current !== phraseId) return;
-          transition(
-            { kind: "recording", phraseId, elapsedMs },
-            `Recording your voice · ${formatDuration(elapsedMs)} / 00:30`,
+      const requestId = ++permissionRequestRef.current;
+      transition({ kind: "requesting", phraseId }, "Requesting microphone permission…");
+      let stream: MediaStream | null = null;
+      let captureOwnsStream = false;
+      let prepared: PreparedAudio | undefined;
+      let transport: PracticeTransport | undefined;
+      let referenceOffsetMs = 0;
+      const capturedVoiceId = selectedModel?.voiceId ?? "";
+      const valid = () =>
+        permissionRequestRef.current === requestId && selectedPhraseIdRef.current === phraseId;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true } });
+        if (!valid()) {
+          for (const track of stream.getTracks()) track.stop();
+          return;
+        }
+        if (mode === "with-reference" && selectedAudioVariant) {
+          transport = createPracticeTransport();
+          transportRef.current = transport;
+          prepared = await transport.prepare(
+            await referenceBuffer.sourceFor(selectedAudioVariant.src),
           );
-        },
-        onSaving(reason, elapsedMs) {
-          transition(
-            { kind: "saving", phraseId, reason, elapsedMs },
-            reason === "limit" ? "30-second limit reached. Saving recording…" : "Saving recording…",
-          );
-        },
-        onSaved(blob) {
-          captureSessionRef.current = null;
-          if (selectedPhraseIdRef.current !== phraseId) return;
-          const objectUrl = URL.createObjectURL(blob);
-          const previous = recordingsRef.current[phraseId];
-          if (previous) URL.revokeObjectURL(previous.objectUrl);
-          updateState((current) => ({
-            ...current,
-            phase: { kind: "ready" },
-            recordings: { ...current.recordings, [phraseId]: { objectUrl } },
-            status: "Recording saved in this page session. Play it back or compare.",
-            error: null,
-          }));
-        },
-        onError(message) {
-          captureSessionRef.current = null;
-          if (selectedPhraseIdRef.current !== phraseId) return;
-          reportError(message, "Recording failed.", true, { kind: "ready" });
-        },
-      });
-    } catch (cause) {
-      if (permissionRequestRef.current !== requestId || selectedPhraseIdRef.current !== phraseId)
-        return;
-
-      const name = cause instanceof DOMException ? cause.name : "";
-      const message =
-        name === "NotAllowedError" || name === "SecurityError"
-          ? "Microphone permission was denied. Allow microphone access in your browser settings, then try again."
-          : name === "NotFoundError"
-            ? "No microphone was found. Connect or enable a microphone, then try again."
-            : "Microphone access failed. Check the browser permission and try again.";
-      reportError(message, "Microphone permission is needed to record.", true, { kind: "ready" });
-    }
-  }, [clearRecordReadyTimer, reportError, transition, updateState]);
+          if (!valid()) {
+            transport.cancel();
+            for (const track of stream.getTracks()) track.stop();
+            return;
+          }
+          beginRun("speak-along", phrase, selectedAudioVariant);
+        }
+        captureOwnsStream = true;
+        const capture = beginCapture(
+          stream,
+          {
+            onStarted(startedAt) {
+              if (!valid() || !transport || !prepared) return;
+              const timing = transport.start(prepared, 0, {
+                onEnded(source) {
+                  if (valid()) finishSource(source);
+                },
+                onError() {
+                  if (!valid()) return;
+                  permissionRequestRef.current += 1;
+                  stopCapture("navigation");
+                  stopAudio();
+                  reportError(
+                    "The reference was interrupted. Your previous recording is unchanged. Try plain Speak.",
+                    "Recording interrupted.",
+                    true,
+                    { kind: "ready" },
+                  );
+                },
+              });
+              referenceOffsetMs = Math.max(0, timing.referenceStartedAtMs - startedAt);
+              setTransportActive(true);
+            },
+            onProgress(elapsedMs) {
+              if (!valid()) return;
+              transition(
+                { kind: "recording", phraseId, elapsedMs, mode },
+                `Recording your voice · ${formatDuration(elapsedMs)} / 00:30`,
+              );
+            },
+            onSaving(reason, elapsedMs) {
+              if (!valid()) return;
+              stopAudio();
+              transition(
+                { kind: "saving", phraseId, reason, elapsedMs },
+                reason === "limit"
+                  ? "30-second limit reached. Saving recording…"
+                  : "Saving recording…",
+              );
+            },
+            onSaved(blob, timing) {
+              captureSessionRef.current = null;
+              if (!valid()) return;
+              const objectUrl = URL.createObjectURL(blob);
+              const previous = recordingsRef.current[phraseId];
+              if (previous) URL.revokeObjectURL(previous.objectUrl);
+              updateState((current) => ({
+                ...current,
+                phase: { kind: "ready" },
+                recordings: {
+                  ...current.recordings,
+                  [phraseId]: {
+                    objectUrl,
+                    voiceId: capturedVoiceId,
+                    referenceOffsetMs,
+                    durationMs: timing.durationMs,
+                  },
+                },
+                status: "Recording saved in this page session. Play it back or compare.",
+                error: null,
+              }));
+            },
+            onError(message) {
+              captureSessionRef.current = null;
+              if (!valid()) return;
+              stopAudio();
+              reportError(message, "Recording failed.", true, { kind: "ready" });
+            },
+          },
+          { stopOnSilence: mode === "repeat" },
+        );
+        captureSessionRef.current = capture;
+      } catch (cause) {
+        transport?.cancel();
+        if (stream && !captureOwnsStream) for (const track of stream.getTracks()) track.stop();
+        if (!valid()) return;
+        stopAudio();
+        const name = cause instanceof DOMException ? cause.name : "";
+        const message =
+          name === "NotAllowedError" || name === "SecurityError"
+            ? "Microphone permission was denied. Allow microphone access in your browser settings, then try again."
+            : mode === "with-reference"
+              ? "Recording with reference is unavailable. Your previous take is unchanged. Try plain Speak."
+              : "Microphone access failed. Check the browser permission and try again.";
+        reportError(message, "Recording is ready to try again.", true, { kind: "ready" });
+      }
+    },
+    [
+      beginRun,
+      clearRecordReadyTimer,
+      finishSource,
+      phrase,
+      referenceBuffer.sourceFor,
+      reportError,
+      selectedAudioVariant,
+      selectedModel?.voiceId,
+      stopAudio,
+      stopCapture,
+      transition,
+      updateState,
+    ],
+  );
 
   const selectPhrase = useCallback(
     (index: number) => {
@@ -711,6 +875,149 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
     };
   }, [activePlaybackKind, isReferencePlayback, selectedAudioVariant?.wordTimings, transition]);
 
+  useEffect(() => {
+    if (!transportActive) return;
+    let frame = 0;
+    const tick = () => {
+      const time = transportRef.current?.referenceTimeMs();
+      const timings = selectedAudioVariant?.wordTimings ?? [];
+      const match =
+        time == null ? -1 : timings.findIndex((cue) => time >= cue.startMs && time < cue.endMs);
+      setCurrentWordIndex(match < 0 ? null : match);
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [transportActive, selectedAudioVariant?.wordTimings]);
+
+  const compareTogether = useCallback(async () => {
+    if (
+      !currentRecording ||
+      !selectedAudioVariant ||
+      ["requesting", "recording", "saving"].includes(phaseRef.current.kind)
+    )
+      return;
+    stopAudio();
+    clearRecordReadyTimer();
+    const sequence = playbackSequenceRef.current;
+    const phraseId = phrase.id;
+    transition(
+      { kind: "playing", playback: "comparison-together", phraseId, returnTo: "ready" },
+      "Preparing both tracks…",
+    );
+    const valid = () =>
+      playbackSequenceRef.current === sequence && selectedPhraseIdRef.current === phraseId;
+    const failed = () => {
+      if (!valid()) return;
+      stopAudio();
+      reportError(
+        "Both together is unavailable. Your take is unchanged; use sequential Compare.",
+        "Synchronized playback unavailable.",
+        false,
+        { kind: "ready" },
+      );
+    };
+    try {
+      const transport = createPracticeTransport();
+      transportRef.current = transport;
+      const prepared = await transport.prepare(
+        await referenceBuffer.sourceFor(selectedAudioVariant.src),
+        currentRecording.objectUrl,
+      );
+      if (!valid()) {
+        transport.cancel();
+        return;
+      }
+      beginRun("simultaneous", phrase, selectedAudioVariant);
+      transport.start(prepared, currentRecording.referenceOffsetMs, {
+        onEnded(source) {
+          if (!valid()) return;
+          if (finishSource(source)) {
+            setComparedPhraseIds((ids) => (ids.includes(phraseId) ? ids : [...ids, phraseId]));
+            stopAudio();
+            transition(
+              { kind: "ready" },
+              "Comparison complete. You can compare again or record another take.",
+            );
+          }
+        },
+        onError: failed,
+      });
+      setTransportActive(true);
+      transition(
+        { kind: "playing", playback: "comparison-together", phraseId, returnTo: "ready" },
+        "Playing reference and your recording together.",
+      );
+    } catch {
+      failed();
+    }
+  }, [
+    beginRun,
+    clearRecordReadyTimer,
+    currentRecording,
+    finishSource,
+    phrase,
+    referenceBuffer.sourceFor,
+    reportError,
+    selectedAudioVariant,
+    stopAudio,
+    transition,
+  ]);
+
+  const stop = useCallback(() => {
+    permissionRequestRef.current += 1;
+    clearRecordReadyTimer();
+    // A recording Stop must accept its last chunk; cancellation of a pending
+    // permission/decode must discard late output instead.
+    if (phaseRef.current.kind === "recording") {
+      permissionRequestRef.current -= 1;
+      stopCapture("manual");
+    } else {
+      stopCapture("navigation");
+      stopAudio();
+      transition(
+        recordingsRef.current[selectedPhraseIdRef.current] ? { kind: "ready" } : { kind: "idle" },
+        "Stopped.",
+      );
+    }
+  }, [clearRecordReadyTimer, stopAudio, stopCapture, transition]);
+
+  useEffect(() => {
+    const interrupt = () => {
+      if (document.visibilityState !== "hidden") return;
+      permissionRequestRef.current += 1;
+      stopCapture("navigation");
+      stopAudio();
+      clearRecordReadyTimer();
+      transition(
+        recordingsRef.current[selectedPhraseIdRef.current] ? { kind: "ready" } : { kind: "idle" },
+        "Practice interrupted. Your previous take is unchanged.",
+      );
+    };
+    document.addEventListener("visibilitychange", interrupt);
+    return () => document.removeEventListener("visibilitychange", interrupt);
+  }, [clearRecordReadyTimer, stopAudio, stopCapture, transition]);
+
+  const previousAccountRef = useRef(accountGeneration);
+  useEffect(() => {
+    if (previousAccountRef.current === accountGeneration) return;
+    previousAccountRef.current = accountGeneration;
+    permissionRequestRef.current += 1;
+    stopCapture("navigation");
+    stopAudio();
+    clearRecordReadyTimer();
+    for (const recording of Object.values(recordingsRef.current))
+      URL.revokeObjectURL(recording.objectUrl);
+    updateState((current) => ({
+      ...current,
+      phase: { kind: "idle" },
+      recordings: {},
+      status: "Account changed. Listen again to practice.",
+      error: null,
+    }));
+    setComparedPhraseIds([]);
+  }, [accountGeneration, clearRecordReadyTimer, stopAudio, stopCapture, updateState]);
+
   const listenToReference = useCallback(() => {
     clearRecordReadyTimer();
     playReference("reference", phrase, selectedAudioVariant, "idle");
@@ -758,6 +1065,8 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       clearRecordReadyTimer();
       permissionRequestRef.current += 1;
       playbackSequenceRef.current += 1;
+      completionRef.current?.cancel();
+      transportRef.current?.cancel();
       audioRef.current?.pause();
       wordReplayAudioRef.current?.pause();
       const activeCapture = captureSessionRef.current;
@@ -788,6 +1097,14 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       isRequestingMicrophone,
       isRecording,
       elapsedMs,
+      transportActive,
+      capturedVoiceName: currentRecording
+        ? scenario.audioModels.find((model) => model.voiceId === currentRecording.voiceId)
+            ?.voiceName
+        : undefined,
+      referenceVoiceMismatch: Boolean(
+        currentRecording && currentRecording.voiceId !== selectedModel?.voiceId,
+      ),
       status: state.status,
       error: state.error?.message ?? null,
       canRetryRecording: Boolean(state.error?.retryable && canRecord),
@@ -800,6 +1117,11 @@ export function useShadowingPractice(scenario: ScenarioFixture) {
       stopRecording,
       playRecording,
       compare,
+      compareTogether,
+      recordWithReference: () => startRecording("with-reference"),
+      stop,
+      setVolumes: (reference: number, take: number) =>
+        transportRef.current?.setVolumes(reference, take),
       handleAudioEnded,
       handleAudioError,
       handleWordAudioEnded,

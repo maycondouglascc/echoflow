@@ -196,3 +196,14 @@ test("with-reference policy skips the energy watcher but keeps manual/limit and 
   assert.equal(timing.durationMs, 30000);
   assert.equal(fixture.stops, 1);
 });
+
+test("an unsolicited recorder end does not accept an interrupted replacement take", (t) => {
+  const fixture = setup(t);
+  beginCapture(fixture.stream, fixture.callbacks);
+  t.mock.timers.tick(100);
+  fixture.recorder.finish();
+  assert.equal(fixture.events.saved.length, 0);
+  assert.equal(fixture.events.errors.length, 1);
+  assert.match(fixture.events.errors[0], /interrupted/);
+  assert.equal(fixture.stops, 1);
+});

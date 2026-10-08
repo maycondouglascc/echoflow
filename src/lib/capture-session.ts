@@ -80,6 +80,10 @@ export function beginCapture(
     recorder.onstop = () => {
       release();
       if (finished) return;
+      if (reason === null) {
+        fail("The recording was interrupted. Your previous take is unchanged. Please try again.");
+        return;
+      }
       finished = true;
       const blob = new Blob(chunks, {
         type: recorder?.mimeType || chunks[0]?.type || "application/octet-stream",
