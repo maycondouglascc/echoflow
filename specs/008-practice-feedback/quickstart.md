@@ -1,6 +1,6 @@
 # Validation guide — practice feedback 008
 
-Implementation was authorized and resumed on 2026-10-08. Ensure checkout dependencies/runtime match README/package.json. Use one dedicated worktree per writer and a local Supabase stack/schema per backend writer; no production credentials. This execution uses integration frontend4185/API58321/DB58322/inbox58324; the default e2e frontend4175 is for a separate single-checkout run. each concurrent worktree gets a distinct agreed port and test identity. Never run provider generation as CI/test setup.
+Implementation was authorized and resumed on 2026-10-08. Ensure checkout dependencies/runtime match README/package.json. Use one dedicated worktree per writer and a local Supabase stack/schema per backend writer; no production credentials. This execution uses integration frontend4185/API58321/DB58322/inbox58324; the default e2e frontend4175 is for a separate single-checkout run. Each concurrent worktree gets a distinct agreed port and test identity. Never run provider generation as CI/test setup.
 
 ## Automated gates
 
@@ -64,3 +64,25 @@ UI review used the [Web Interface Guidelines](https://raw.githubusercontent.com/
 - T012/T016: independent listening diagnosis and two-listener review of each proposed unit. Empty approvals mean no isolated production word or linking annotation has been published. Labelled whole-phrase fallback is the delivered safe behavior. T017/T018 paid pilot/private asset schema remain conditional and unstarted.
 - T033/T036/T037: real locality/offline/model/recorder evidence. No approved recognizer exists; default unavailable UI plus ordinary recording is delivered. No model download, cloud recognition or transcript-assisted stop is enabled. A future verified provider must connect attempt-scoped start/cleanup before activation.
 - Source-local migration is a separate setup step: `npx --no-install supabase migration up --local` after checking the selected local project. This execution applied the migration only to the isolated integration database. No remote migration, push, merge or deployment occurred.
+
+## Final automated outcome and source transfer
+
+Final frozen application: `e46d1d7`; native-audio observation regression `59b0c57`. `npm run test:e2e` passed **114/114 Chromium cases** in4.1minutes on isolated frontend4185/API58321. The last native-audio wait uses50/100ms observations instead of a1second blind polling gap; its4second timeout and−25/+50ms end-duration assertions remain unchanged. Final suite includes real decoded reference bytes, media fixtures, history refresh/A/B/retry/concurrent tabs, retained capture/focus/drawer/320px occlusion, cues/autoplay/completion/retakes, unsupported local text and existing feedback/privacy/auth tests.
+
+| Gate | Outcome | Environment |
+| --- | --- | --- |
+| npm run lint | PASS,116files | Integration and source |
+| npm run typecheck | PASS | Integration and source |
+| npm run build -- --webpack | PASS | Symlinked isolated integration |
+| npm run build | PASS, normal Turbopack | Source real node_modules |
+| npm run test:unit |92passed,1opt-in DB skip | Integration and source |
+| explicit history concurrency |1passed, separate transactions | Isolated history DB only |
+| npm run test:db |121assertions,6files PASS | Isolated integration DB only |
+| npm run test:audio-generator |16passed | Deterministic Python fixtures |
+| npm run test:e2e |114passed | Isolated integration, Chromium |
+
+Root applied the58-path delta from baseline8a283c3 via checked binary patch, excluding `supabase/config.toml`. Source HEADefa73b5 and its index/previous Notion/ai-memory work remain intact; a490-path hash manifest proved zero changes outside the feature and exact agreement with integrated feature bytes. Independent Git-Manager audited local56321/56322 ports and additive history types alongside the existing Notion types. Source changes remain in the working tree; reviewable commits reside on `codex/008-integration`.
+
+Source database inspection was read-only. Prior migrations202610040001/002/003 are still unapplied there, so an unrestricted local migration-up would also alter earlier features. This execution left that database intact;008 SQL and RLS were validated on the isolated stack. Review/apply the selected local migration sequence before expecting source-account listening history to persist. No remote CI run, push, merge, deployment or remote migration is claimed.
+
+Convergence appendedT041–043 for the outstanding physical-device/perceptual/local-recognizer evidence. The implementation is locally integrated and automatically validated; these release gates remain pending.
