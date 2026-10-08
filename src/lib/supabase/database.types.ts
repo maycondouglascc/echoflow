@@ -3,6 +3,50 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      feedback_notion_exports: {
+        Row: {
+          feedback_id: string;
+          attempts: number;
+          next_attempt_at: string;
+          lease_token: string | null;
+          lease_until: string | null;
+          creation_started: boolean;
+          notion_page_id: string | null;
+          delivered_at: string | null;
+          last_error: string | null;
+        };
+        Insert: {
+          feedback_id: string;
+          attempts?: number;
+          next_attempt_at?: string;
+          lease_token?: string | null;
+          lease_until?: string | null;
+          creation_started?: boolean;
+          notion_page_id?: string | null;
+          delivered_at?: string | null;
+          last_error?: string | null;
+        };
+        Update: {
+          feedback_id?: string;
+          attempts?: number;
+          next_attempt_at?: string;
+          lease_token?: string | null;
+          lease_until?: string | null;
+          creation_started?: boolean;
+          notion_page_id?: string | null;
+          delivered_at?: string | null;
+          last_error?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "feedback_notion_exports_feedback_id_fkey";
+            columns: ["feedback_id"];
+            isOneToOne: true;
+            referencedRelation: "app_feedback";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       app_feedback: {
         Row: {
           id: string;
@@ -218,6 +262,19 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      claim_notion_feedback: { Args: Record<PropertyKey, never>; Returns: Json };
+      start_notion_feedback: { Args: { p_id: string; p_token: string }; Returns: boolean };
+      finish_notion_feedback: {
+        Args: {
+          p_id: string;
+          p_token: string;
+          p_page: string | null;
+          p_error: string | null;
+          p_delay: number;
+          p_reset: boolean;
+        };
+        Returns: boolean;
+      };
       increment_platform_metric: { Args: { metric_name: string }; Returns: undefined };
       record_practice_access: { Args: Record<PropertyKey, never>; Returns: undefined };
       valid_feedback_navigation: { Args: { events: Json; captured: string }; Returns: boolean };

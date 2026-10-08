@@ -92,6 +92,24 @@ This structure follows the Next.js App Router convention. Mark privileged module
 
 ## Contextual feedback (006)
 
+Feature 007 extends administrative review with a restricted Notion copy. Supabase remains
+the immutable origin. An additive trigger/backfill enqueues one feedback_notion_exports row
+per feedback; authenticated/anon callers cannot access its table or worker RPCs. A bounded Supabase Edge Function uses server secrets, claims with SKIP LOCKED and
+10-minute fenced leases, queries Notion by Feedback ID, uploads PNG bytes directly and creates
+one complete page. It never updates existing pages or Hermes triage fields. Request timeouts
+and durable backoff protect availability; a creation marker blocks another POST after an
+uncertain write. Operators reconcile unmatched/duplicate records. Next.js never uses the
+worker credentials, so the application service-role prohibition remains intact.
+Remote queue and dispatch migrations, Edge secrets, Vault target and invocation secret are
+configured in the authorized project. Inserting an outbox job dispatches the Edge Function
+through pg_net; pg_cron checks due work every minute. The function rejects unauthorized
+calls before accessing credentials or claiming work. Dispatch failures cannot reject the
+original feedback; leases and retry backoff allow recovery. The original Node worker remains
+an optional alternative, not required for production. Eight historical feedbacks were verified
+in Notion, including one screenshot. Independent Hermes permissions remain unverified. Deleting an original feedback cascades its
+queue entry, not its Notion copy; account deletion requests must cover both services/files.
+See specs/007-notion-feedback/quickstart.md for configuration and evidence.
+
 Authenticated layout mounts an account-keyed FeedbackWidget. Its in-memory five-minute/20-event buffer records only allowlisted app paths and explicit practice action names. No replay, typed values, URL parameters, network logs, or personal audio/video. Opening creates a sanitized computed-geometry viewport staging tree and lazily imports html-to-image; controls, account identity, private nodes and media are omitted. The user reviews/removes attachments before explicit submit.
 
 POST /api/feedback requires caller authentication and matching Origin, bounds multipart/PNG dimensions and metadata, uses the user's RLS client, and persists immutable owned app_feedback plus optional private feedback-screenshots/user-id/request-id.png. Request digest/UUID handles identical retries; failed inserts clean newly uploaded objects. No privileged key, public URL or screenshot client update permission. Existing administrative Supabase tooling is the team inbox. See specs/006-contextual-feedback/quickstart.md for separate-account checks and screenshot limitations.

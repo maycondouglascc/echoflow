@@ -58,8 +58,10 @@ Migration `202610040001` enables the private feedback table and screenshot bucke
 `.vercelignore` excludes local environment files, worktrees, generated output and source audio.
 Provider/service-role secrets are not part of the frontend deployment.
 
-This release was deployed from local branch `codex/contextual-feedback` at application commit
-`a98a4fa`. The new playlist/feedback commits still need integration into remote `master`;
+The initial release was deployed from `codex/contextual-feedback` at application commit
+`a98a4fa`. The 2026-10-04 Notion disclosure update is deployed as
+`dpl_47tQQp7pLVu9LXZVynDhCy5RE8eu` from the tested local working tree.
+The new playlist/feedback and Notion changes still need integration into remote `master`;
 the connected Git repository can replace this manual deployment on future production-branch pushes.
 Preview environment variables are not configured. Public email delivery still needs custom SMTP,
 and Google login needs its OAuth configuration; existing confirmed email/password accounts can log in.
@@ -77,6 +79,19 @@ Project-wide agent instructions are in AGENTS.md. Feature specifications live un
 Codex uses the installed skills as $speckit-specify, $speckit-clarify, $speckit-plan, $speckit-tasks, $speckit-analyze, $speckit-implement, and $speckit-converge. Claude Code has the corresponding /speckit-* skills. Spec Kit CLI version 0.16.5 initialized the project. To install that CLI locally, use uv tool install specify-cli==0.16.5.
 
 ## Documentation
+
+Feedback export to Notion is **active in production** as of 2026-10-04.
+The [feedback inbox](https://app.notion.com/p/e953e342cbd54be3a253d8f7289258ee) includes
+Hermes triage fields, screenshots and views. Eight existing feedbacks were exported and verified.
+A Supabase Edge Function handles new-feedback dispatch; pg_cron checks pending work every minute.
+The durable queue and retry schedule recover failures without requiring a running desktop.
+Server secrets are held in Edge secrets and Vault, never in the frontend environment.
+Run `bash scripts/setup-notion-feedback.sh` to configure credentials silently, then
+`node --env-file=.env.notion-worker.local scripts/activate-notion-feedback.mjs --confirm-project hllsxshahgvdqhzxdmef`
+only with authorization for the target project. Never share tokens in chat.
+The [activation/validation guide](specs/007-notion-feedback/quickstart.md) records evidence
+and the outstanding independent Hermes access check. Unknown create results require
+reconciliation before creating another record.
 
 - Product: docs/EchoFlow.md
 - Implementation plan: docs/IMPLEMENTATION_PLAN.md
@@ -113,3 +128,8 @@ For concurrent local test work, use a separate Supabase project and port set. Se
 then run browser tests with `PLAYWRIGHT_BASE_URL` pointing at that checkout's frontend.
 The test helper still requires `127.0.0.1` and the exact selected API port; defaults remain
 56321/56324. Do not point these checks at remote Supabase or another writer's stack.
+
+## Agent memory
+
+Local ai-memory setup, capture scope, verification and restart instructions:
+[docs/agents/ai-memory.md](docs/agents/ai-memory.md).

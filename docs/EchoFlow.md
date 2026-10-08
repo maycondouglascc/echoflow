@@ -80,3 +80,8 @@ Every session follows the same 6-step rhythm:
 The catalog now includes the original Voice Comparison and five workplace playlists: Team Meetings, Deadlines and Priorities, Working with Colleagues, Client Conversations, Feedback and Career Growth. Each new playlist has 15 phrases with Puck and Harper (150 new reference audios). Generation/import evidence is under docs/content/.
 
 Feedback is available from the lower-right button throughout the authenticated area. People send improvement suggestions with optional reviewed viewport screenshot and recent route/action context. Attachments remain local until Send feedback; recordings are never included. Suggestions/screenshots are private and account-owned, reviewed through existing Supabase administrative tooling. Feature 006 intentionally adds this optional context persistence beyond feature 005's completion-only persistence; it does not persist practice recordings or continuous session replay.
+Feature 007 automatically exports historical/new feedback and included screenshots
+to a restricted Notion inbox for Hermes triage. Production uses a durable queue, Supabase
+Edge Function dispatch on new feedback and minute recovery checks; eight historical
+feedbacks have been verified in Notion. Independent Hermes integration access remains to be confirmed.
+Supabase remains origin; Notion status, priority and Hermes notes are preserved independently.

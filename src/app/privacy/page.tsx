@@ -78,9 +78,12 @@ export default function PrivacyPage() {
           </p>
           <p>
             Nothing is submitted until you choose Send feedback. Submitted suggestions and optional
-            screenshots are stored privately in Supabase for the team to review. Other accounts
-            cannot access them. Avoid personal or sensitive information in your suggestion or
-            screenshot.
+            screenshots are stored privately in Supabase. When the team’s Notion integration is
+            enabled, feedback text, account identifier, page context and included screenshots are
+            also copied to a restricted Notion database for review by the team and its Hermes agent.
+            Other app accounts cannot access them. Copies in both services need to be removed when
+            handling a deletion request. Avoid personal or sensitive information in your suggestion
+            or screenshot.
           </p>
         </section>
         <section aria-labelledby="beta-privacy">
