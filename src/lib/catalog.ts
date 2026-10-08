@@ -1,7 +1,8 @@
 import "server-only";
 import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
 import { requireUser } from "@/lib/supabase/server";
-import { decodeModel, decodeVariant } from "./catalog-metadata";
+import { decodeLearningUnits, decodeModel, decodeVariant } from "./catalog-metadata";
+import learningAnnotations from "../../docs/content/practice-learning-units.json";
 import { loadPracticeHistory } from "./practice-history";
 import type { PracticeHistoryInitial } from "./practice-history-core";
 
@@ -73,14 +74,25 @@ export async function getScenario(slug: string): Promise<{
         text: p.text,
         category: p.category,
         order: p.sort_order,
-        audioVariants: p.audio_variants.map((v) =>
-          decodeVariant(
+        audioVariants: p.audio_variants.map((v) => {
+          const variant = decodeVariant(
             v.audio_metadata,
             v.word_timings,
             v.provenance,
             `/api/reference-audio/${v.id}`,
-          ),
-        ),
+          );
+          return {
+            ...variant,
+            learningUnits: decodeLearningUnits(learningAnnotations, {
+              phraseId: p.slug,
+              text: p.text,
+              voiceId: variant.voiceId,
+              sha256: variant.sha256,
+              src: variant.src,
+              durationMs: variant.durationMs ?? 0,
+            }),
+          };
+        }),
       })),
     },
   };

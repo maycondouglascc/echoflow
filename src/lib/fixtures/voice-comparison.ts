@@ -1,4 +1,5 @@
 import source from "./voice-comparison.json";
+import type { LearningUnit } from "../practice-learning-units";
 
 export type AudioFormat = "wav" | "mp3";
 export type AudioResponseFormat = "pcm" | "mp3";
@@ -37,6 +38,7 @@ export interface WordTiming {
 }
 
 export interface AudioVariantFixture {
+  readonly learningUnits?: readonly LearningUnit[];
   readonly id: string;
   readonly modelId: string;
   readonly voiceId: string;
