@@ -1,6 +1,6 @@
 # PM review — 008 practice feedback
 
-**Status**: Ready for a separate authorized implementation session; requirements-quality review complete. Application implementation not executed. Owner requested analysis/plans, not code changes. Optional paid word pilot and real-device feasibility gates remain future execution constraints.
+**Current status (2026-10-08)**: Implementation authorized and integrated locally. Deterministic checks and independent code reviews cover the delivered fallback behaviors; final validation is recorded in quickstart.md. Device/perceptual release gates remain open. The planning record below describes the earlier planning-only session and does not override the later authorization.
 
 ## Decisions
 
@@ -84,3 +84,13 @@ Next is a separate explicitly authorized implementation session invoking speckit
 Final recheck by coordinator: zero critical/high/medium open, zero material gaps,22/22coverage100%,40unstarted tasks. Built-in checklist16/16; custom20/20 under explicit reviewer ownership. Technical and product reviews final scopes covered; no application/device/provider validation claimed. Ready status excludes optional paid pilot authorization and future device/schema/code evidence gates.
 
 Documentation verification actually executed: Spec Kit check-prerequisites --json --require-tasks --include-tasks resolves008 and lists research/data/contracts/quickstart/tasks. PM format script found40 unique IDsT001–040, all unchecked with explicit paths,8[P]. Coordinator read-only link/format script found zero broken relative Markdown links and no checked implementation task. No lint/typecheck/build/application tests executed because only planning docs and feature metadata changed.
+
+## Authorized implementation and convergence — 2026-10-08
+
+Root coordinated isolated media/history/content/layout/optional worktrees, reused snapshot8a283c3, and serially integrated frozen commits. Programador-Luna delivered media and optional wiring; Programador-Gemini delivered shell/list/CSS; local agents supplied fail-closed ASR/cues, real authenticated UI/cue tests and independent review after Maestri model/quota failures. Git-Manager independently verified the baseline and source preservation. No production/provider/dependency/CI change was required.
+
+Implemented: solo replay, explicit speak-along and shared-clock comparison with fallback; safe reviewed-range metadata/exact-duration scheduler and whole-phrase fallback; account-owned idempotent history/RLS/retry/Unsaved; viewport/collapse/mobile drawer and retained capture; optional local cues with visible states; explicitly unavailable local transcription and private component/adapter seams. Physical sound/recognition and phonetic quality are not inferred from deterministic tests.
+
+Focused review closed stale range ownership, late mic cancellation, cue overlap/visibility, post-inert focus restoration, completed-playlist visual precedence, floating Feedback occlusion and pointer-click preservation. Real app UI tests replaced copied-HTML simulation. Canonical docs describe the accepted overlap/history exception; historical spec/plan remain unchanged. See quickstart.md for commands and measured outcomes.
+
+Spec Kit converge assessed 15FR+7SC,20AC,8architecture decisions,5constitution principles. Findings: three partial (twoHIGH,oneMEDIUM), zero missing/contradicts/unrequested findings or known constitution violations. Appended T041–043 underPhase9 for actual-device audio/UI release evidence, independent content listeners, and verified local recognition/provider lifecycle. T017/018 remain conditional, without paid generation authorization. Convergence is **tasks_appended**, not a claim that all release gates are satisfied.

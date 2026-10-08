@@ -33,3 +33,9 @@ Read the versioned Voice Comparison fixture and `docs/content/work-playlists.jso
 `practice-learning-units.ts` independently validates phrase/voice/reference checksum, exact contiguous token text, bounds, type, private isolated asset destination/checksum and two distinct complete/no-adjacent-speech review judgments. Unknown/stale/unapproved units yield an explicitly labelled whole-phrase **In context** fallback. Natural linking uses reviewed reference ranges; generated isolated assets cannot masquerade as linking. Highlight timings remain unchanged.
 
 Tests contain only synthetic reviewer identities; they approve no production content. No listener annotations or provider assets were fabricated. Unit tests prove metadata withholding and synthetic sample selection, **not actual playback timing**. T014 must decode metadata; T015 must connect the seam and transport/UI; T016 must obtain independent human approval for every exposed unit. Until then existing UI remains unchanged and no claim of repaired perceptual quality is made.
+
+## Integration result — 2026-10-08
+
+T014 decoding and T015 playback are now integrated. Reviewed reference ranges use decoded-buffer `start(when, startSeconds, durationSeconds)`, with exact synthetic boundary and stale-owner tests. Whole-phrase fallback retains the HTML media path; its legacy RAF end probe still demonstrates why that path is unsuitable for isolated crops. No approved isolated range uses that poller. Highlight timings are unchanged.
+
+All checked-in approvals remain empty. The visible fallback explicitly says **In context** and plays the whole selected-voice phrase; it is excluded from full-reference history. This implementation withholds unsafe word clips rather than certifying production pronunciation. Stratified listening diagnosis and two-listener approval for each proposed isolated/contextual unit remain pending. No paid pilot or asset/schema import ran.

@@ -133,3 +133,20 @@ The test helper still requires `127.0.0.1` and the exact selected API port; defa
 
 Local ai-memory setup, capture scope, verification and restart instructions:
 [docs/agents/ai-memory.md](docs/agents/ai-memory.md).
+
+## Practice feedback (008) development
+
+Implementation and independent checks are recorded in
+[feature quickstart](specs/008-practice-feedback/quickstart.md). Solo replay, optional
+speak-along/paired comparison, focus mode, account listening history and optional
+cues are scoped by that feature. Apply the additive history migration only to the
+selected local test stack; production migration/publishing require separate instruction.
+Recordings stay local; live transcription defaults unavailable pending verified
+on-device support. Word replay uses reviewed units or labelled whole-phrase context.
+
+Worktrees under `/tmp/echoflow-008` use dedicated ports; their Supabase config must
+not replace the source checkout's config. Dependency symlinks are unsupported by
+Turbopack's worktree filesystem boundary; `npm run build -- --webpack` validates the
+same application without changing dependencies or quality gates. Normal source
+checkout verification retains `npm run build`. Physical device/listener checks remain
+explicit release gates; deterministic mocks do not certify audio quality or locality.

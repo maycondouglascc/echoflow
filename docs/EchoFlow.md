@@ -19,8 +19,8 @@ EchoFlow is a web app that teaches English speaking fluency through the **shadow
 Current feature 005: public free-beta landing; confirmed account required for playlists, phrases,
 practice and all reference audio. One **Voice Comparison** playlist, five phrases, **Puck/Harper**.
 Listen, Speak, Compare, word highlight/replay and microphone recovery are preserved. Recordings
-and voice selection stay in page memory; only **Completed** persists per account after five
-recordings/comparisons. Search/filter use the real catalog. Supabase Auth/database/private Storage
+and voice selection stay in page memory; **Completed** persists after playlist recordings/comparisons; feature 008 also
+saves account-owned full-reference listening events/counts across visits. Search/filter use the real catalog. Supabase Auth/database/private Storage
 are implemented locally; remote Google/email/domain, legal approval, spend/abuse limits, real
 devices and deployment remain release gates. Larger catalog and modes below are future roadmap.
 
@@ -85,3 +85,35 @@ to a restricted Notion inbox for Hermes triage. Production uses a durable queue,
 Edge Function dispatch on new feedback and minute recovery checks; eight historical
 feedbacks have been verified in Notion. Independent Hermes integration access remains to be confirmed.
 Supabase remains origin; Notion status, priority and Hermes notes are preserved independently.
+
+## Practice feedback update (008, 2026-10-08)
+
+Feature 008 adds discoverable My recording replay, optional Record with reference and
+Both together comparison; sequential comparison remains the default. Capture records
+only the microphone. Speakers can acoustically leak reference audio into a take, so
+headphones are recommended. Speak keeps silence/manual/30-second stop; Record with
+reference uses manual/30-second stop. Recordings stay in page memory. Physical device
+synchronization, bleed and interruption checks remain release gates.
+
+Heard counts full reference finishes across voices, independently from playlist
+Completed. Listen, comparison reference and speak-along reference qualify; interrupted
+playback, word/context replay and personal replay do not. Counts persist by account;
+pending saves are separately Unsaved with bounded retries. Leaving the page may lose
+unconfirmed events. Listening is client-reported metadata, not verified attendance.
+
+Word highlighting remains based on original timings. Replay annotations require
+phrase/voice/checksum matching and independent listener approval. With no approved
+unit, the UI offers explicitly labelled whole-phrase In context playback; unreviewed
+crops are withheld. No isolated assets or linking annotations have been approved by
+this implementation, and no paid generation is authorized.
+
+Focus mode preserves selected phrase, take and history, with accessible restore and
+account/navigation access. Desktop panels fit available viewport height; mobile, short
+viewports and zoom use a scrolling fallback to keep Stop reachable. Optional app
+sounds are page-local, muted by default and suppressed during capture/learning audio.
+
+Live transcription is exclusively on-device and opt-in. The default adapter is
+unavailable until a device/provider has verified offline/local processing and recorder
+compatibility. No cloud fallback, automatic model download, pronunciation score or
+transcript-driven stopping is enabled. Recordings and recognized text are never uploaded;
+transcript nodes are excluded from feedback screenshot staging.

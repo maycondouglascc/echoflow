@@ -1,10 +1,10 @@
-# Future validation guide — no application checks executed during planning
+# Validation guide — practice feedback 008
 
-Start only after implementation is authorized and checkout dependencies/runtime match README/package.json. Use one dedicated worktree per writer and a local Supabase stack/schema per backend writer; no production credentials. Standard e2e local port4175 belongs to integration; each concurrent worktree gets a distinct agreed port and test identity. Never run provider generation as CI/test setup.
+Implementation was authorized and resumed on 2026-10-08. Ensure checkout dependencies/runtime match README/package.json. Use one dedicated worktree per writer and a local Supabase stack/schema per backend writer; no production credentials. This execution uses integration frontend4185/API58321/DB58322/inbox58324; the default e2e frontend4175 is for a separate single-checkout run. each concurrent worktree gets a distinct agreed port and test identity. Never run provider generation as CI/test setup.
 
 ## Automated gates
 
-Run from integrated checkout (commands are future checks):
+Run from the integrated checkout:
 
 ```sh
 npm run lint
@@ -42,3 +42,25 @@ Local recognition must fail closed when capability/locality not demonstrated. Te
 ## Rollout and recovery gates
 
 Local migration review includes rollback/reconciliation count query, grant/RLS matrices and deletion behavior. Apply to production only on explicit authorization, additive objects, backup/recovery checks and monitoring; this plan does not authorize application publishing/migration. On history outage, show unsaved and retry; practice works. Disable optional synchronized/ASR/cue controls if device requirements fail while retaining sequential/manual paths. Generated word pilot and private import require approved finite unit×2-voice budget, destinations, no retries and atomic metadata; no blanket regeneration.
+
+## Implementation evidence — 2026-10-08
+
+Source baseline `8a283c3` was isolated from the preserved dirty checkout. Root integrated media, history, reviewed-unit metadata, layout and optional feedback. Workers froze before final integration. Maestri Planejador/QA model and quota failures were replaced with root assessment and independent local reviews; no quality gate was removed.
+
+- Lint/typecheck and production Webpack build passed in the symlinked integration worktree. Plain Turbopack cannot resolve its external node_modules symlink; source checkout uses its real dependency directory and must also run the normal build.
+- Unit suite: 92 passed, one opt-in real-database concurrency test skipped in the ordinary command. Explicit execution against `supabase_db_echoflow-008-history`: one passed using separate simultaneous transactions.
+- Local SQL: six files, 121 assertions passed, including A/B/anon ownership, write revocations, duplicates, rate/overflow rollback, reconciliation and deletion. Cascade assertions target their synthetic phrase and do not assume globally empty tables.
+- Audio-generator Python regression suite: 16 passed; no paid provider calls.
+- Generated isolated-database history table/RPC types match the merged type blocks; unrelated existing Notion types were preserved.
+- First integrated 113-case browser round: 104 passed, nine failed. It exposed mobile drawer focus timing and stale assumptions in fixtures (loading boundary, persistent counts, history POST consuming completion interception, mobile hidden sidebar title). Root fixed the behavior and narrowed fixtures without removing source/privacy assertions; final frozen rerun is recorded below when complete.
+
+`tests/e2e/practice-focus-integration.spec.ts` exercises actual authenticated React screens, replacing a copied-HTML layout fixture. Desktop1024×768/1440×900 measurements cover controls before and after a take; mobile390×844/844×390 and CSS512×384 (200% layout equivalent) cover drawer Escape and keyboard Stop. Screenshots are emitted to Playwright test-results. This is Chromium/CSS-viewport evidence, not a real Safari/mobile device or optical-zoom claim. Expanded optional explanations and errors permit panel scrolling; narrow/short layouts use natural scrolling rather than clipping Stop.
+
+UI review used the [Web Interface Guidelines](https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md): labels, focus, semantic buttons, overflow, private text and touch reachability. Motion review removed repeated phrase/collapse scaling; remaining new interactions use immediate state changes and a short background transition. Existing word highlight respects MotionConfig reduced-motion, covered by regression checks. Independent review identified and closed stale replay ownership, cue overlap, invisible cue status, drawer inert-focus timing and completion-status precedence.
+
+## Outstanding release evidence
+
+- T011: real Chrome/Safari/iOS/Android devices, headphones/speakers/Bluetooth, ten measured scheduled output runs/profile, <=50ms relative-offset requirement and interruptions. No synchronized-mode device release approval is claimed.
+- T012/T016: independent listening diagnosis and two-listener review of each proposed unit. Empty approvals mean no isolated production word or linking annotation has been published. Labelled whole-phrase fallback is the delivered safe behavior. T017/T018 paid pilot/private asset schema remain conditional and unstarted.
+- T033/T036/T037: real locality/offline/model/recorder evidence. No approved recognizer exists; default unavailable UI plus ordinary recording is delivered. No model download, cloud recognition or transcript-assisted stop is enabled. A future verified provider must connect attempt-scoped start/cleanup before activation.
+- Source-local migration is a separate setup step: `npx --no-install supabase migration up --local` after checking the selected local project. This execution applied the migration only to the isolated integration database. No remote migration, push, merge or deployment occurred.

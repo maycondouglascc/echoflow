@@ -29,8 +29,8 @@ Every screen in the app is just an entry point to the Practice Screen. The loop 
 - First authenticated entry per account/tab opens a mascot-led modal using the auth dialog structure. Browser permission is requested only by Enable microphone, releases tracks immediately and starts no recording. Escape/close/Not now dismiss; rejection is retryable. Signup confirmation precedes this entry. The public server-rendered `/privacy` explains current data/microphone handling without requesting permission; legal approval remains a launch gate.
 - Step 3 → 4: 300ms readiness gap; recording starts only on explicit Speak. A local energy detector stops after 1500ms silence following at least 200ms voice signal; initial silence does not stop recording. Manual stop/30s limit remain, Web Audio failures fall back to manual control. Device/noise validation is still required.
 - Reference bytes are deduplicated and preloaded for the current/next phrase in the current voice, up to four page-owned object URLs, aborted/revoked on exit. No persistent/public HTTP cache; received buffers cannot be revoked retroactively. Voice changes preserve take/readiness/comparison; no new upload or database field.
-- Step 5: play user recording and reference audio **sequentially**, not simultaneously — easier to self-evaluate
-- No recording or partial progress is saved. After recording/comparing all five phrases in one page session, an idempotent action saves only the current user's playlist completion. The server enforces identity/publication/ownership, not physical practice attestation.
+- Step 5: sequential comparison remains default; feature 008 adds explicit simultaneous comparison using a shared Web Audio clock and the recorded reference-start offset.
+- No recording or transcript is saved. Feature 008 saves account-owned full-reference listening metadata separately from playlist completion. After recording/comparing all phrases in one page session, an idempotent action saves only the current user's playlist completion. The server enforces identity/publication/ownership, not physical practice attestation.
 
 ---
 
@@ -38,7 +38,7 @@ Every screen in the app is just an entry point to the Practice Screen. The loop 
 
 Current tables: `playlists`, `phrases`, `audio_variants`, `playlist_completions`, UTC daily aggregate
 `platform_metrics`. Migrations/seed are authoritative; generated types are in
-`src/lib/supabase/database.types.ts`. No profiles, recordings, per-phrase progress or video sessions.
+`src/lib/supabase/database.types.ts`. Feature 008 adds `phrase_listen_events` and `phrase_listen_counts`; no profiles, recordings, transcripts or video sessions.
 Key design decisions:
 
 - **Audio**: private object paths, checksums, provenance and word timings; clients receive only Next endpoint paths.
@@ -113,3 +113,35 @@ See specs/007-notion-feedback/quickstart.md for configuration and evidence.
 Authenticated layout mounts an account-keyed FeedbackWidget. Its in-memory five-minute/20-event buffer records only allowlisted app paths and explicit practice action names. No replay, typed values, URL parameters, network logs, or personal audio/video. Opening creates a sanitized computed-geometry viewport staging tree and lazily imports html-to-image; controls, account identity, private nodes and media are omitted. The user reviews/removes attachments before explicit submit.
 
 POST /api/feedback requires caller authentication and matching Origin, bounds multipart/PNG dimensions and metadata, uses the user's RLS client, and persists immutable owned app_feedback plus optional private feedback-screenshots/user-id/request-id.png. Request digest/UUID handles identical retries; failed inserts clean newly uploaded objects. No privileged key, public URL or screenshot client update permission. Existing administrative Supabase tooling is the team inbox. See specs/006-contextual-feedback/quickstart.md for separate-account checks and screenshot limitations.
+
+## Practice feedback (008)
+
+`useShadowingPractice` remains the only media lifecycle owner. `capture-session`
+owns mic/recorder/VAD/timers; `practice-transport` owns each scheduled output run and
+its reference/take gains. Reference never enters the recorder graph. Repeat recordings
+use silence/manual/limit; speak-along uses manual/limit. Estimated reference onset
+offset is stored with the local take and recreated on simultaneous playback; source
+clock tests do not prove hardware onset. Comparison completion waits for both sources,
+while reference natural completion emits its own idempotent history event.
+
+History uses a user-session server action and narrow SECURITY DEFINER RPC with fixed
+search_path, auth/expected-account/publication checks, per-user transaction lock,
+60-new-events/minute limit and duplicate exemption. Atomic event insert and counter
+upsert prevent retry duplication/lost updates; safe-number saturation rolls back. RLS
+permits owned published reads only; direct authenticated writes are revoked. Pending
+events remain volatile and bounded20, with 1/2/4-second retries then explicit Retry.
+Confirmed counts use max on out-of-order responses; no blobs, transcripts or client
+counts enter persistence. No production migration was applied by this implementation.
+
+`practice-learning-units` validates replay annotations separately from highlight cues.
+The checked-in approval list is empty; unsafe isolated crops are withheld in favor of
+labelled whole-phrase context. Optional private isolated-asset schema/endpoints remain
+conditional on diagnosed need, listener approval and separately approved provider spend.
+
+`PracticeShell`, `PhrasePracticeList` and `PracticeControls` consume props/actions and
+never own media or persistence. Optional cue player owns its idle context and stops
+all cue sources before capture/playback; capture's VAD and learning transport retain
+their own single owners. No shared-context abstraction is needed. Transcription has
+no default provider, never invokes generic remote-default SpeechRecognition, and
+requires independently verified local evidence before adapter activation. Private
+transcript presentation is omitted by the existing feedback capture walker.
