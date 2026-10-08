@@ -653,3 +653,135 @@
 .recording-clock {
   font-variant-numeric: tabular-nums;
 }
+
+/* The practice panel yields space to controls, including modes and status. */
+.practice-grid .transcript-area {
+  min-height: 0;
+  padding: 16px 0;
+}
+.practice-grid .practice-transcript {
+  font-size: clamp(24px, 3.4vw, 48px);
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+.practice-grid .practice-bottom {
+  gap: 8px;
+  flex-shrink: 0;
+}
+.practice-grid .practice-actions {
+  flex-wrap: wrap;
+  padding-top: 8px;
+  gap: 8px;
+}
+.practice-grid .practice-actions .dark-button {
+  min-height: 44px;
+  height: auto;
+  padding: 8px 12px;
+  white-space: normal;
+}
+.practice-comparison-options fieldset,
+.practice-volume-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  justify-content: center;
+}
+.practice-comparison-options legend {
+  float: left;
+  margin-right: 12px;
+}
+.practice-grid .practice-comparison-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+}
+.practice-volume-controls input {
+  width: 100px;
+}
+.practice-listen-history,
+.practice-optional-feedback,
+.practice-cue-status {
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 20px;
+}
+.practice-optional-feedback summary {
+  cursor: pointer;
+  min-height: 24px;
+}
+.practice-mobile-navigation {
+  display: none;
+}
+.practice-grid .phrase-retry-button {
+  width: auto;
+}
+/* High-frequency phrase navigation needs immediate, stable feedback. */
+.practice-grid .phrase-list button,
+.practice-collapse-button,
+.practice-restore-button {
+  transition: background 100ms ease-out;
+}
+.practice-grid .phrase-list button:active,
+.practice-collapse-button:active,
+.practice-restore-button:active {
+  transform: none;
+}
+@media (max-width: 1023px) {
+  .platform-grid.practice-grid,
+  .platform-grid.practice-grid.is-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .practice-grid .practice-panel {
+    height: auto;
+    max-height: none;
+    min-height: calc(100dvh - 48px);
+    overflow: visible;
+  }
+  .practice-grid .transcript-area {
+    min-height: 160px;
+    padding: 24px 0;
+  }
+  .practice-mobile-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .practice-mobile-navigation .account-control,
+  .practice-collapsed-account .account-control {
+    margin-top: 0;
+    padding-top: 0;
+  }
+  .practice-grid .practice-sidebar,
+  .practice-grid .practice-sidebar.is-collapsed {
+    display: none;
+  }
+  .practice-grid .practice-sidebar.is-drawer-open {
+    display: flex;
+    position: fixed;
+    z-index: 51;
+    inset: 0 auto 0 0;
+    width: min(400px, calc(100vw - 24px));
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: contain;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+  .practice-grid .practice-sidebar.is-drawer-open .phrase-list {
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 0;
+  }
+  .practice-drawer-backdrop {
+    position: fixed;
+    z-index: 50;
+    inset: 0;
+    background: rgb(0 0 0 / 30%);
+  }
+}

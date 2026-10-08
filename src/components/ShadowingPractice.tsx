@@ -76,6 +76,18 @@ export function ShadowingPractice({
     (sum, count) => sum + count,
     0,
   );
+  const phraseCounts = Object.fromEntries(
+    scenario.phrases.map((item) => [
+      item.id,
+      item.databasePhraseId ? (historyState.counts[item.databasePhraseId] ?? 0) : 0,
+    ]),
+  );
+  const phrasePending = Object.fromEntries(
+    scenario.phrases.map((item) => [
+      item.id,
+      item.databasePhraseId ? (historyState.unsaved[item.databasePhraseId] ?? 0) : 0,
+    ]),
+  );
   const historyIdentityChanged =
     historyState.error === "unauthenticated" || historyState.error === "identity_changed";
   const historyCanRetry =
@@ -226,6 +238,7 @@ export function ShadowingPractice({
 
   return (
     <PracticeShell
+      account={account}
       sidebar={
         <>
           <Link href="/home" className="back-link">
@@ -238,6 +251,9 @@ export function ShadowingPractice({
             phrases={scenario.phrases}
             selectedId={phrase.id}
             onSelect={actions.selectPhrase}
+            counts={phraseCounts}
+            pending={phrasePending}
+            onRetry={historyCanRetry ? historyState.retry : undefined}
           />
           {completion === "completed" ? <p className="completion-badge">✓ Completed</p> : null}
           {completion === "saving" ? <p aria-live="polite">Saving completion…</p> : null}

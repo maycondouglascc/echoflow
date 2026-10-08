@@ -26,8 +26,13 @@ export function PracticeShell({
   playlists,
 }: PracticeShellProps) {
   const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const isControlled = controlledCollapsed !== undefined;
   const isCollapsed = isControlled ? controlledCollapsed : uncontrolledCollapsed;
+  const sidebarHidden = isMobile ? !drawerOpen : isCollapsed;
+  const sidebarRef = useRef<HTMLElement>(null);
+  const drawerTriggerRef = useRef<HTMLButtonElement>(null);
 
   const collapseButtonRef = useRef<HTMLButtonElement>(null);
   const restoreButtonRef = useRef<HTMLButtonElement>(null);
@@ -41,11 +46,62 @@ export function PracticeShell({
   };
 
   const handleCollapse = () => {
+    if (isMobile) {
+      setDrawerOpen(false);
+      drawerTriggerRef.current?.focus();
+      return;
+    }
     if (!isControlled) {
       setUncontrolledCollapsed(true);
     }
     onCollapsedChange?.(true);
   };
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile || !drawerOpen) return;
+    const sidebar = sidebarRef.current;
+    // Modality applies only while this retained sidebar is the mobile dialog.
+    sidebar?.setAttribute("aria-modal", "true");
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    collapseButtonRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setDrawerOpen(false);
+        drawerTriggerRef.current?.focus();
+      }
+      if (event.key !== "Tab") return;
+      const targets = Array.from(
+        sidebar?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), [tabindex="0"]',
+        ) ?? [],
+      ).filter((target) => target.getClientRects().length > 0);
+      const first = targets[0];
+      const last = targets.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    sidebar?.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = overflow;
+      sidebar?.removeAttribute("aria-modal");
+      sidebar?.removeEventListener("keydown", onKeyDown);
+    };
+  }, [drawerOpen, isMobile]);
 
   const handleRestore = () => {
     if (!isControlled) {
@@ -55,6 +111,7 @@ export function PracticeShell({
   };
 
   useEffect(() => {
+    if (isMobile) return;
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
@@ -73,15 +130,27 @@ export function PracticeShell({
         firstListTarget?.focus();
       }
     }
-  }, [isCollapsed]);
+  }, [isCollapsed, isMobile]);
 
   return (
     <section className={`platform-grid practice-grid${isCollapsed ? " is-collapsed" : ""}`}>
+      {isMobile && drawerOpen ? (
+        <button
+          type="button"
+          className="practice-drawer-backdrop"
+          aria-label="Dismiss practice phrases"
+          tabIndex={-1}
+          onClick={handleCollapse}
+        />
+      ) : null}
       <aside
+        ref={sidebarRef}
         id="practice-sidebar"
-        className={`platform-sidebar practice-sidebar${isCollapsed ? " is-collapsed" : ""}`}
-        inert={isCollapsed ? true : undefined}
-        aria-hidden={isCollapsed ? true : undefined}
+        className={`platform-sidebar practice-sidebar${isCollapsed ? " is-collapsed" : ""}${drawerOpen ? " is-drawer-open" : ""}`}
+        inert={sidebarHidden ? true : undefined}
+        aria-hidden={sidebarHidden ? true : undefined}
+        role={isMobile && drawerOpen ? "dialog" : "complementary"}
+        aria-label="Practice phrases"
         onFocusCapture={handleSidebarFocusCapture}
       >
         <div className="practice-sidebar-controls">
@@ -90,21 +159,41 @@ export function PracticeShell({
             ref={collapseButtonRef}
             className="practice-collapse-button"
             data-feedback-action="collapse-sidebar"
-            aria-expanded={!isCollapsed}
+            aria-expanded={!sidebarHidden}
             aria-controls="practice-sidebar"
-            aria-label="Collapse practice sidebar"
+            aria-label={isMobile ? "Close practice phrases" : "Collapse practice sidebar"}
             onClick={handleCollapse}
           >
             <span aria-hidden="true" className="collapse-icon">
               ◀
             </span>
-            <span>Collapse</span>
+            <span>{isMobile ? "Close" : "Collapse"}</span>
           </button>
         </div>
         {sidebar}
       </aside>
-      <section aria-labelledby="practice-title" className="platform-panel practice-panel">
-        {isCollapsed && (
+      <section
+        aria-labelledby="practice-title"
+        className="platform-panel practice-panel"
+        inert={isMobile && drawerOpen ? true : undefined}
+      >
+        <div className="practice-mobile-navigation">
+          <button
+            type="button"
+            ref={drawerTriggerRef}
+            className="practice-restore-button"
+            aria-label="Show practice phrases"
+            aria-controls="practice-sidebar"
+            aria-expanded={drawerOpen}
+            onClick={() => setDrawerOpen(true)}
+          >
+            Phrases
+          </button>
+          <Link href="/home">Playlists</Link>
+          <Link href="/privacy">Privacy</Link>
+          {account}
+        </div>
+        {!isMobile && isCollapsed && (
           <div className="practice-collapsed-bar" data-testid="practice-collapsed-bar">
             <button
               type="button"

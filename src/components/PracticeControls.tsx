@@ -206,9 +206,9 @@ export function PracticeControls({
           ) : null}
         </div>
       ) : null}
-      <p id="record-with-reference-help" className="sr-only">
-        Your microphone is recorded while the reference plays separately. The saved take contains
-        microphone audio only.
+      <p id="record-with-reference-help" className="recording-privacy">
+        Use headphones for Record with reference. Speakers can be picked up by your microphone;
+        reference audio is never mixed digitally into your take.
       </p>
       {isPlaybackActive ? (
         <button
