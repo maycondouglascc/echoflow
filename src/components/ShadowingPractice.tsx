@@ -337,13 +337,12 @@ export function ShadowingPractice({
       ) : null}
       {cuesEnabled ? (
         <p className="practice-cue-status" aria-live="polite">
-          {completion === "completed"
-            ? "Playlist completed"
-            : view.status === "Reference finished. You can record now."
-              ? "Ready to record"
-              : view.status === "Recording saved in this page session. Play it back or compare."
-                ? "Recording saved"
-                : "Sound cues on"}
+          {view.status === "Reference finished. You can record now."
+            ? "Ready to record"
+            : view.status === "Recording saved in this page session. Play it back or compare."
+              ? "Recording saved"
+              : "Sound cues on"}
+          {completion === "completed" ? <span> · Playlist completed</span> : null}
         </p>
       ) : null}
       <details className="practice-optional-feedback">

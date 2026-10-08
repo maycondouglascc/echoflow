@@ -33,6 +33,7 @@ export function PracticeShell({
   const sidebarHidden = isMobile ? !drawerOpen : isCollapsed;
   const sidebarRef = useRef<HTMLElement>(null);
   const drawerTriggerRef = useRef<HTMLButtonElement>(null);
+  const previousDrawerOpen = useRef(false);
 
   const collapseButtonRef = useRef<HTMLButtonElement>(null);
   const restoreButtonRef = useRef<HTMLButtonElement>(null);
@@ -48,7 +49,6 @@ export function PracticeShell({
   const handleCollapse = () => {
     if (isMobile) {
       setDrawerOpen(false);
-      drawerTriggerRef.current?.focus();
       return;
     }
     if (!isControlled) {
@@ -56,6 +56,14 @@ export function PracticeShell({
     }
     onCollapsedChange?.(true);
   };
+
+  useEffect(() => {
+    if (isMobile && previousDrawerOpen.current && !drawerOpen) {
+      // React has removed inert from the panel before restoring its trigger.
+      drawerTriggerRef.current?.focus();
+    }
+    previousDrawerOpen.current = drawerOpen;
+  }, [drawerOpen, isMobile]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
@@ -77,7 +85,6 @@ export function PracticeShell({
       if (event.key === "Escape") {
         event.preventDefault();
         setDrawerOpen(false);
-        drawerTriggerRef.current?.focus();
       }
       if (event.key !== "Tab") return;
       const targets = Array.from(
