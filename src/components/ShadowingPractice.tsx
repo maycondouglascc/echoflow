@@ -8,32 +8,64 @@ import { completePlaylist } from "@/app/(app)/actions";
 import { PhrasePracticeList } from "@/components/PhrasePracticeList";
 import { PracticeControls } from "@/components/PracticeControls";
 import { PracticeShell } from "@/components/PracticeShell";
+import { usePracticeHistory } from "@/components/usePracticeHistory";
 import { useShadowingPractice } from "@/components/useShadowingPractice";
 import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
+import type { FullReferenceEvent } from "@/lib/practice-events";
+import type { PracticeHistoryInitial } from "@/lib/practice-history-core";
+
+const unavailableHistory: PracticeHistoryInitial = {
+  accountId: "00000000-0000-4000-8000-000000000000",
+  counts: {},
+  available: false,
+};
+
+function isHistoryEventForAccount(event: FullReferenceEvent, accountId: string) {
+  return event.run.accountGeneration === accountId;
+}
 
 export function ShadowingPractice({
   scenario,
   playlistId,
   completed = false,
   account,
+  history,
 }: {
   scenario: ScenarioFixture;
   playlistId?: string;
   completed?: boolean;
   account?: ReactNode;
+  history?: PracticeHistoryInitial;
 }) {
-  const { audioRef, wordReplayAudioRef, view, actions } = useShadowingPractice(scenario);
+  const historyState = usePracticeHistory(history ?? unavailableHistory);
+  const onFullReferenceComplete = useCallback(
+    (event: FullReferenceEvent) => {
+      if (!history || !isHistoryEventForAccount(event, history.accountId)) return;
+      const databasePhraseId = scenario.phrases.find(
+        (item) => item.id === event.run.phraseId,
+      )?.databasePhraseId;
+      if (databasePhraseId) historyState.record(databasePhraseId, event.eventId);
+    },
+    [history, historyState.record, scenario.phrases],
+  );
+  const { audioRef, wordReplayAudioRef, view, actions } = useShadowingPractice(scenario, {
+    accountGeneration: history?.accountId ?? "page",
+    onFullReferenceComplete,
+  });
   const {
     phrase,
     activeWordIndex,
-    wordTimings,
     selectedIndex,
     audioModels,
     selectedModelId,
     isAudioBusy,
     isRequestingMicrophone,
     isRecording,
+    learningReplays,
   } = view;
+  const databasePhraseId = phrase.databasePhraseId;
+  const listenedCount = databasePhraseId ? (historyState.counts[databasePhraseId] ?? 0) : 0;
+  const unsavedCount = databasePhraseId ? (historyState.unsaved[databasePhraseId] ?? 0) : 0;
   const [completion, setCompletion] = useState<"idle" | "saving" | "completed" | "error">(
     completed ? "completed" : "idle",
   );
@@ -58,8 +90,8 @@ export function ShadowingPractice({
     if (/^\s+$/.test(part)) return part;
     const wordIndex = nextWordIndex++;
     const highlighted = activeWordIndex === wordIndex;
-    const canReplayWord =
-      Boolean(wordTimings[wordIndex]) && !isRequestingMicrophone && !isRecording;
+    const replay = learningReplays[wordIndex];
+    const canReplayWord = Boolean(replay) && !isRequestingMicrophone && !isRecording;
     const text = (
       <motion.span
         animate={{ color: "#1a1e26" }}
@@ -90,7 +122,7 @@ export function ShadowingPractice({
           <motion.button
             type="button"
             data-feedback-action="replay-word"
-            aria-label={`Replay word: ${part} in ${selectedVoiceName}`}
+            aria-label={`Replay ${replay?.label ?? part} in ${selectedVoiceName}`}
             onClick={() => actions.replayWord(wordIndex)}
             disabled={isRequestingMicrophone || isRecording}
             className="word-replay"
@@ -174,6 +206,17 @@ export function ShadowingPractice({
           </LayoutGroup>
         </MotionConfig>
       </div>
+      {history ? (
+        <p className="practice-listen-history" aria-live="polite">
+          {listenedCount > 0 ? `Heard · ${listenedCount}` : "Not heard yet"}
+          {unsavedCount > 0 ? ` · Unsaved · ${unsavedCount}` : ""}
+          {unsavedCount > 0 ? (
+            <button type="button" className="text-button" onClick={historyState.retry}>
+              Retry history save
+            </button>
+          ) : null}
+        </p>
+      ) : null}
       <PracticeControls
         state={view}
         actions={{ ...actions, nextPhrase: () => actions.selectPhrase(selectedIndex + 1) }}

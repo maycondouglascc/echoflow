@@ -1,5 +1,5 @@
-import source from "./voice-comparison.json";
 import type { LearningUnit } from "../practice-learning-units";
+import source from "./voice-comparison.json";
 
 export type AudioFormat = "wav" | "mp3";
 export type AudioResponseFormat = "pcm" | "mp3";

@@ -259,7 +259,7 @@ test("solo take replay never starts reference, requests mic or highlights the tr
   await page.evaluate(() => window.__echoTest.finishCurrentAudio());
   await page.evaluate(() => window.__echoTest.denyNextMicrophone());
   await page.getByRole("button", { name: "Record again", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("denied");
+  await expect(page.locator("p[role=alert]")).toContainText("denied");
   await expect(solo).toBeEnabled();
   await solo.click();
   await expect(page.getByRole("status")).toContainText("Playing your recording");

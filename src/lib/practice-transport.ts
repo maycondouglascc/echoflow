@@ -15,6 +15,7 @@ export function createPracticeTransport(createContext = () => new AudioContext()
   const controller = new AbortController();
   const nodes: AudioBufferSourceNode[] = [];
   const gains: Partial<Record<TransportSource, GainNode>> = {};
+  let volumes = { reference: 0.5, take: 0.5 };
   let cancelled = false;
   let started = false;
   let referenceStart: number | null = null;
@@ -56,8 +57,9 @@ export function createPracticeTransport(createContext = () => new AudioContext()
     const r = Math.max(0, Math.min(1, reference));
     const t = Math.max(0, Math.min(1, take));
     const scale = Math.max(1, r + t);
-    if (gains.reference) gains.reference.gain.value = r / scale;
-    if (gains.take) gains.take.gain.value = t / scale;
+    volumes = { reference: r / scale, take: t / scale };
+    if (gains.reference) gains.reference.gain.value = volumes.reference;
+    if (gains.take) gains.take.gain.value = volumes.take;
   };
   return {
     cancel,
@@ -103,7 +105,7 @@ export function createPracticeTransport(createContext = () => new AudioContext()
           source.buffer = buffer;
           source.connect(gain);
           gain.connect(context.destination);
-          gain.gain.value = audio.take ? 0.5 : 1;
+          gain.gain.value = audio.take ? volumes[kind] : 1;
           source.onended = () => {
             if (cancelled) return;
             if (kind === "reference") referenceEnded = true;

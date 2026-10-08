@@ -51,7 +51,9 @@ test("uses the decoded reference audio clock for both selectable voices", async 
   }
 });
 
-test("replays one aligned word from the decoded selected voice", async ({ page }) => {
+test("replays an unreviewed token as full reference context in the selected voice", async ({
+  page,
+}) => {
   await login(page, "real-audio");
   await expect(page.getByRole("heading", { name: "Voice Comparison" })).toBeVisible();
 
@@ -80,14 +82,18 @@ test("replays one aligned word from the decoded selected voice", async ({ page }
       );
     });
 
+    await expect(word).toHaveAttribute(
+      "aria-label",
+      `Replay In context: ${phrase.text} in ${voiceName}`,
+    );
     await word.click();
-    await expect(page.getByRole("status")).toContainText("Replaying word");
+    await expect(page.getByRole("status")).toContainText(`In context: ${phrase.text}`);
     await expect
       .poll(() => wordAudio.evaluate((element) => !(element as HTMLAudioElement).paused))
       .toBe(true);
     await expect
       .poll(() => wordAudio.evaluate((element) => (element as HTMLAudioElement).currentTime * 1000))
-      .toBeGreaterThanOrEqual((cue?.startMs ?? 0) - 20);
+      .toBeGreaterThanOrEqual(0);
     await expect
       .poll(() => wordAudio.evaluate((element) => (element as HTMLAudioElement).paused), {
         timeout: 4_000,
@@ -97,8 +103,8 @@ test("replays one aligned word from the decoded selected voice", async ({ page }
     const finalTimeMs = await wordAudio.evaluate(
       (element) => (element as HTMLAudioElement).currentTime * 1000,
     );
-    expect(finalTimeMs).toBeGreaterThanOrEqual((cue?.endMs ?? 0) - 25);
-    expect(finalTimeMs).toBeLessThanOrEqual((cue?.endMs ?? 0) + 50);
+    expect(finalTimeMs).toBeGreaterThanOrEqual((variant?.durationMs ?? cue?.endMs ?? 0) - 25);
+    expect(finalTimeMs).toBeLessThanOrEqual((variant?.durationMs ?? cue?.endMs ?? 0) + 50);
     expect(await wordAudio.evaluate((element) => (element as HTMLAudioElement).currentSrc)).toMatch(
       /^blob:/,
     );

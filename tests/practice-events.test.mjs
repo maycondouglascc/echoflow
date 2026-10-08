@@ -42,3 +42,26 @@ test("words/chunks/solo never count full listens or comparisons", () => {
     });
   }
 });
+test("reference, sequential and speak-along count only full natural reference endings", () => {
+  for (const mode of ["reference", "sequential", "speak-along"]) {
+    const tracker = trackPlaybackCompletion({ ...identity, mode });
+    if (mode !== "sequential")
+      assert.deepEqual(tracker.ended("take"), {
+        referenceComplete: false,
+        comparisonComplete: false,
+      });
+    assert.deepEqual(tracker.ended("reference"), {
+      referenceComplete: true,
+      comparisonComplete: false,
+    });
+    assert.deepEqual(tracker.ended("reference"), {
+      referenceComplete: false,
+      comparisonComplete: false,
+    });
+    if (mode === "sequential")
+      assert.deepEqual(tracker.ended("take"), {
+        referenceComplete: false,
+        comparisonComplete: true,
+      });
+  }
+});

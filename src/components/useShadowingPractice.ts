@@ -9,9 +9,15 @@ import type {
 } from "@/lib/fixtures/voice-comparison";
 import {
   type CaptureMode,
+  type ComparisonMode,
   type FullReferenceEvent,
   trackPlaybackCompletion,
 } from "@/lib/practice-events";
+import {
+  type LearningReference,
+  type LearningReplay,
+  learningReplayForWord,
+} from "@/lib/practice-learning-units";
 import {
   createPracticeTransport,
   type PracticeTransport,
@@ -57,6 +63,7 @@ type PracticePhase =
       readonly kind: "playing";
       readonly phraseId: string;
       readonly returnTo: ReturnPhase;
+      readonly runId: string | null;
     } & (
       | { readonly playback: Exclude<PlaybackKind, "word-replay"> }
       | { readonly playback: "word-replay"; readonly endMs: number }
@@ -124,7 +131,11 @@ export function useShadowingPractice(
   const referenceCallbackRef = useRef(options.onFullReferenceComplete);
   referenceCallbackRef.current = options.onFullReferenceComplete;
   const accountGeneration = options.accountGeneration ?? "page";
+  const accountGenerationRef = useRef(accountGeneration);
+  accountGenerationRef.current = accountGeneration;
   const [transportActive, setTransportActive] = useState(false);
+  const [comparisonMode, setComparisonMode] = useState<ComparisonMode>("sequential");
+  const [volumes, setVolumes] = useState({ reference: 0.5, take: 0.5 });
   const recordingsRef = useRef<Readonly<Record<string, SessionRecording>>>(state.recordings);
 
   const stateRef = useRef(state);
@@ -151,6 +162,42 @@ export function useShadowingPractice(
           variant.modelId === selectedModel.id && variant.voiceId === selectedModel.voiceId,
       )
     : undefined;
+  const learningReference: LearningReference | null = selectedAudioVariant
+    ? {
+        phraseId: phrase.id,
+        text: phrase.text,
+        voiceId: selectedAudioVariant.voiceId,
+        sha256: selectedAudioVariant.sha256,
+        src: selectedAudioVariant.src,
+        durationMs:
+          selectedAudioVariant.durationMs && selectedAudioVariant.durationMs > 0
+            ? selectedAudioVariant.durationMs
+            : Number.MAX_SAFE_INTEGER,
+      }
+    : null;
+  const learningReplays: readonly (LearningReplay | null)[] = learningReference
+    ? phrase.text
+        .trim()
+        .split(/\s+/)
+        .map((_, index) => {
+          const replay = learningReplayForWord(
+            learningReference,
+            selectedAudioVariant?.learningUnits ?? [],
+            index,
+          );
+          return (
+            replay ?? {
+              kind: "whole-phrase",
+              label: `In context: ${phrase.text}`,
+              src: learningReference.src,
+              sha256: learningReference.sha256,
+              startMs: 0,
+              endMs: learningReference.durationMs,
+              unitId: null,
+            }
+          );
+        })
+    : [];
   const selectableModels = scenario.audioModels.filter((model) => model.selectable);
   const nextVariant = scenario.phrases[state.selectedIndex + 1]?.audioVariants.find(
     (variant) => variant.modelId === selectedModel?.id && variant.voiceId === selectedModel.voiceId,
@@ -233,17 +280,22 @@ export function useShadowingPractice(
     [],
   );
 
-  const finishSource = useCallback((source: "reference" | "take") => {
+  const finishSource = useCallback((source: "reference" | "take", runId: string | null) => {
     const tracker = completionRef.current;
-    if (!tracker) return false;
+    if (!tracker || !runId || tracker.run.runId !== runId) return false;
     const result = tracker.ended(source);
-    if (result.referenceComplete) {
+    if (
+      result.referenceComplete &&
+      tracker.run.accountGeneration === accountGenerationRef.current
+    ) {
       try {
-        referenceCallbackRef.current?.({
-          kind: "full-reference-complete",
-          eventId: tracker.run.runId,
-          run: tracker.run,
-        });
+        referenceCallbackRef.current?.(
+          Object.freeze({
+            kind: "full-reference-complete",
+            eventId: tracker.run.runId,
+            run: tracker.run,
+          }),
+        );
       } catch {
         /* Optional history failures must not interrupt local practice. */
       }
@@ -294,6 +346,7 @@ export function useShadowingPractice(
         phraseId,
         playback,
         returnTo,
+        runId: completionRef.current?.run.runId ?? null,
       };
       transition(
         playingPhase,
@@ -325,7 +378,7 @@ export function useShadowingPractice(
             : "The reference audio could not be played. You can try it again.",
           "Audio could not be played.",
           playback === "recording" || playback === "comparison-recording",
-          { kind: "idle" },
+          returnTo === "ready" ? { kind: "ready" } : { kind: "idle" },
         );
       }
     },
@@ -374,7 +427,7 @@ export function useShadowingPractice(
         : "The reference audio was interrupted. You can try it again.",
       "Audio playback failed.",
       isRecordingPlayback,
-      { kind: "idle" },
+      active.returnTo === "ready" ? { kind: "ready" } : { kind: "idle" },
     );
   }, [clearRecordReadyTimer, reportError]);
 
@@ -391,7 +444,7 @@ export function useShadowingPractice(
     playbackSequenceRef.current += 1;
 
     if (active.playback === "reference") {
-      finishSource("reference");
+      finishSource("reference", active.runId);
       const waitingPhase: PracticePhase = { kind: "waiting", phraseId: active.phraseId };
       transition(waitingPhase, "Reference finished. Recording will be ready in a moment.");
       clearRecordReadyTimer();
@@ -410,7 +463,7 @@ export function useShadowingPractice(
     }
 
     if (active.playback === "comparison-reference") {
-      finishSource("reference");
+      finishSource("reference", active.runId);
       const recording = recordingsRef.current[active.phraseId];
       if (!recording) {
         reportError(
@@ -431,7 +484,7 @@ export function useShadowingPractice(
     }
 
     if (active.playback === "comparison-recording") {
-      finishSource("take");
+      finishSource("take", active.runId);
       setComparedPhraseIds((ids) =>
         ids.includes(active.phraseId) ? ids : [...ids, active.phraseId],
       );
@@ -490,9 +543,9 @@ export function useShadowingPractice(
         currentPhase.kind === "saving"
       )
         return;
-      const cue = selectedAudioVariant?.wordTimings?.[wordIndex];
+      const replay = learningReplays[wordIndex];
       const audio = wordReplayAudioRef.current;
-      if (!cue || !audio) return;
+      if (!replay || !audio || !selectedAudioVariant) return;
 
       transportRef.current?.cancel();
       transportRef.current = null;
@@ -502,7 +555,10 @@ export function useShadowingPractice(
       const requestedPhrase = phrase.id;
       const requestedSequence = ++playbackSequenceRef.current;
       try {
-        const source = await referenceBuffer.sourceFor(selectedAudioVariant.src);
+        const source =
+          replay.src === selectedAudioVariant.src
+            ? await referenceBuffer.sourceFor(selectedAudioVariant.src)
+            : replay.src;
         if (
           selectedPhraseIdRef.current !== requestedPhrase ||
           playbackSequenceRef.current !== requestedSequence ||
@@ -526,7 +582,7 @@ export function useShadowingPractice(
       playbackSequenceRef.current = sequence;
       audioRef.current?.pause();
       audio.pause();
-      audio.currentTime = cue.startMs / 1000;
+      audio.currentTime = replay.startMs / 1000;
       setCurrentWordIndex(wordIndex);
       transition(
         {
@@ -534,9 +590,10 @@ export function useShadowingPractice(
           phraseId: phrase.id,
           playback: "word-replay",
           returnTo,
-          endMs: cue.endMs,
+          runId: null,
+          endMs: replay.endMs,
         },
-        "Replaying word.",
+        replay.label,
       );
       void audio.play().catch(() => {
         if (playbackSequenceRef.current !== sequence) return;
@@ -548,6 +605,7 @@ export function useShadowingPractice(
       handleWordAudioError,
       phrase.id,
       selectedAudioVariant,
+      learningReplays,
       transition,
       referenceBuffer.sourceFor,
       reportError,
@@ -582,10 +640,14 @@ export function useShadowingPractice(
       let captureOwnsStream = false;
       let prepared: PreparedAudio | undefined;
       let transport: PracticeTransport | undefined;
+      let runId: string | null = null;
       let referenceOffsetMs = 0;
       const capturedVoiceId = selectedModel?.voiceId ?? "";
+      const requestAccountGeneration = accountGeneration;
       const valid = () =>
-        permissionRequestRef.current === requestId && selectedPhraseIdRef.current === phraseId;
+        permissionRequestRef.current === requestId &&
+        selectedPhraseIdRef.current === phraseId &&
+        accountGenerationRef.current === requestAccountGeneration;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true } });
         if (!valid()) {
@@ -604,6 +666,7 @@ export function useShadowingPractice(
             return;
           }
           beginRun("speak-along", phrase, selectedAudioVariant);
+          runId = completionRef.current?.run.runId ?? null;
         }
         captureOwnsStream = true;
         const capture = beginCapture(
@@ -613,7 +676,7 @@ export function useShadowingPractice(
               if (!valid() || !transport || !prepared) return;
               const timing = transport.start(prepared, 0, {
                 onEnded(source) {
-                  if (valid()) finishSource(source);
+                  if (valid() && runId) finishSource(source, runId);
                 },
                 onError() {
                   if (!valid()) return;
@@ -704,6 +767,7 @@ export function useShadowingPractice(
       reportError,
       selectedAudioVariant,
       selectedModel?.voiceId,
+      accountGeneration,
       stopAudio,
       stopCapture,
       transition,
@@ -902,7 +966,13 @@ export function useShadowingPractice(
     const sequence = playbackSequenceRef.current;
     const phraseId = phrase.id;
     transition(
-      { kind: "playing", playback: "comparison-together", phraseId, returnTo: "ready" },
+      {
+        kind: "playing",
+        playback: "comparison-together",
+        phraseId,
+        returnTo: "ready",
+        runId: null,
+      },
       "Preparing both tracks…",
     );
     const valid = () =>
@@ -910,6 +980,7 @@ export function useShadowingPractice(
     const failed = () => {
       if (!valid()) return;
       stopAudio();
+      setComparisonMode("sequential");
       reportError(
         "Both together is unavailable. Your take is unchanged; use sequential Compare.",
         "Synchronized playback unavailable.",
@@ -920,6 +991,7 @@ export function useShadowingPractice(
     try {
       const transport = createPracticeTransport();
       transportRef.current = transport;
+      transport.setVolumes(volumes.reference, volumes.take);
       const prepared = await transport.prepare(
         await referenceBuffer.sourceFor(selectedAudioVariant.src),
         currentRecording.objectUrl,
@@ -929,10 +1001,11 @@ export function useShadowingPractice(
         return;
       }
       beginRun("simultaneous", phrase, selectedAudioVariant);
+      const runId = completionRef.current?.run.runId ?? null;
       transport.start(prepared, currentRecording.referenceOffsetMs, {
         onEnded(source) {
-          if (!valid()) return;
-          if (finishSource(source)) {
+          if (!valid() || !runId) return;
+          if (finishSource(source, runId)) {
             setComparedPhraseIds((ids) => (ids.includes(phraseId) ? ids : [...ids, phraseId]));
             stopAudio();
             transition(
@@ -945,7 +1018,7 @@ export function useShadowingPractice(
       });
       setTransportActive(true);
       transition(
-        { kind: "playing", playback: "comparison-together", phraseId, returnTo: "ready" },
+        { kind: "playing", playback: "comparison-together", phraseId, returnTo: "ready", runId },
         "Playing reference and your recording together.",
       );
     } catch {
@@ -962,9 +1035,20 @@ export function useShadowingPractice(
     selectedAudioVariant,
     stopAudio,
     transition,
+    volumes.reference,
+    volumes.take,
   ]);
 
+  const updateVolumes = useCallback((reference: number, take: number) => {
+    const r = Number.isFinite(reference) ? Math.max(0, Math.min(1, reference)) : 0.5;
+    const t = Number.isFinite(take) ? Math.max(0, Math.min(1, take)) : 0.5;
+    const next = { reference: r, take: t };
+    setVolumes(next);
+    transportRef.current?.setVolumes(r, t);
+  }, []);
+
   const stop = useCallback(() => {
+    if (phaseRef.current.kind === "saving") return;
     permissionRequestRef.current += 1;
     clearRecordReadyTimer();
     // A recording Stop must accept its last chunk; cancellation of a pending
@@ -1035,6 +1119,10 @@ export function useShadowingPractice(
 
   const compare = useCallback(() => {
     if (isAudioBusy || isRecording || isRequestingMicrophone) return;
+    if (comparisonMode === "simultaneous") {
+      void compareTogether();
+      return;
+    }
     if (!currentRecording) {
       reportError(
         "Choose Speak and record your voice before comparing.",
@@ -1058,6 +1146,8 @@ export function useShadowingPractice(
     playReference,
     selectedAudioVariant,
     reportError,
+    comparisonMode,
+    compareTogether,
   ]);
 
   useEffect(() => {
@@ -1087,15 +1177,21 @@ export function useShadowingPractice(
       comparedPhraseIds,
       activeWordIndex,
       wordTimings: selectedAudioVariant?.wordTimings ?? [],
+      learningReplays,
       referenceAudioSource: referenceBuffer.source,
       selectedIndex: state.selectedIndex,
       audioModels: selectableModels,
       selectedModelId: state.selectedModelId,
       hasRecording: Boolean(currentRecording),
+      canRecordWithReference:
+        Boolean(selectedAudioVariant) &&
+        !["requesting", "recording", "saving"].includes(phase.kind),
       canRecord,
       isAudioBusy,
+      isPlaybackActive: phase.kind === "playing",
       isRequestingMicrophone,
       isRecording,
+      isSaving: phase.kind === "saving",
       elapsedMs,
       transportActive,
       capturedVoiceName: currentRecording
@@ -1108,6 +1204,9 @@ export function useShadowingPractice(
       status: state.status,
       error: state.error?.message ?? null,
       canRetryRecording: Boolean(state.error?.retryable && canRecord),
+      comparisonMode,
+      referenceVolume: volumes.reference,
+      takeVolume: volumes.take,
     },
     actions: {
       selectPhrase,
@@ -1118,10 +1217,10 @@ export function useShadowingPractice(
       playRecording,
       compare,
       compareTogether,
+      setComparisonMode,
       recordWithReference: () => startRecording("with-reference"),
       stop,
-      setVolumes: (reference: number, take: number) =>
-        transportRef.current?.setVolumes(reference, take),
+      setVolumes: updateVolumes,
       handleAudioEnded,
       handleAudioError,
       handleWordAudioEnded,

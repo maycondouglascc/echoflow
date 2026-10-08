@@ -4,7 +4,13 @@ import { installMediaMocks } from "./helpers/media";
 
 declare global {
   interface Window {
-    __pairedTest: { starts: number[]; stopped: number; finish(index: number): void };
+    __pairedTest: {
+      starts: number[];
+      stopped: number;
+      gains: number[];
+      finish(index: number): void;
+      failNextDecode(): void;
+    };
   }
 }
 // Control source ends independently rather than treating two play promises as
@@ -12,9 +18,15 @@ declare global {
 function installPairedMocks() {
   const Original = window.AudioContext;
   const sources: Array<{ onended: (() => void) | null }> = [];
+  const gainNodes: Array<{ gain: { value: number } }> = [];
   const state = {
     starts: [] as number[],
     stopped: 0,
+    gains: [] as number[],
+    failDecode: false,
+    failNextDecode() {
+      state.failDecode = true;
+    },
     finish(index: number) {
       sources[index]?.onended?.();
     },
@@ -27,10 +39,17 @@ function installPairedMocks() {
       return {} as AudioDestinationNode;
     }
     async decodeAudioData() {
+      if (state.failDecode) {
+        state.failDecode = false;
+        throw new Error("decode failed");
+      }
       return { duration: 3 } as AudioBuffer;
     }
     createGain() {
-      return { gain: { value: 0 }, connect() {}, disconnect() {} } as unknown as GainNode;
+      const node = { gain: { value: 0 }, connect() {}, disconnect() {} };
+      gainNodes.push(node);
+      state.gains.push(node.gain.value);
+      return node as unknown as GainNode;
     }
     createBufferSource() {
       const source = {
@@ -50,6 +69,9 @@ function installPairedMocks() {
   }
   Object.defineProperty(window, "AudioContext", { configurable: true, value: PairedContext });
   window.__pairedTest = state;
+  Object.defineProperty(window.__pairedTest, "gains", {
+    get: () => gainNodes.map((node) => node.gain.value),
+  });
 }
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(installMediaMocks);
@@ -70,19 +92,41 @@ test("paired playback shares a clock, waits for both ends and Stop cancels outst
 }) => {
   await login(page, "paired-end");
   await recordTake(page);
-  await page.getByRole("button", { name: "Both together", exact: true }).click();
+  await page.getByRole("radio", { name: "Both together", exact: true }).check();
+  await expect(page.getByLabel("Reference volume")).toHaveValue("0.5");
+  await expect(page.getByLabel("My recording volume")).toHaveValue("0.5");
+  await page.getByLabel("Reference volume").focus();
+  await page.getByLabel("Reference volume").press("ArrowRight");
+  await expect(page.getByLabel("Reference volume")).toHaveValue("0.55");
+  await page.getByRole("button", { name: "Compare", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("together");
   expect(await page.evaluate(() => window.__pairedTest.starts)).toEqual([10.1, 10.1]);
+  expect(await page.evaluate(() => window.__pairedTest.gains)).toEqual([0.55 / 1.05, 0.5 / 1.05]);
   await page.evaluate(() => window.__pairedTest.finish(0));
+  await expect(page.locator(".practice-listen-history")).toContainText("Heard · 2");
   await expect(page.getByRole("status")).toContainText("together");
   await page.evaluate(() => window.__pairedTest.finish(1));
   await expect(page.getByRole("status")).toContainText("Comparison complete");
-  await page.getByRole("button", { name: "Both together", exact: true }).click();
+  await expect(page.locator(".practice-listen-history")).toContainText("Heard · 2");
+  await page.getByRole("button", { name: "Compare", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("together");
   await page.getByRole("button", { name: "Stop playback", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Stopped");
   await page.evaluate(() => window.__pairedTest.finish(3));
   await expect(page.getByRole("status")).toContainText("Stopped");
+});
+
+test("synchronized preparation failure keeps the take and falls back to sequential mode", async ({
+  page,
+}) => {
+  await login(page, "paired-fallback");
+  await recordTake(page);
+  await page.getByRole("radio", { name: "Both together", exact: true }).check();
+  await page.evaluate(() => window.__pairedTest.failNextDecode());
+  await page.getByRole("button", { name: "Compare", exact: true }).click();
+  await expect(page.locator("p[role=alert]")).toContainText("use sequential Compare");
+  await expect(page.getByRole("radio", { name: "Sequential", exact: true })).toBeChecked();
+  await expect(page.getByRole("button", { name: "My recording", exact: true })).toBeEnabled();
 });
 test("recording with reference disables silence stop and preserves take for solo replay", async ({
   page,
@@ -102,4 +146,13 @@ test("recording with reference disables silence stop and preserves take for solo
   await page.getByRole("button", { name: "My recording", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Playing your recording");
   await expect(page.locator('[data-highlighted="true"]')).toHaveCount(0);
+});
+
+test("a rejected solo take replay keeps Record again ready", async ({ page }) => {
+  await login(page, "solo-replay-rejection");
+  await recordTake(page);
+  await page.evaluate(() => window.__echoTest.failNextRecordingPlayback());
+  await page.getByRole("button", { name: "My recording", exact: true }).click();
+  await expect(page.locator("p[role=alert]")).toContainText("could not be played");
+  await expect(page.getByRole("button", { name: "Record again", exact: true })).toBeEnabled();
 });

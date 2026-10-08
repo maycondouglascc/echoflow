@@ -1,15 +1,22 @@
 import Image from "next/image";
+import type { ComparisonMode } from "@/lib/practice-events";
 
 export interface PracticeControlsState {
   hasRecording: boolean;
   canRecord: boolean;
   isAudioBusy: boolean;
+  isPlaybackActive: boolean;
   isRequestingMicrophone: boolean;
   isRecording: boolean;
+  isSaving: boolean;
   elapsedMs: number;
   status: string;
   error: string | null;
   canRetryRecording: boolean;
+  canRecordWithReference: boolean;
+  comparisonMode: ComparisonMode;
+  referenceVolume: number;
+  takeVolume: number;
 }
 export interface PracticeControlsActions {
   listenToReference(): void;
@@ -17,6 +24,10 @@ export interface PracticeControlsActions {
   stopRecording(): void;
   playRecording(): void;
   compare(): void;
+  recordWithReference(): void;
+  stop(): void;
+  setComparisonMode(mode: ComparisonMode): void;
+  setVolumes(reference: number, take: number): void;
   nextPhrase(): void;
 }
 export function PracticeControls({
@@ -32,12 +43,18 @@ export function PracticeControls({
     hasRecording,
     canRecord,
     isAudioBusy,
+    isPlaybackActive,
     isRequestingMicrophone,
     isRecording,
+    isSaving,
     elapsedMs,
     status,
     error,
     canRetryRecording,
+    canRecordWithReference,
+    comparisonMode,
+    referenceVolume,
+    takeVolume,
   } = state;
   return (
     <div className="practice-bottom">
@@ -62,14 +79,18 @@ export function PracticeControls({
           <span className="step-number" aria-hidden="true">
             2
           </span>
-          {isRecording ? (
+          {isRecording && !isSaving ? (
             <button
               type="button"
               data-feedback-action="stop-recording"
-              onClick={actions.stopRecording}
+              onClick={actions.stop}
               className="dark-button"
             >
-              Stop recording
+              {isRequestingMicrophone ? "Cancel" : "Stop recording"}
+            </button>
+          ) : isSaving ? (
+            <button type="button" className="dark-button" disabled>
+              Saving recording…
             </button>
           ) : (
             <button
@@ -115,7 +136,90 @@ export function PracticeControls({
         >
           My recording
         </button>
+        <button
+          type="button"
+          data-feedback-action="record-with-reference"
+          onClick={actions.recordWithReference}
+          disabled={!canRecordWithReference || isRequestingMicrophone || isRecording}
+          className="dark-button"
+          aria-describedby="record-with-reference-help"
+        >
+          Record with reference
+        </button>
       </div>
+      {hasRecording ? (
+        <div className="practice-comparison-options">
+          <fieldset disabled={isAudioBusy || isRequestingMicrophone || isRecording}>
+            <legend>Compare mode</legend>
+            <label>
+              <input
+                type="radio"
+                name="comparison-mode"
+                value="sequential"
+                checked={comparisonMode === "sequential"}
+                onChange={() => actions.setComparisonMode("sequential")}
+              />
+              Sequential
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="comparison-mode"
+                value="simultaneous"
+                checked={comparisonMode === "simultaneous"}
+                onChange={() => actions.setComparisonMode("simultaneous")}
+              />
+              Both together
+            </label>
+          </fieldset>
+          {comparisonMode === "simultaneous" ? (
+            <div className="practice-volume-controls">
+              <label>
+                Reference volume
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={referenceVolume}
+                  onChange={(event) =>
+                    actions.setVolumes(Number(event.currentTarget.value), takeVolume)
+                  }
+                  disabled={isAudioBusy || isRequestingMicrophone || isRecording}
+                />
+              </label>
+              <label>
+                My recording volume
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={takeVolume}
+                  onChange={(event) =>
+                    actions.setVolumes(referenceVolume, Number(event.currentTarget.value))
+                  }
+                  disabled={isAudioBusy || isRequestingMicrophone || isRecording}
+                />
+              </label>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <p id="record-with-reference-help" className="sr-only">
+        Your microphone is recorded while the reference plays separately. The saved take contains
+        microphone audio only.
+      </p>
+      {isPlaybackActive || isRequestingMicrophone ? (
+        <button
+          type="button"
+          data-feedback-action="stop-playback"
+          onClick={actions.stop}
+          className="dark-button"
+        >
+          {isRequestingMicrophone ? "Cancel" : "Stop playback"}
+        </button>
+      ) : null}
       <div className="practice-feedback">
         <p role="status" aria-live="polite" className="sr-only">
           {status}

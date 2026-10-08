@@ -193,7 +193,9 @@ test("requires complete word timings for each selectable audio variant", () => {
   }
 });
 
-test("replays the selected word from each voice and stops at its cue", async ({ page }) => {
+test("uses labelled whole-phrase context when no word unit has listener approval", async ({
+  page,
+}) => {
   await openPractice(page);
   const phrase = voiceComparisonScenario.phrases[0];
   const word = page.locator('[data-word-index="4"] button');
@@ -216,14 +218,17 @@ test("replays the selected word from each voice and stops at its cue", async ({ 
           .evaluate((element) => (element as HTMLAudioElement).src),
       )
       .toMatch(/^blob:/);
-    await expect(word).toHaveAttribute("aria-label", `Replay word: ${cue?.word} in ${voiceName}`);
+    await expect(word).toHaveAttribute(
+      "aria-label",
+      `Replay In context: ${phrase.text} in ${voiceName}`,
+    );
     if (voiceName === "Puck") {
       await word.click();
     } else {
       await word.focus();
       await page.keyboard.press("Enter");
     }
-    await expect(page.getByRole("status")).toContainText("Replaying word");
+    await expect(page.getByRole("status")).toContainText(`In context: ${phrase.text}`);
     await expect
       .poll(() => page.evaluate(() => window.__echoTest.wordReplayStarts.length))
       .toBe(replayCount + 1);
@@ -233,11 +238,11 @@ test("replays the selected word from each voice and stops at its cue", async ({ 
       (source) => new URL(source, document.baseURI).href,
       variant?.src ?? "",
     );
-    expect(replay).toEqual({ source: expectedSource, startMs: cue?.startMs });
+    expect(replay).toEqual({ source: expectedSource, startMs: 0 });
 
     await page.evaluate(
       (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
-      (cue?.endMs ?? 0) + 1,
+      (variant?.durationMs ?? cue?.endMs ?? 0) + 1,
     );
     await expect(page.getByRole("status")).toContainText("Word replay finished");
     await expect
@@ -251,7 +256,9 @@ test("replays the selected word from each voice and stops at its cue", async ({ 
   }
 });
 
-test("rapid word selection leaves only the latest cue playing", async ({ page }) => {
+test("rapid contextual selection leaves only the latest phrase replay playing", async ({
+  page,
+}) => {
   await openPractice(page);
   const phrase = voiceComparisonScenario.phrases[0];
   const puck = voiceComparisonScenario.audioModels.find((model) => model.voiceName === "Puck");
@@ -264,13 +271,11 @@ test("rapid word selection leaves only the latest cue playing", async ({ page })
   await page.locator('[data-word-index="1"] button').click();
   await page.locator('[data-word-index="6"] button').click();
   await expect.poll(() => page.evaluate(() => window.__echoTest.wordReplayStarts.length)).toBe(2);
-  await expect(page.locator('[data-word-index="6"]')).toHaveAttribute("data-highlighted", "true");
-
   const latestReplay = await page.evaluate(() => window.__echoTest.wordReplayStarts.at(-1));
-  expect(latestReplay?.startMs).toBe(latestCue?.startMs);
+  expect(latestReplay?.startMs).toBe(0);
   await page.evaluate(
     (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
-    (latestCue?.endMs ?? 0) + 1,
+    (variant?.durationMs ?? latestCue?.endMs ?? 0) + 1,
   );
   await expect(page.getByRole("status")).toContainText("Word replay finished");
   await expect(page.getByTestId("reference-word-audio")).toHaveJSProperty("paused", true);
@@ -290,7 +295,7 @@ test("replays the selected Puck word during comparison reference playback", asyn
   await expect(page.getByRole("status")).toContainText("Playing reference");
   const replayCount = await page.evaluate(() => window.__echoTest.wordReplayStarts.length);
   await page.locator('[data-word-index="4"] button').click();
-  await expect(page.getByRole("status")).toContainText("Replaying word");
+  await expect(page.getByRole("status")).toContainText(`In context: ${phrase.text}`);
   await expect
     .poll(() => page.evaluate(() => window.__echoTest.wordReplayStarts.length))
     .toBe(replayCount + 1);
@@ -300,7 +305,7 @@ test("replays the selected Puck word during comparison reference playback", asyn
     (source) => new URL(source, document.baseURI).href,
     variant?.src ?? "",
   );
-  expect(replay).toEqual({ source: expectedSource, startMs: cue?.startMs });
+  expect(replay).toEqual({ source: expectedSource, startMs: 0 });
   await expect
     .poll(() =>
       page.evaluate(
@@ -310,7 +315,7 @@ test("replays the selected Puck word during comparison reference playback", asyn
     .toBe(0);
   await page.evaluate(
     (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
-    (cue?.endMs ?? 0) + 1,
+    (variant?.durationMs ?? cue?.endMs ?? 0) + 1,
   );
   await expect(page.getByRole("status")).toContainText("Word replay finished");
 });
@@ -333,10 +338,10 @@ test("word selection interrupts playback and stays unavailable during capture", 
   await page.getByRole("button", { name: "Listen to reference" }).click();
   await expect(page.getByRole("status")).toContainText("Playing reference");
   await word.click();
-  await expect(page.getByRole("status")).toContainText("Replaying word");
+  await expect(page.getByRole("status")).toContainText(`In context: ${phrase.text}`);
   await page.evaluate(
     (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
-    (cue?.endMs ?? 0) + 1,
+    (phrase.audioVariants[0].durationMs ?? cue?.endMs ?? 0) + 1,
   );
   await expect(page.getByRole("status")).toContainText("Word replay finished");
 
@@ -359,7 +364,7 @@ test("word selection interrupts playback and stays unavailable during capture", 
     .toBe(1);
   const replayCount = await page.evaluate(() => window.__echoTest.wordReplayStarts.length);
   await word.click();
-  await expect(page.getByRole("status")).toContainText("Replaying word");
+  await expect(page.getByRole("status")).toContainText(`In context: ${phrase.text}`);
   await expect
     .poll(() => page.evaluate(() => window.__echoTest.wordReplayStarts.length))
     .toBe(replayCount + 1);
@@ -370,7 +375,7 @@ test("word selection interrupts playback and stays unavailable during capture", 
   );
   expect(comparisonReplay).toEqual({
     source: expectedComparisonSource,
-    startMs: comparisonCue?.startMs,
+    startMs: 0,
   });
   await expect
     .poll(() =>

@@ -55,8 +55,13 @@ test("dual sources share clock and retain expected offset, independent ends, bou
   const f = setup(t);
   const ends = [];
   const prepared = await f.transport.prepare("ref", "take");
+  f.transport.setVolumes(0.8, 0.6);
   f.transport.start(prepared, 250, { onEnded: (source) => ends.push(source), onError() {} });
   assert.ok(Math.abs(f.nodes[0].time - f.nodes[1].time - 0.25) < 1e-10);
+  assert.deepEqual(
+    f.gains.map((gain) => gain.gain.value),
+    [0.8 / 1.4, 0.6 / 1.4],
+  );
   f.transport.setVolumes(1, 1);
   assert.deepEqual(
     f.gains.map((gain) => gain.gain.value),
@@ -72,6 +77,20 @@ test("dual sources share clock and retain expected offset, independent ends, bou
   f.transport.cancel();
   f.transport.cancel();
   assert.equal(f.closes, 1);
+});
+test("volume controls retain defaults and clamp the combined output before start", async (t) => {
+  const f = setup(t);
+  const prepared = await f.transport.prepare("ref", "take");
+  f.transport.start(prepared, 0, { onEnded() {}, onError() {} });
+  assert.deepEqual(
+    f.gains.map((gain) => gain.gain.value),
+    [0.5, 0.5],
+  );
+  f.transport.setVolumes(2, 0.5);
+  assert.deepEqual(
+    f.gains.map((gain) => gain.gain.value),
+    [1 / 1.5, 0.5 / 1.5],
+  );
 });
 test("second source failure stops first and releases context", async (t) => {
   const f = setup(t, { failStart: true });
