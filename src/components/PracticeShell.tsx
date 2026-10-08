@@ -54,7 +54,12 @@ export function PracticeShell({
     // Native focus scrolling happens after the focus event. Inspect the final
     // position next frame, and ignore a target that has since lost focus.
     requestAnimationFrame(() => {
-      if (!target.isConnected || document.activeElement !== target) return;
+      if (
+        !target.isConnected ||
+        document.activeElement !== target ||
+        !target.matches(":focus-visible")
+      )
+        return;
       const feedback = document.querySelector(".feedback-trigger");
       if (!feedback) return;
       const focused = target.getBoundingClientRect();
