@@ -3,8 +3,9 @@ import { LayoutGroup, MotionConfig } from "motion/react";
 import * as motion from "motion/react-client";
 import Image from "next/image";
 import Link from "next/link";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { completePlaylist } from "@/app/(app)/actions";
+import { LivePracticeTranscript } from "@/components/LivePracticeTranscript";
 import { PhrasePracticeList } from "@/components/PhrasePracticeList";
 import { PracticeControls } from "@/components/PracticeControls";
 import { PracticeShell } from "@/components/PracticeShell";
@@ -13,6 +14,11 @@ import { useShadowingPractice } from "@/components/useShadowingPractice";
 import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
 import type { FullReferenceEvent } from "@/lib/practice-events";
 import type { PracticeHistoryInitial } from "@/lib/practice-history-core";
+import { createPracticeCuePlayer } from "@/lib/practice-sounds";
+import {
+  createLocalRecognitionAdapter,
+  type LocalRecognitionAvailability,
+} from "@/lib/practice-transcription";
 
 const unavailableHistory: PracticeHistoryInitial = {
   accountId: "00000000-0000-4000-8000-000000000000",
@@ -66,8 +72,87 @@ export function ShadowingPractice({
   const databasePhraseId = phrase.databasePhraseId;
   const listenedCount = databasePhraseId ? (historyState.counts[databasePhraseId] ?? 0) : 0;
   const unsavedCount = databasePhraseId ? (historyState.unsaved[databasePhraseId] ?? 0) : 0;
+  const pendingHistoryCount = Object.values(historyState.unsaved).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
+  const historyIdentityChanged =
+    historyState.error === "unauthenticated" || historyState.error === "identity_changed";
+  const historyCanRetry =
+    !historyIdentityChanged &&
+    (historyState.error === null ||
+      historyState.error === "temporarily_unavailable" ||
+      historyState.error === "rate_limited");
   const [completion, setCompletion] = useState<"idle" | "saving" | "completed" | "error">(
     completed ? "completed" : "idle",
+  );
+  const [cuesEnabled, setCuesEnabled] = useState(false);
+  const [transcriptionAvailability, setTranscriptionAvailability] =
+    useState<LocalRecognitionAvailability>("unsupported");
+  const [cuePlayer, setCuePlayer] = useState<ReturnType<typeof createPracticeCuePlayer> | null>(
+    null,
+  );
+  const listenCueEventId = useRef<string | null>(null);
+  const previousPracticeStatus = useRef(view.status);
+  const previousCompletion = useRef(completion);
+  const practiceBusy = view.isAudioBusy || view.isRequestingMicrophone || view.isRecording;
+
+  useEffect(() => {
+    const player = createPracticeCuePlayer();
+    setCuePlayer(player);
+    return () => player.dispose();
+  }, []);
+
+  useEffect(() => {
+    const adapter = createLocalRecognitionAdapter();
+    let mounted = true;
+    void adapter.probe().then((availability) => {
+      if (mounted) setTranscriptionAvailability(availability);
+    });
+    return () => {
+      mounted = false;
+      adapter.stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    const previousStatus = previousPracticeStatus.current;
+    previousPracticeStatus.current = view.status;
+    const cueState = { enabled: cuesEnabled, busy: practiceBusy, userGesture: true };
+    if (
+      view.status === "Reference finished. You can record now." &&
+      previousStatus !== view.status &&
+      listenCueEventId.current
+    ) {
+      cuePlayer?.emitPracticeCue({ eventId: listenCueEventId.current, kind: "ready" }, cueState);
+      listenCueEventId.current = null;
+    }
+    if (
+      view.status === "Recording saved in this page session. Play it back or compare." &&
+      previousStatus !== view.status
+    ) {
+      cuePlayer?.emitPracticeCue({ eventId: crypto.randomUUID(), kind: "take-saved" }, cueState);
+    }
+  }, [cuePlayer, cuesEnabled, practiceBusy, view.status]);
+
+  useEffect(() => {
+    const previous = previousCompletion.current;
+    previousCompletion.current = completion;
+    if (previous === "saving" && completion === "completed") {
+      cuePlayer?.emitPracticeCue(
+        { eventId: crypto.randomUUID(), kind: "playlist-completed" },
+        { enabled: cuesEnabled, busy: practiceBusy, userGesture: true },
+      );
+    }
+  }, [completion, cuePlayer, cuesEnabled, practiceBusy]);
+
+  const setSoundCuesEnabled = useCallback(
+    (enabled: boolean) => {
+      if (enabled) cuePlayer?.unlock();
+      else cuePlayer?.stop();
+      setCuesEnabled(enabled);
+    },
+    [cuePlayer],
   );
   const canComplete = view.comparedPhraseIds.length === scenario.phrases.length;
   const saveCompletion = useCallback(async () => {
@@ -123,7 +208,10 @@ export function ShadowingPractice({
             type="button"
             data-feedback-action="replay-word"
             aria-label={`Replay ${replay?.label ?? part} in ${selectedVoiceName}`}
-            onClick={() => actions.replayWord(wordIndex)}
+            onClick={() => {
+              cuePlayer?.stop();
+              actions.replayWord(wordIndex);
+            }}
             disabled={isRequestingMicrophone || isRecording}
             className="word-replay"
           >
@@ -207,19 +295,74 @@ export function ShadowingPractice({
         </MotionConfig>
       </div>
       {history ? (
-        <p className="practice-listen-history" aria-live="polite">
-          {listenedCount > 0 ? `Heard · ${listenedCount}` : "Not heard yet"}
-          {unsavedCount > 0 ? ` · Unsaved · ${unsavedCount}` : ""}
-          {unsavedCount > 0 ? (
-            <button type="button" className="text-button" onClick={historyState.retry}>
-              Retry history save
-            </button>
+        <div className="practice-listen-history" aria-live="polite">
+          <p>{listenedCount > 0 ? `Heard · ${listenedCount}` : "Not heard yet"}</p>
+          {unsavedCount > 0 ? <span> · Unsaved · {unsavedCount}</span> : null}
+          {pendingHistoryCount > 0 ? (
+            <>
+              <span> Unsaved listens may be lost when you leave this page.</span>
+              {historyCanRetry ? (
+                <button type="button" className="text-button" onClick={historyState.retry}>
+                  Retry history save
+                </button>
+              ) : null}
+            </>
           ) : null}
-        </p>
+          {historyState.backlogFull ? (
+            <p role="status">History queue is full. Retry saving history; practice still works.</p>
+          ) : null}
+          {historyIdentityChanged ? (
+            <p role="status">
+              Your account changed or you signed out. Pending history will not be retried; sign in
+              again to continue.
+            </p>
+          ) : null}
+        </div>
       ) : null}
+      <details className="practice-optional-feedback">
+        <summary>Optional feedback</summary>
+        <label>
+          <input
+            type="checkbox"
+            checked={cuesEnabled}
+            onChange={(event) => setSoundCuesEnabled(event.currentTarget.checked)}
+          />
+          Sound cues
+        </label>
+        <span aria-live="polite">Sound cues {cuesEnabled ? "on" : "off"}</span>
+        <details className="practice-live-transcript-disclosure">
+          <summary>Live transcription (unavailable)</summary>
+          <LivePracticeTranscript
+            availability={transcriptionAvailability}
+            enabled={false}
+            onEnabledChange={() => {}}
+            interimText=""
+            finalText=""
+          />
+        </details>
+      </details>
       <PracticeControls
         state={view}
-        actions={{ ...actions, nextPhrase: () => actions.selectPhrase(selectedIndex + 1) }}
+        actions={{
+          ...actions,
+          listenToReference: () => {
+            listenCueEventId.current = crypto.randomUUID();
+            actions.listenToReference();
+          },
+          startRecording: () => {
+            cuePlayer?.stop();
+            actions.startRecording();
+          },
+          recordWithReference: () => {
+            cuePlayer?.stop();
+            actions.recordWithReference();
+          },
+          stop: () => {
+            cuePlayer?.stop();
+            actions.stop();
+          },
+          nextPhrase: () => actions.selectPhrase(selectedIndex + 1),
+        }}
         isLastPhrase={selectedIndex === scenario.phrases.length - 1}
       />
       {/* biome-ignore lint/a11y/useMediaCaption: Reference text is visible; recording repeats that prompt. */}
