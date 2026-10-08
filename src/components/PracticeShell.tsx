@@ -13,6 +13,7 @@ export interface PracticeShellProps {
   account?: ReactNode;
   privacy?: ReactNode;
   playlists?: ReactNode;
+  title?: string;
 }
 
 export function PracticeShell({
@@ -24,6 +25,7 @@ export function PracticeShell({
   account,
   privacy,
   playlists,
+  title = "Practice",
 }: PracticeShellProps) {
   const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -185,6 +187,7 @@ export function PracticeShell({
         inert={isMobile && drawerOpen ? true : undefined}
       >
         <div className="practice-mobile-navigation">
+          <h1 className="practice-mobile-title">{title}</h1>
           <button
             type="button"
             ref={drawerTriggerRef}

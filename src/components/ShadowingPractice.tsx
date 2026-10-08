@@ -238,6 +238,7 @@ export function ShadowingPractice({
 
   return (
     <PracticeShell
+      title={scenario.title}
       account={account}
       sidebar={
         <>
