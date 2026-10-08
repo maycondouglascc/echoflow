@@ -386,7 +386,7 @@ test("word selection interrupts playback and stays unavailable during capture", 
     .toBe(1);
   await page.evaluate(
     (milliseconds) => window.__echoTest.setAudioTime(milliseconds),
-    (comparisonCue?.endMs ?? 0) + 1,
+    (harperVariant?.durationMs ?? 0) + 1,
   );
   await expect(page.getByRole("status")).toContainText("Word replay finished");
   const captureRecord = page.getByRole("button", { name: "Record again", exact: true });
@@ -696,7 +696,9 @@ test("recovers from a reference playback failure and handles missing browser API
 
   await page.evaluate(() => window.__echoTest.setRecorderUnavailable());
   await page.getByRole("button", { name: "Record", exact: true }).click();
-  await expect(page.locator("p[role=alert]")).toContainText("recording isn't supported");
+  await expect(page.locator("p[role=alert]")).toContainText(
+    "Microphone recording is unavailable in this browser.",
+  );
   await expect.poll(() => page.evaluate(() => window.__echoTest.getUserMediaCalls)).toBe(0);
   await expect(page.getByRole("button", { name: "Next phrase" })).toBeEnabled();
 });
