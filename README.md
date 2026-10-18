@@ -65,6 +65,14 @@ Preview environment variables are not configured. Public email delivery still ne
 and Google login needs its OAuth configuration; existing confirmed email/password accounts can log in.
 Deployment and remote migration evidence: [Feedback quickstart](specs/006-contextual-feedback/quickstart.md).
 
+## PostHog analytics and error tracking
+
+Configure `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` and `NEXT_PUBLIC_POSTHOG_HOST` in the local
+environment and each deployed runtime. Optional source-map upload at build time requires
+`POSTHOG_API_KEY`, `POSTHOG_PROJECT_ID`, and `NEXT_PUBLIC_POSTHOG_HOST`. Keep the API key
+server-side and out of source control. Event scope, privacy controls, and the tracked events
+are documented in [docs/posthog.md](docs/posthog.md).
+
 ## AI development workflow
 
 Project-wide agent instructions are in AGENTS.md. Feature specifications live under specs/ and are created with the installed GitHub Spec Kit skills. Use a short codex/ branch for each change; use a separate Git worktree when multiple agents need to write in parallel.

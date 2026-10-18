@@ -1,5 +1,22 @@
 "use client";
-export default function ErrorPage({ reset }: { reset: () => void }) {
+
+import posthog from "posthog-js";
+import { useEffect } from "react";
+
+const posthogConfigured =
+  Boolean(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN) &&
+  Boolean(process.env.NEXT_PUBLIC_POSTHOG_HOST);
+
+export default function ErrorPage({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    if (posthogConfigured) posthog.captureException(error);
+  }, [error]);
   return (
     <main className="auth-page">
       <div className="auth-form">
