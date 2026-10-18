@@ -4,6 +4,22 @@ import type {
   AudioVariantFixture,
   WordTiming,
 } from "./fixtures/voice-comparison";
+import {
+  decodeLearningUnit,
+  type LearningReference,
+  type LearningUnit,
+} from "./practice-learning-units.ts";
+
+/** Replay approvals never change highlight timings or invalidate the reference. */
+export function decodeLearningUnits(
+  values: unknown,
+  reference: LearningReference,
+): readonly LearningUnit[] {
+  if (!Array.isArray(values)) return [];
+  return values
+    .map((value) => decodeLearningUnit(value, reference))
+    .filter((unit): unit is LearningUnit => unit !== null);
+}
 
 function invalid(): never {
   throw new Error("The catalog contains invalid audio metadata.");

@@ -4,6 +4,10 @@
 # working directory name when running `supabase init`.
 project_id = "public-platform-005"
 
+# Dedicated server-only bearer secret is checked before privileged work.
+[functions.notion-feedback]
+verify_jwt = false
+
 [api]
 enabled = true
 # Port to use for the API URL.

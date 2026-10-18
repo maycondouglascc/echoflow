@@ -12,7 +12,11 @@ test("all five comparisons persist once for A, survive login, and do not complet
   const finish = async () => page.evaluate(() => window.__echoTest.finishCurrentAudio());
   let rejectSave = true;
   await page.route("**/scenarios/voice-comparison", async (route) => {
-    if (rejectSave && route.request().method() === "POST") {
+    if (
+      rejectSave &&
+      route.request().method() === "POST" &&
+      !route.request().postData()?.includes("eventId")
+    ) {
       rejectSave = false;
       await route.abort();
     } else await route.continue();

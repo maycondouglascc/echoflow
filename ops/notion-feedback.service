@@ -1,0 +1,24 @@
+# Template only. Install on approved server after migration/secret configuration.
+# Replace account and absolute paths to match that server; do not use a desktop session.
+[Unit]
+Description=EchoFlow feedback export to Notion
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=echoflow
+WorkingDirectory=/opt/echoflow
+ExecStart=/usr/bin/node --conditions=react-server --env-file=/etc/echoflow/notion-worker.env /opt/echoflow/scripts/notion-feedback-worker.ts
+Restart=on-failure
+RestartSec=60
+TimeoutStopSec=90
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/opt/echoflow /etc/echoflow
+
+[Install]
+WantedBy=multi-user.target

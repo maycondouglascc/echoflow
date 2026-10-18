@@ -118,7 +118,7 @@ test("Compare is actionable without a take and practice has no redundant footer"
   await expect(page.getByRole("button", { name: "Compare", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "Compare", exact: true }).click();
   await expect(page.locator("p[role=alert]")).toContainText("Speak");
-  await expect(page.getByRole("button", { name: "Play your recording" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "My recording", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Previous phrase" })).toHaveCount(0);
   await expect(page.getByText("Phrase 1 of 5", { exact: true })).toHaveCount(0);
 });
@@ -222,4 +222,48 @@ test("page transitions are short, reduced-motion friendly and immediate by keybo
   expect(reduced).toHaveLength(1);
   expect(reduced[0].duration).toBe(120);
   expect(reduced[0].frames.every((frame) => !frame.transform)).toBe(true);
+});
+
+test("solo take replay never starts reference, requests mic or highlights the transcript", async ({
+  page,
+}) => {
+  await login(page, "solo-take");
+  const solo = page.getByRole("button", { name: "My recording", exact: true });
+  await expect(solo).toBeDisabled();
+  await page.getByRole("button", { name: "Listen to reference" }).click();
+  await expect(page.getByRole("status")).toContainText("Playing reference");
+  await page.evaluate(() => window.__echoTest.finishCurrentAudio());
+  await expect(page.getByRole("button", { name: "Record", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Record", exact: true }).click();
+  await expect(solo).toBeDisabled();
+  await page.getByRole("button", { name: "Stop recording" }).click();
+  await expect(solo).toBeEnabled();
+  const before = await page.evaluate(() => ({
+    starts: window.__echoTest.audioStarts.length,
+    mic: window.__echoTest.getUserMediaCalls,
+  }));
+  await solo.click();
+  await expect(page.getByRole("status")).toContainText("Playing your recording");
+  await expect(page.locator('[data-highlighted="true"]')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__echoTest.audioStarts.slice(-1))).toHaveLength(1);
+  expect(await page.evaluate(() => window.__echoTest.audioStarts.length)).toBe(before.starts + 1);
+  expect(await page.evaluate(() => window.__echoTest.getUserMediaCalls)).toBe(before.mic);
+  const take = await page
+    .getByTestId("practice-audio")
+    .evaluate((audio) => (audio as HTMLAudioElement).src);
+  const reference = await page
+    .getByTestId("reference-word-audio")
+    .evaluate((audio) => (audio as HTMLAudioElement).src);
+  expect(take).toMatch(/^blob:/);
+  expect(take).not.toBe(reference);
+  await page.evaluate(() => window.__echoTest.finishCurrentAudio());
+  await page.evaluate(() => window.__echoTest.denyNextMicrophone());
+  await page.getByRole("button", { name: "Record again", exact: true }).click();
+  await expect(page.locator("p[role=alert]")).toContainText("denied");
+  await expect(solo).toBeEnabled();
+  await solo.click();
+  await expect(page.getByRole("status")).toContainText("Playing your recording");
+  expect(
+    await page.getByTestId("practice-audio").evaluate((audio) => (audio as HTMLAudioElement).src),
+  ).toBe(take);
 });

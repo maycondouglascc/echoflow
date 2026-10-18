@@ -1,7 +1,10 @@
 import "server-only";
 import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
 import { requireUser } from "@/lib/supabase/server";
-import { decodeModel, decodeVariant } from "./catalog-metadata";
+import learningAnnotations from "../../docs/content/practice-learning-units.json";
+import { decodeLearningUnits, decodeModel, decodeVariant } from "./catalog-metadata";
+import { loadPracticeHistory } from "./practice-history";
+import type { PracticeHistoryInitial } from "./practice-history-core";
 
 export interface PlaylistSummary {
   id: string;
@@ -25,10 +28,13 @@ export async function getPlaylists(): Promise<PlaylistSummary[]> {
   }));
 }
 
-export async function getScenario(
-  slug: string,
-): Promise<{ playlistId: string; scenario: ScenarioFixture; completed: boolean } | null> {
-  const { client } = await requireUser(`/scenarios/${slug}`);
+export async function getScenario(slug: string): Promise<{
+  playlistId: string;
+  scenario: ScenarioFixture;
+  completed: boolean;
+  history: PracticeHistoryInitial;
+} | null> {
+  const { client, user } = await requireUser(`/scenarios/${slug}`);
   const playlist = await client
     .from("playlists")
     .select(
@@ -50,6 +56,11 @@ export async function getScenario(
     ).values(),
   ].sort((a, b) => a.id.localeCompare(b.id));
   return {
+    history: await loadPracticeHistory(
+      client,
+      user.id,
+      phrases.map((p) => p.id),
+    ),
     playlistId: playlist.data.id,
     completed: playlist.data.playlist_completions.length > 0,
     scenario: {
@@ -59,17 +70,29 @@ export async function getScenario(
       audioModels,
       phrases: phrases.map((p) => ({
         id: p.slug,
+        databasePhraseId: p.id,
         text: p.text,
         category: p.category,
         order: p.sort_order,
-        audioVariants: p.audio_variants.map((v) =>
-          decodeVariant(
+        audioVariants: p.audio_variants.map((v) => {
+          const variant = decodeVariant(
             v.audio_metadata,
             v.word_timings,
             v.provenance,
             `/api/reference-audio/${v.id}`,
-          ),
-        ),
+          );
+          return {
+            ...variant,
+            learningUnits: decodeLearningUnits(learningAnnotations, {
+              phraseId: p.slug,
+              text: p.text,
+              voiceId: variant.voiceId,
+              sha256: variant.sha256,
+              src: variant.src,
+              durationMs: variant.durationMs ?? 0,
+            }),
+          };
+        }),
       })),
     },
   };

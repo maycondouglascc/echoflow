@@ -1,11 +1,46 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { decodeModel, decodeVariant } from "../src/lib/catalog-metadata.ts";
+import { decodeLearningUnits, decodeModel, decodeVariant } from "../src/lib/catalog-metadata.ts";
 
 const fixture = JSON.parse(
   readFileSync(new URL("../src/lib/fixtures/voice-comparison.json", import.meta.url)),
 );
+
+test("catalog exposes only matching reviewed replay annotations; highlight cues remain separate", () => {
+  const reference = {
+    phraseId: "hello",
+    text: "Hello there",
+    voiceId: "puck",
+    sha256: "a".repeat(64),
+    src: "/api/reference-audio/test",
+    durationMs: 1000,
+  };
+  const approved = {
+    id: "hello-context",
+    phraseId: "hello",
+    voiceId: "puck",
+    referenceSha256: reference.sha256,
+    kind: "linking-chunk",
+    tokenStart: 0,
+    tokenEnd: 1,
+    text: "Hello there",
+    source: { kind: "reference-range", startMs: 0, endMs: 900 },
+    reviews: [
+      { reviewerId: "listener-a", complete: true, noAdjacentLexicalSpeech: true },
+      { reviewerId: "listener-b", complete: true, noAdjacentLexicalSpeech: true },
+    ],
+  };
+  assert.deepEqual(
+    decodeLearningUnits(
+      [approved, { ...approved, voiceId: "harper" }, { ...approved, reviews: [] }, null],
+      reference,
+    ),
+    [approved],
+  );
+  assert.deepEqual(decodeLearningUnits(undefined, reference), []);
+  assert.deepEqual(decodeLearningUnits([approved], { ...reference, sha256: "b".repeat(64) }), []);
+});
 
 test("all versioned model and variant metadata round-trip through the catalog seam", () => {
   for (const model of fixture.audioModels) assert.deepEqual(decodeModel(model), model);

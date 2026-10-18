@@ -1,8 +1,13 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
+import posthog from "posthog-js";
 import { type ReactNode, useState } from "react";
 import type { PlaylistSummary } from "@/lib/catalog";
+
+const posthogConfigured =
+  Boolean(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN) &&
+  Boolean(process.env.NEXT_PUBLIC_POSTHOG_HOST);
 
 export function PlaylistBrowser({
   playlists,
@@ -57,7 +62,16 @@ export function PlaylistBrowser({
         <ul className="playlist-list">
           {visible.map((p) => (
             <li key={p.id}>
-              <Link href={`/scenarios/${p.slug}`}>
+              <Link
+                href={`/scenarios/${p.slug}`}
+                onClick={() => {
+                  if (posthogConfigured)
+                    posthog.capture("playlist_opened", {
+                      playlist_slug: p.slug,
+                      was_completed: p.completed,
+                    });
+                }}
+              >
                 <span>{p.title}</span>
                 {p.completed ? (
                   <span className="completion-badge">
