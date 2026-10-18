@@ -274,9 +274,10 @@ export function FeedbackWidget() {
                   </ol>
                 ) : null}
                 <p className="feedback-hint">
-                  Only recent pages and selected actions are included as page context. Typed values
-                  on the page, microphone audio and video are excluded. Nothing is sent until you
-                  submit.
+                  Only recent pages and selected actions. Typed values, microphone audio and video
+                  are excluded. Nothing is sent until you submit. The team reviews submitted
+                  feedback and included screenshots in Supabase and, when enabled, its private
+                  Notion workspace with the Hermes agent.
                 </p>
               </fieldset>
               {posthogConfigured ? (

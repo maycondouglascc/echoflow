@@ -22,6 +22,7 @@ export async function proxy(request: NextRequest) {
   // Refresh/verify the token here; protected reads still check getUser on the server.
   await client.auth.getClaims();
   response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }
 

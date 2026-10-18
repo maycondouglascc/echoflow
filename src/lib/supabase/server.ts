@@ -1,10 +1,25 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { supabaseConfig } from "./config";
 import type { Database } from "./database.types";
+
+// Default hosted emails return sessions in a URL fragment. Email requests must not
+// bind that link to an initiating browser's PKCE verifier. OAuth retains PKCE.
+export function createEmailClient() {
+  const { url, key } = supabaseConfig();
+  return createSupabaseClient<Database>(url, key, {
+    auth: {
+      flowType: "implicit",
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
 
 export async function createClient() {
   const store = await cookies();

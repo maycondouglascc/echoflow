@@ -38,6 +38,19 @@ export default function PrivacyPage() {
             Automatic stop checks sound levels locally in your browser. It does not transcribe your
             voice or send it to a speech service.
           </p>
+          <p>
+            Optional live transcription is available only after on-device processing has been
+            verified. It is currently unavailable on unverified devices; recording still works. When
+            supported and enabled, recognized words stay in page memory and are cleared for another
+            take or when you leave. They are excluded from feedback screenshots and recent actions,
+            and are not uploaded or used as a pronunciation score. Transcription does not decide
+            when recording stops.
+          </p>
+          <p>
+            No speech model is downloaded automatically. Any future on-device model installation
+            requires a separate informed action explaining its download destination and device
+            storage. There is no cloud transcription fallback.
+          </p>
         </section>
         <section aria-labelledby="account-privacy">
           <h2 id="account-privacy">Your account and progress</h2>
@@ -88,12 +101,15 @@ export default function PrivacyPage() {
           </p>
           <p>
             Nothing is submitted until you choose Send feedback. Submitted suggestions and optional
-            screenshots are stored privately in Supabase for the team to review. Other accounts
-            cannot access them. If you choose to share your suggestion text with PostHog for product
+            screenshots are stored privately in Supabase. When the team’s Notion integration is
+            enabled, feedback text, account identifier, page context and included screenshots are
+            also copied to a restricted Notion database for review by the team and its Hermes agent.
+            Other app accounts cannot access them. Copies in both services need to be removed when
+            handling a deletion request. Avoid personal or sensitive information in your suggestion
+            or screenshot. If you choose to share your suggestion text with PostHog for product
             research, the text is included in a PostHog event that may be linked to your opaque app
             account identifier. Screenshots and recent navigation are excluded from that event;
-            ordinary PostHog metadata may include the current page and browser details. Avoid
-            personal or sensitive information in your suggestion or screenshot.
+            ordinary PostHog metadata may include the current page and browser details.
           </p>
         </section>
         <section aria-labelledby="beta-privacy">
