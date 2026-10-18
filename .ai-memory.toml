@@ -1,0 +1,15 @@
+# Stable scope for every EchoFlow checkout and coding agent.
+workspace = "default"
+project = "echoflow"
+
+[briefing]
+inject_on_session_start = "true"
+max_chars = 4000
+
+# Keep project history out of cross-project personal profiles.
+[profile]
+contribute = false
+consume = false
+
+[capture]
+ignore_paths = [".env", ".env.*", "**/.env", "**/.env.*", "*.pem", "**/*.pem", ".git/**", "node_modules/**", ".next/**", "docs/adr/**", "~/.codex/auth.json", "~/.aws/**"]
