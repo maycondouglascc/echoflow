@@ -1,8 +1,13 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
+import posthog from "posthog-js";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ModalDialog } from "./ModalDialog";
+
+const posthogConfigured =
+  Boolean(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN) &&
+  Boolean(process.env.NEXT_PUBLIC_POSTHOG_HOST);
 
 export function MicrophoneOnboarding({ userId }: { userId: string }) {
   const [status, setStatus] = useState<"explain" | "requesting" | "ready" | "denied">("ready");
@@ -32,6 +37,9 @@ export function MicrophoneOnboarding({ userId }: { userId: string }) {
       if (sequence.current === id) setStatus("denied");
     }
   }, [dismiss]);
+  useEffect(() => {
+    if (posthogConfigured) posthog.identify(userId);
+  }, [userId]);
   useEffect(() => {
     try {
       if (!sessionStorage.getItem(key)) setStatus("explain");
