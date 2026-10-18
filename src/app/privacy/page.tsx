@@ -75,6 +75,16 @@ export default function PrivacyPage() {
             completions. These counters contain no email address, user identifier, recording or
             transcript. Practice access events are not counts of unique people.
           </p>
+          <p>
+            When PostHog is configured, EchoFlow sends selected product events and application
+            errors for analytics and diagnostics. Events may include an opaque account identifier,
+            playlist or phrase identifiers, practice actions, and whether feedback included
+            navigation or a screenshot. Email addresses, recordings, transcripts and screenshots are
+            not sent. Suggestion text is included only if you select the optional PostHog sharing
+            checkbox in the feedback form. Automatic page tracking, click capture and session replay
+            are disabled. Event processing may include the current page and standard browser
+            metadata.
+          </p>
         </section>
         <section aria-labelledby="feedback-privacy">
           <h2 id="feedback-privacy">Feedback and page context</h2>
@@ -96,7 +106,10 @@ export default function PrivacyPage() {
             also copied to a restricted Notion database for review by the team and its Hermes agent.
             Other app accounts cannot access them. Copies in both services need to be removed when
             handling a deletion request. Avoid personal or sensitive information in your suggestion
-            or screenshot.
+            or screenshot. If you choose to share your suggestion text with PostHog for product
+            research, the text is included in a PostHog event that may be linked to your opaque app
+            account identifier. Screenshots and recent navigation are excluded from that event;
+            ordinary PostHog metadata may include the current page and browser details.
           </p>
         </section>
         <section aria-labelledby="beta-privacy">

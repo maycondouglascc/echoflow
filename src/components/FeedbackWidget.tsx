@@ -1,5 +1,6 @@
 "use client";
 import { usePathname } from "next/navigation";
+import posthog from "posthog-js";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   FEEDBACK_ACTIONS,
@@ -13,6 +14,11 @@ import { captureFeedbackViewport } from "@/lib/feedback-capture";
 import { ModalDialog } from "./ModalDialog";
 
 type DraftContext = Omit<FeedbackMetadata, "id" | "message">;
+
+const posthogConfigured =
+  Boolean(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN) &&
+  Boolean(process.env.NEXT_PUBLIC_POSTHOG_HOST);
+
 export function FeedbackWidget() {
   const pathname = usePathname();
   const pathRef = useRef(pathname),
@@ -32,6 +38,7 @@ export function FeedbackWidget() {
     [preview, setPreview] = useState<string | null>(null);
   const [includeImage, setIncludeImage] = useState(true),
     [includeHistory, setIncludeHistory] = useState(true);
+  const [shareWithPostHog, setShareWithPostHog] = useState(false);
   const [capture, setCapture] = useState<"pending" | "ready" | "failed">("pending");
   const [state, setState] = useState<"draft" | "sending" | "success">("draft"),
     [error, setError] = useState("");
@@ -91,6 +98,7 @@ export function FeedbackWidget() {
     setError("");
     setIncludeImage(true);
     setIncludeHistory(true);
+    setShareWithPostHog(false);
     setCapture("pending");
     setScreenshot(null);
     const token = ++generation.current;
@@ -148,6 +156,15 @@ export function FeedbackWidget() {
         receipt.id !== attempt.current?.id
       )
         throw new Error("We could not confirm your feedback. Please try again.");
+      if (posthogConfigured)
+        posthog.capture("feedback_submitted", {
+          included_navigation: includeHistory,
+          included_screenshot: Boolean(image),
+        });
+      if (posthogConfigured && shareWithPostHog)
+        posthog.capture("product_feedback_submitted", {
+          feedback_text: message.trim(),
+        });
       setState("success");
       setMessage("");
       setScreenshot(null);
@@ -263,6 +280,18 @@ export function FeedbackWidget() {
                   Notion workspace with the Hermes agent.
                 </p>
               </fieldset>
+              {posthogConfigured ? (
+                <label className="feedback-check">
+                  <input
+                    type="checkbox"
+                    checked={shareWithPostHog}
+                    onChange={(e) => setShareWithPostHog(e.target.checked)}
+                    disabled={state === "sending"}
+                  />
+                  Also share my suggestion text with PostHog for product research. PostHog may link
+                  it to my account; the screenshot and recent navigation are excluded.
+                </label>
+              ) : null}
               {error ? <p role="alert">{error}</p> : null}
               <div className="feedback-buttons">
                 <button

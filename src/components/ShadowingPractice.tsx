@@ -3,6 +3,7 @@ import { LayoutGroup, MotionConfig } from "motion/react";
 import * as motion from "motion/react-client";
 import Image from "next/image";
 import Link from "next/link";
+import posthog from "posthog-js";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { completePlaylist } from "@/app/(app)/actions";
 import { LivePracticeTranscript } from "@/components/LivePracticeTranscript";
@@ -19,6 +20,10 @@ import {
   createLocalRecognitionAdapter,
   type LocalRecognitionAvailability,
 } from "@/lib/practice-transcription";
+
+const posthogConfigured =
+  Boolean(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN) &&
+  Boolean(process.env.NEXT_PUBLIC_POSTHOG_HOST);
 
 const unavailableHistory: PracticeHistoryInitial = {
   accountId: "00000000-0000-4000-8000-000000000000",
@@ -251,7 +256,15 @@ export function ShadowingPractice({
           <PhrasePracticeList
             phrases={scenario.phrases}
             selectedId={phrase.id}
-            onSelect={actions.selectPhrase}
+            onSelect={(index) => {
+              const selectedPhrase = scenario.phrases[index];
+              if (posthogConfigured && selectedPhrase)
+                posthog.capture("practice_phrase_selected", {
+                  phrase_id: selectedPhrase.id,
+                  phrase_position: index + 1,
+                });
+              actions.selectPhrase(index);
+            }}
             counts={phraseCounts}
             pending={phrasePending}
             onRetry={historyCanRetry ? historyState.retry : undefined}
@@ -289,7 +302,11 @@ export function ShadowingPractice({
                     name="reference-model"
                     value={model.id}
                     checked={selectedModelId === model.id}
-                    onChange={() => actions.selectAudioModel(model.id)}
+                    onChange={() => {
+                      if (posthogConfigured)
+                        posthog.capture("reference_voice_selected", { voice_id: model.id });
+                      actions.selectAudioModel(model.id);
+                    }}
                     aria-label={model.voiceName}
                   />
                   <span className="voice-pill">{model.voiceName}</span>
@@ -375,6 +392,12 @@ export function ShadowingPractice({
           listenToReference: () => {
             cuePlayer?.stop();
             listenCueEventId.current = crypto.randomUUID();
+            if (posthogConfigured)
+              posthog.capture("practice_reference_played", {
+                phrase_id: phrase.id,
+                phrase_position: selectedIndex + 1,
+                voice_id: selectedModelId,
+              });
             actions.listenToReference();
           },
           playRecording: () => {
@@ -383,10 +406,20 @@ export function ShadowingPractice({
           },
           compare: () => {
             cuePlayer?.stop();
+            if (posthogConfigured)
+              posthog.capture("practice_comparison_started", {
+                phrase_id: phrase.id,
+                phrase_position: selectedIndex + 1,
+              });
             actions.compare();
           },
           startRecording: () => {
             cuePlayer?.stop();
+            if (posthogConfigured)
+              posthog.capture("practice_recording_started", {
+                phrase_id: phrase.id,
+                phrase_position: selectedIndex + 1,
+              });
             actions.startRecording();
           },
           recordWithReference: () => {
@@ -397,7 +430,16 @@ export function ShadowingPractice({
             cuePlayer?.stop();
             actions.stop();
           },
-          nextPhrase: () => actions.selectPhrase(selectedIndex + 1),
+          nextPhrase: () => {
+            const nextPhrase = scenario.phrases[selectedIndex + 1];
+            if (!nextPhrase) return;
+            if (posthogConfigured)
+              posthog.capture("practice_phrase_selected", {
+                phrase_id: nextPhrase.id,
+                phrase_position: selectedIndex + 2,
+              });
+            actions.selectPhrase(selectedIndex + 1);
+          },
         }}
         isLastPhrase={selectedIndex === scenario.phrases.length - 1}
       />
