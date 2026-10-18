@@ -6,6 +6,9 @@
     0 0 16px rgba(255, 255, 255, 0.1);
 }
 .signup-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   overflow: visible;
   background: #0087da;
   border-radius: 35.859px;
