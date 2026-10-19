@@ -9,6 +9,7 @@ export function ModalDialog({
   closeLabel,
   onClose,
   children,
+  dismissDisabled = false,
 }: {
   dialogRef: RefObject<HTMLDialogElement | null>;
   titleId: string;
@@ -16,6 +17,7 @@ export function ModalDialog({
   closeLabel: string;
   onClose: () => void;
   children: ReactNode;
+  dismissDisabled?: boolean;
 }) {
   return (
     <dialog
@@ -24,11 +26,14 @@ export function ModalDialog({
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       onClose={onClose}
+      onCancel={(event) => {
+        if (dismissDisabled) event.preventDefault();
+      }}
       onKeyDown={(event) => {
         if (event.key !== "Tab") return;
         const controls = Array.from(
           event.currentTarget.querySelectorAll<HTMLElement>(
-            'button:not(:disabled), input:not([type="hidden"]):not(:disabled), a[href]',
+            'button:not(:disabled), input:not([type="hidden"]):not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href]',
           ),
         );
         const first = controls[0];
@@ -46,6 +51,7 @@ export function ModalDialog({
       <button
         type="button"
         aria-label={closeLabel}
+        disabled={dismissDisabled}
         className="close-signup"
         onClick={() => dialogRef.current?.close()}
       >

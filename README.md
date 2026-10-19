@@ -10,7 +10,7 @@ Practice English speaking through listening and repetition. The initial product 
 - Biome for formatting and linting, with Next.js and React rules
 - Supabase for authentication, Postgres, and Storage when those features are implemented
 - ElevenLabs for curated speech audio; OpenAI transcription is a later phase
-- Vercel is the planned hosting provider
+- Vercel hosts the production frontend
 
 Dependency versions are recorded in package.json and package-lock.json. The Node.js version is pinned in .nvmrc.
 
@@ -44,6 +44,34 @@ Do not run ordinary tests or the local audio importer against the remote project
 Register with an organization team-member email and confirm in the same browser;
 public email delivery needs custom SMTP and Google login needs its OAuth credentials.
 This is a local frontend with remote Supabase, not a published deployment.
+
+## Production deployment
+
+Production: [EchoFlow](https://echoflow-delta.vercel.app), deployed on 2026-10-04.
+The Vercel project is `echoflow` and uses Node 24.x with the authorized remote Supabase project.
+Production environment variables are `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+and `NEXT_PUBLIC_SITE_URL=https://echoflow-delta.vercel.app`. Supabase Auth uses the same site URL
+and allows the exact `https://echoflow-delta.vercel.app/auth/callback` redirect.
+
+The release includes the five workplace playlists with Puck/Harper and contextual Feedback.
+Migration `202610040001` enables the private feedback table and screenshot bucket.
+`.vercelignore` excludes local environment files, worktrees, generated output and source audio.
+Provider/service-role secrets are not part of the frontend deployment.
+
+This release was deployed from local branch `codex/contextual-feedback` at application commit
+`a98a4fa`. The new playlist/feedback commits still need integration into remote `master`;
+the connected Git repository can replace this manual deployment on future production-branch pushes.
+Preview environment variables are not configured. Public email delivery still needs custom SMTP,
+and Google login needs its OAuth configuration; existing confirmed email/password accounts can log in.
+Deployment and remote migration evidence: [Feedback quickstart](specs/006-contextual-feedback/quickstart.md).
+
+## PostHog analytics and error tracking
+
+Configure `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` and `NEXT_PUBLIC_POSTHOG_HOST` in the local
+environment and each deployed runtime. Optional source-map upload at build time requires
+`POSTHOG_API_KEY`, `POSTHOG_PROJECT_ID`, and `NEXT_PUBLIC_POSTHOG_HOST`. Keep the API key
+server-side and out of source control. Event scope, privacy controls, and the tracked events
+are documented in [docs/posthog.md](docs/posthog.md).
 
 ## AI development workflow
 

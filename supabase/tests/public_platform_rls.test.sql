@@ -21,13 +21,13 @@ select is((select count(*)::integer from storage.objects where bucket_id='phrase
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa', true);
-select is((select count(*)::integer from public.playlists), 1, 'A reads published playlist');
-select is((select count(*)::integer from public.phrases), 5, 'A reads five phrases');
-select is((select count(*)::integer from public.audio_variants), 10, 'archived variants hidden');
-select is((select count(*)::integer from storage.objects where bucket_id='phrase-audio'), 10, 'A downloads only active references');
+select is((select count(*)::integer from public.playlists), 6, 'A reads all six published playlists');
+select is((select count(*)::integer from public.phrases), 80, 'A reads the original five and 75 work phrases');
+select is((select count(*)::integer from public.audio_variants), 160, 'all active references visible and archived variants hidden');
+select is((select count(*)::integer from storage.objects where bucket_id='phrase-audio'), 160, 'A downloads only active references');
 select lives_ok($$insert into public.playlist_completions (user_id,playlist_id) select 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa', id from public.playlists$$, 'A completes own playlist');
 select lives_ok($$insert into public.playlist_completions (user_id,playlist_id) select 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa', id from public.playlists on conflict do nothing$$, 'duplicate completion is idempotent');
-select is((select count(*)::integer from public.playlist_completions), 1, 'one completion row');
+select is((select count(*)::integer from public.playlist_completions), 6, 'one completion row per published playlist');
 select throws_ok($$insert into public.playlist_completions(user_id,playlist_id) values('aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa','cccccccc-cccc-4ccc-accc-cccccccccccc')$$, '42501', null, 'unpublished playlist cannot be completed');
 select throws_ok($$insert into public.playlist_completions (user_id,playlist_id) select 'bbbbbbbb-bbbb-4bbb-abbb-bbbbbbbbbbbb', id from public.playlists$$, '42501', null, 'A cannot impersonate B');
 select set_config('request.jwt.claim.sub', 'bbbbbbbb-bbbb-4bbb-abbb-bbbbbbbbbbbb', true);

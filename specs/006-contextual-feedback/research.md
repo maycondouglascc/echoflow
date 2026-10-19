@@ -1,0 +1,10 @@
+# Research and decisions
+
+- Recent navigation means allowlisted routes and explicit action names, kept in memory for five minutes/20 events. This provides context without replaying entered text or recording audio/video. The optional preference question had no answer when the documented default was selected.
+- Capture: lazy html-to-image DOM rendering, filter form controls/dialog/media/private nodes before cloning; viewport crop, pixel ratio 1 and capped dimensions. Reviewable PNG, fallback text-only. Official API: https://github.com/bubkoo/html-to-image . DOM rendering can differ from compositor output and cross-origin assets can fail.
+- Storage: private bucket and caller JWT with policies, no signed/public screenshot URLs, no service-role route. https://supabase.com/docs/guides/storage/security/access-control and https://supabase.com/docs/guides/storage/buckets/fundamentals .
+- Idempotency: client UUID retained with failed draft; server digest covers normalized metadata and optional image checksum. Identical retries succeed; edited payload uses a new ID. Own immutable insert policies protect cross-account writes. Cleanup owns only this request's newly uploaded object.
+- Reuse native ModalDialog and existing design tokens. Capture dependency excluded from initial bundle through dynamic import. Account-keyed layout component prevents cross-account buffer reuse.
+
+- Verified capture uses a computed-geometry staging tree with explicit logical inset reset; without this reset the offscreen staging offset creates a blank SVG canvas. Real Chromium pixel assertions cover scrolling/fixed/nested elements and excluded controls/media. See official rendering/style implementation https://github.com/bubkoo/html-to-image/blob/master/src/index.ts and https://github.com/bubkoo/html-to-image/blob/master/src/apply-style.ts .
+- Receipt JSON is consumed and matched to the request UUID before showing success; network loss retains the same attempt. An identical uploaded-but-unlinked PNG is recovered by checksum on retry. Linked screenshots cannot be removed by user Storage policy.

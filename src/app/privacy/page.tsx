@@ -62,6 +62,39 @@ export default function PrivacyPage() {
             completions. These counters contain no email address, user identifier, recording or
             transcript. Practice access events are not counts of unique people.
           </p>
+          <p>
+            When PostHog is configured, EchoFlow sends selected product events and application
+            errors for analytics and diagnostics. Events may include an opaque account identifier,
+            playlist or phrase identifiers, practice actions, and whether feedback included
+            navigation or a screenshot. Email addresses, recordings, transcripts and screenshots are
+            not sent. Suggestion text is included only if you select the optional PostHog sharing
+            checkbox in the feedback form. Automatic page tracking, click capture and session replay
+            are disabled. Event processing may include the current page and standard browser
+            metadata.
+          </p>
+        </section>
+        <section aria-labelledby="feedback-privacy">
+          <h2 id="feedback-privacy">Feedback and page context</h2>
+          <p>
+            Feedback lets you send improvement suggestions linked to your account and the current
+            page. Opening the form prepares a local screenshot of the visible app and a history of
+            up to 20 recent pages and selected actions from the last five minutes.
+          </p>
+          <p>
+            You can review and remove either attachment before sending. Form fields, private
+            elements, microphone audio and video are excluded. Navigation context contains no typed
+            values, URL queries or fragments; it stays in memory and is discarded when you leave the
+            authenticated area.
+          </p>
+          <p>
+            Nothing is submitted until you choose Send feedback. Submitted suggestions and optional
+            screenshots are stored privately in Supabase for the team to review. Other accounts
+            cannot access them. If you choose to share your suggestion text with PostHog for product
+            research, the text is included in a PostHog event that may be linked to your opaque app
+            account identifier. Screenshots and recent navigation are excluded from that event;
+            ordinary PostHog metadata may include the current page and browser details. Avoid
+            personal or sensitive information in your suggestion or screenshot.
+          </p>
         </section>
         <section aria-labelledby="beta-privacy">
           <h2 id="beta-privacy">About this beta</h2>

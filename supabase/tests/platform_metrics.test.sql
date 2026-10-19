@@ -7,7 +7,7 @@ update auth.users set email_confirmed_at=now() where id='dddddddd-dddd-4ddd-addd
 select is((select count::integer from public.platform_metrics where metric='confirmed_signups'),1,'confirmation update does not double count');
 insert into public.playlist_completions(user_id,playlist_id) select 'dddddddd-dddd-4ddd-addd-dddddddddddd',id from public.playlists where published on conflict do nothing;
 insert into public.playlist_completions(user_id,playlist_id) select 'dddddddd-dddd-4ddd-addd-dddddddddddd',id from public.playlists where published on conflict do nothing;
-select is((select count::integer from public.platform_metrics where metric='playlist_completions'),1,'duplicate completion counts only new row');
+select is((select count::integer from public.platform_metrics where metric='playlist_completions'),6,'each of six playlists counted once despite duplicate completion');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','dddddddd-dddd-4ddd-addd-dddddddddddd',true);
 select lives_ok('select public.record_practice_access()','authenticated event increments');

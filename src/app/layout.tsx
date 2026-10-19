@@ -5,6 +5,7 @@ import "./landing.css";
 import "@/components/styles/auth-dialog.css";
 import "@/components/styles/catalog-practice.css";
 import "./privacy/privacy.css";
+import "@/components/styles/feedback.css";
 import { PageTransition } from "@/components/PageTransition";
 
 export const metadata: Metadata = {

@@ -3,10 +3,15 @@ import { LayoutGroup, MotionConfig } from "motion/react";
 import * as motion from "motion/react-client";
 import Image from "next/image";
 import Link from "next/link";
+import posthog from "posthog-js";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { completePlaylist } from "@/app/(app)/actions";
 import { useShadowingPractice } from "@/components/useShadowingPractice";
 import type { ScenarioFixture } from "@/lib/fixtures/voice-comparison";
+
+const posthogConfigured =
+  Boolean(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN) &&
+  Boolean(process.env.NEXT_PUBLIC_POSTHOG_HOST);
 
 export function ShadowingPractice({
   scenario,
@@ -92,6 +97,7 @@ export function ShadowingPractice({
         {canReplayWord ? (
           <motion.button
             type="button"
+            data-feedback-action="replay-word"
             aria-label={`Replay word: ${part} in ${selectedVoiceName}`}
             onClick={() => actions.replayWord(wordIndex)}
             disabled={isRequestingMicrophone || isRecording}
@@ -120,9 +126,17 @@ export function ShadowingPractice({
             <li key={item.id}>
               <button
                 type="button"
+                data-feedback-action="select-phrase"
                 aria-label={`Choose phrase ${index + 1}: ${item.text}`}
                 aria-pressed={index === selectedIndex}
-                onClick={() => actions.selectPhrase(index)}
+                onClick={() => {
+                  if (posthogConfigured)
+                    posthog.capture("practice_phrase_selected", {
+                      phrase_id: item.id,
+                      phrase_position: index + 1,
+                    });
+                  actions.selectPhrase(index);
+                }}
               >
                 <span className="phrase-number">{String(index + 1).padStart(2, "0")}</span>
                 <span>
@@ -155,12 +169,17 @@ export function ShadowingPractice({
             {audioModels.map((model, index) => (
               <label key={model.id} htmlFor={`reference-model-${index}`}>
                 <input
+                  data-feedback-action="select-voice"
                   id={`reference-model-${index}`}
                   type="radio"
                   name="reference-model"
                   value={model.id}
                   checked={selectedModelId === model.id}
-                  onChange={() => actions.selectAudioModel(model.id)}
+                  onChange={() => {
+                    if (posthogConfigured)
+                      posthog.capture("reference_voice_selected", { voice_id: model.id });
+                    actions.selectAudioModel(model.id);
+                  }}
                   aria-label={model.voiceName}
                 />
                 <span className="voice-pill">{model.voiceName}</span>
@@ -187,8 +206,17 @@ export function ShadowingPractice({
               </span>
               <button
                 type="button"
+                data-feedback-action="listen-reference"
                 aria-label="Listen to reference"
-                onClick={actions.listenToReference}
+                onClick={() => {
+                  if (posthogConfigured)
+                    posthog.capture("practice_reference_played", {
+                      phrase_id: phrase.id,
+                      phrase_position: selectedIndex + 1,
+                      voice_id: selectedModelId,
+                    });
+                  actions.listenToReference();
+                }}
                 disabled={isRequestingMicrophone || isRecording}
                 className="dark-button"
               >
@@ -201,7 +229,12 @@ export function ShadowingPractice({
                 2
               </span>
               {isRecording ? (
-                <button type="button" onClick={actions.stopRecording} className="dark-button">
+                <button
+                  type="button"
+                  data-feedback-action="stop-recording"
+                  onClick={actions.stopRecording}
+                  className="dark-button"
+                >
                   Stop recording
                 </button>
               ) : (
@@ -214,7 +247,15 @@ export function ShadowingPractice({
                         ? "Record again"
                         : "Record"
                   }
-                  onClick={actions.startRecording}
+                  data-feedback-action="record"
+                  onClick={() => {
+                    if (posthogConfigured)
+                      posthog.capture("practice_recording_started", {
+                        phrase_id: phrase.id,
+                        phrase_position: selectedIndex + 1,
+                      });
+                    actions.startRecording();
+                  }}
                   disabled={!canRecord || isAudioBusy || isRequestingMicrophone}
                   className="dark-button"
                 >
@@ -229,7 +270,15 @@ export function ShadowingPractice({
               </span>
               <button
                 type="button"
-                onClick={actions.compare}
+                data-feedback-action="compare"
+                onClick={() => {
+                  if (posthogConfigured)
+                    posthog.capture("practice_comparison_started", {
+                      phrase_id: phrase.id,
+                      phrase_position: selectedIndex + 1,
+                    });
+                  actions.compare();
+                }}
                 disabled={isAudioBusy || isRequestingMicrophone || isRecording}
                 className="dark-button"
               >
@@ -249,7 +298,12 @@ export function ShadowingPractice({
               <div>
                 <p role="alert">{error}</p>
                 {canRetryRecording ? (
-                  <button type="button" className="text-button" onClick={actions.startRecording}>
+                  <button
+                    type="button"
+                    className="text-button"
+                    data-feedback-action="record"
+                    onClick={actions.startRecording}
+                  >
                     Try again
                   </button>
                 ) : null}
@@ -259,9 +313,19 @@ export function ShadowingPractice({
           <div className="phrase-navigation">
             <button
               type="button"
+              data-feedback-action="next-phrase"
               aria-label="Next phrase"
               className="next-phrase"
-              onClick={() => actions.selectPhrase(selectedIndex + 1)}
+              onClick={() => {
+                const nextPhrase = scenario.phrases[selectedIndex + 1];
+                if (!nextPhrase) return;
+                if (posthogConfigured)
+                  posthog.capture("practice_phrase_selected", {
+                    phrase_id: nextPhrase.id,
+                    phrase_position: selectedIndex + 2,
+                  });
+                actions.selectPhrase(selectedIndex + 1);
+              }}
               disabled={selectedIndex === scenario.phrases.length - 1}
             >
               <Image src="/design/forward.svg" width={24} height={24} alt="" />

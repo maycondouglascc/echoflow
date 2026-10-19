@@ -3,6 +3,45 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      app_feedback: {
+        Row: {
+          id: string;
+          user_id: string;
+          message: string;
+          page_path: string;
+          submitted_at: string;
+          captured_at: string;
+          viewport: Json;
+          navigation: Json;
+          screenshot_path: string | null;
+          request_sha256: string;
+        };
+        Insert: {
+          id: string;
+          user_id: string;
+          message: string;
+          page_path: string;
+          submitted_at?: string;
+          captured_at: string;
+          viewport: Json;
+          navigation?: Json;
+          screenshot_path?: string | null;
+          request_sha256: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          message?: string;
+          page_path?: string;
+          submitted_at?: string;
+          captured_at?: string;
+          viewport?: Json;
+          navigation?: Json;
+          screenshot_path?: string | null;
+          request_sha256?: string;
+        };
+        Relationships: [];
+      };
       audio_variants: {
         Row: {
           active: boolean;
@@ -181,6 +220,7 @@ export type Database = {
     Functions: {
       increment_platform_metric: { Args: { metric_name: string }; Returns: undefined };
       record_practice_access: { Args: Record<PropertyKey, never>; Returns: undefined };
+      valid_feedback_navigation: { Args: { events: Json; captured: string }; Returns: boolean };
       valid_word_timings: { Args: { timings: Json }; Returns: boolean };
     };
     Enums: {

@@ -89,3 +89,9 @@ layout. They preserve existing selectors, responsive rules and reduced-motion be
 ```
 
 This structure follows the Next.js App Router convention. Mark privileged modules as server-only and keep credentials out of client components. The folder structure and agent instructions are guidance; server-side authorization, RLS, dependency boundaries, and automated tests are the enforcement.
+
+## Contextual feedback (006)
+
+Authenticated layout mounts an account-keyed FeedbackWidget. Its in-memory five-minute/20-event buffer records only allowlisted app paths and explicit practice action names. No replay, typed values, URL parameters, network logs, or personal audio/video. Opening creates a sanitized computed-geometry viewport staging tree and lazily imports html-to-image; controls, account identity, private nodes and media are omitted. The user reviews/removes attachments before explicit submit.
+
+POST /api/feedback requires caller authentication and matching Origin, bounds multipart/PNG dimensions and metadata, uses the user's RLS client, and persists immutable owned app_feedback plus optional private feedback-screenshots/user-id/request-id.png. Request digest/UUID handles identical retries; failed inserts clean newly uploaded objects. No privileged key, public URL or screenshot client update permission. Existing administrative Supabase tooling is the team inbox. See specs/006-contextual-feedback/quickstart.md for separate-account checks and screenshot limitations.

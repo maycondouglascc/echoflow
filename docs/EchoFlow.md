@@ -74,3 +74,9 @@ This unlocks practice with real-world content — interviews, movies, talks, pod
 ## Core Practice Loop
 
 Every session follows the same 6-step rhythm:
+
+## Catalog and feedback update (2026-10-04)
+
+The catalog now includes the original Voice Comparison and five workplace playlists: Team Meetings, Deadlines and Priorities, Working with Colleagues, Client Conversations, Feedback and Career Growth. Each new playlist has 15 phrases with Puck and Harper (150 new reference audios). Generation/import evidence is under docs/content/.
+
+Feedback is available from the lower-right button throughout the authenticated area. People send improvement suggestions with optional reviewed viewport screenshot and recent route/action context. Attachments remain local until Send feedback; recordings are never included. Suggestions/screenshots are private and account-owned, reviewed through existing Supabase administrative tooling. Feature 006 intentionally adds this optional context persistence beyond feature 005's completion-only persistence; it does not persist practice recordings or continuous session replay.
